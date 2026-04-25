@@ -41,6 +41,9 @@ export default function Login() {
           case 1012:
             setErrorMessage('Mật khẩu không chính xác. Vui lòng thử lại.');
             break;
+          case 1013:
+            setErrorMessage('Tài khoản đang chờ phê duyệt. Vui lòng đợi quản trị viên xác nhận.');
+            break;
           case 1003:
             setErrorMessage('Phiên đăng nhập hết hạn hoặc không hợp lệ.');
             break;

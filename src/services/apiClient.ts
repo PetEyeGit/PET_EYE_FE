@@ -10,11 +10,17 @@ const apiClient = axios.create({
 // Add a request interceptor to add the auth token to headers
 apiClient.interceptors.request.use(
   (config) => {
-    const userStr = localStorage.getItem('Peteye_user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
+    // Skip token for public endpoints to avoid 401 from expired tokens
+    const publicEndpoints = ['/auth/login', '/shops/register', '/files/upload', '/users/register'];
+    const isPublic = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
+
+    if (!isPublic) {
+      const userStr = localStorage.getItem('Peteye_user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.token) {
+          config.headers.Authorization = `Bearer ${user.token}`;
+        }
       }
     }
     return config;
@@ -28,7 +34,9 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+    const isAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/register');
+    
+    if (error.response?.status === 401 && !isAuthPage) {
       // Handle unauthorized (e.g., logout or refresh token)
       localStorage.removeItem('Peteye_user');
       window.location.href = '/login';

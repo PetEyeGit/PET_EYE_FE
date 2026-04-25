@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Store, Mail, Phone, Lock, MapPin, FileText, CheckCircle } from 'lucide-react';
+import { Store, Mail, Phone, Lock, MapPin, FileText, CheckCircle, Loader2, AlertCircle, Upload, X, ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
+import { shopService } from '../services/shop.service';
+import { petService } from '../services/pet.service'; // Reuse upload service
 
 export default function ShopRegister() {
   const navigate = useNavigate();
@@ -16,9 +18,13 @@ export default function ShopRegister() {
     description: '',
     password: '',
     confirmPassword: '',
-    businessLicense: '',
+    licenseImageUrl: '',
     agreed: false
   });
+  const [loading, setLoading] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const shopTypes = [
     'Phòng khám thú y',
@@ -37,7 +43,31 @@ export default function ShopRegister() {
     'Khác'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setError('');
+      // Using petService.uploadAvatar as it points to the generic /files/upload endpoint
+      const url = await petService.uploadAvatar(file);
+      setFormData(prev => ({ ...prev, licenseImageUrl: url }));
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      setError('Không thể tải ảnh lên. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (step < 3) {
@@ -46,20 +76,41 @@ export default function ShopRegister() {
     }
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu không khớp!');
+      setError('Mật khẩu không khớp!');
       return;
     }
 
     if (!formData.agreed) {
-      alert('Vui lòng đồng ý với điều khoản dịch vụ');
+      setError('Vui lòng đồng ý với điều khoản dịch vụ');
       return;
     }
 
-    // FAKE DATA - Auto approve for testing
-    localStorage.setItem(`shop_data_${formData.email}`, JSON.stringify(formData));
-    
-    // Navigate to success page
-    navigate('/shop/register/success');
+    try {
+      setLoading(true);
+      setError('');
+      
+      const request = {
+        shopName: formData.shopName,
+        shopType: formData.shopType,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        description: formData.description,
+        password: formData.password,
+        licenseImageUrl: formData.licenseImageUrl
+      };
+
+      await shopService.register(request);
+      
+      // Navigate to success page
+      navigate('/shop/register/success');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isStepValid = () => {
@@ -70,7 +121,7 @@ export default function ShopRegister() {
       return formData.address && formData.city && formData.description;
     }
     if (step === 3) {
-      return formData.password && formData.confirmPassword && formData.businessLicense && formData.agreed;
+      return formData.password && formData.confirmPassword && formData.licenseImageUrl && formData.agreed;
     }
     return false;
   };
@@ -119,6 +170,18 @@ export default function ShopRegister() {
             ))}
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-bold flex items-center gap-2"
+          >
+            <AlertCircle size={20} />
+            {error}
+          </motion.div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-sm">
@@ -289,22 +352,64 @@ export default function ShopRegister() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Giấy phép kinh doanh *
+                  Ảnh chụp giấy phép kinh doanh *
                 </label>
-                <div className="relative">
-                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input
-                    type="text"
-                    value={formData.businessLicense}
-                    onChange={(e) => setFormData({ ...formData, businessLicense: e.target.value })}
-                    placeholder="Số giấy phép kinh doanh"
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  Bạn sẽ cần upload ảnh giấy phép sau khi tài khoản được tạo
-                </p>
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+                
+                {formData.licenseImageUrl ? (
+                  <div className="relative group rounded-2xl overflow-hidden border-2 border-slate-200 aspect-video bg-slate-50">
+                    <img 
+                      src={formData.licenseImageUrl} 
+                      alt="Business License" 
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <button 
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-3 bg-white rounded-full text-slate-900 hover:scale-110 transition-transform"
+                      >
+                        <Upload size={20} />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, licenseImageUrl: '' }))}
+                        className="p-3 bg-white rounded-full text-red-500 hover:scale-110 transition-transform"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="w-full aspect-video border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-[#1a2b4c] hover:bg-slate-50 transition-all group"
+                  >
+                    <div className="size-12 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-[#1a2b4c]/10 transition-colors">
+                      {isUploading ? (
+                        <Loader2 size={24} className="text-[#1a2b4c] animate-spin" />
+                      ) : (
+                        <ImageIcon size={24} className="text-slate-400 group-hover:text-[#1a2b4c]" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-slate-700">
+                        {isUploading ? 'Đang tải ảnh lên...' : 'Tải ảnh giấy phép lên'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Hỗ trợ: JPG, PNG, WEBP (Tối đa 5MB)
+                      </p>
+                    </div>
+                  </button>
+                )}
               </div>
 
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
@@ -350,13 +455,14 @@ export default function ShopRegister() {
             )}
             <button
               type="submit"
-              disabled={!isStepValid()}
-              className={`flex-1 py-3 rounded-xl font-bold text-white transition-all ${
-                isStepValid()
+              disabled={!isStepValid() || loading}
+              className={`flex-1 py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${
+                isStepValid() && !loading
                   ? 'bg-[#1a2b4c] hover:bg-[#1a2b4c]/90'
                   : 'bg-slate-300 cursor-not-allowed'
               }`}
             >
+              {loading && <Loader2 size={18} className="animate-spin" />}
               {step === 3 ? 'Gửi đơn đăng ký' : 'Tiếp tục'}
             </button>
           </div>

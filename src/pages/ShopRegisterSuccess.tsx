@@ -8,12 +8,12 @@ export default function ShopRegisterSuccess() {
       <div className="max-w-2xl w-full">
         {/* Success Animation */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center size-24 rounded-full bg-green-100 mb-6 animate-bounce">
-            <CheckCircle className="text-green-500" size={48} />
+          <div className="inline-flex items-center justify-center size-24 rounded-full bg-orange-100 mb-6">
+            <Clock className="text-orange-500" size={48} />
           </div>
-          <h1 className="text-4xl font-black mb-2">Đăng ký thành công!</h1>
+          <h1 className="text-4xl font-black mb-2">Đăng ký hoàn tất!</h1>
           <p className="text-slate-600 text-lg">
-            Cảm ơn bạn đã đăng ký trở thành đối tác của Peteye
+            Hồ sơ của bạn đã được gửi và đang chờ phê duyệt
           </p>
         </div>
 
@@ -21,13 +21,13 @@ export default function ShopRegisterSuccess() {
         <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
           <div className="space-y-6">
             <div className="flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                <CheckCircle className="text-green-600" size={24} />
+              <div className="size-12 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                <Clock className="text-orange-600" size={24} />
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-lg mb-1">Tài khoản đã được kích hoạt</h3>
+                <h3 className="font-bold text-lg mb-1">Đang chờ xét duyệt</h3>
                 <p className="text-slate-600 text-sm">
-                  Bạn có thể đăng nhập ngay bây giờ để bắt đầu sử dụng hệ thống. (Chế độ demo - không cần phê duyệt)
+                  Admin sẽ xem xét hồ sơ của bạn trong vòng 1-2 ngày làm việc. Bạn sẽ nhận được thông báo qua email khi có kết quả.
                 </p>
               </div>
             </div>
@@ -66,9 +66,9 @@ export default function ShopRegisterSuccess() {
 
         {/* Next Steps */}
         <div className="bg-gradient-to-br from-[#1a2b4c] to-slate-900 rounded-2xl p-8 text-white mb-6">
-          <h3 className="font-bold text-xl mb-4">🎉 Bạn đã sẵn sàng!</h3>
+          <h3 className="font-bold text-xl mb-4">🎉 Bước tiếp theo?</h3>
           <p className="text-slate-200 mb-4">
-            Tài khoản của bạn đã được kích hoạt. Bạn có thể đăng nhập ngay để:
+            Sau khi được phê duyệt, bạn sẽ có thể:
           </p>
           <ul className="space-y-2 text-sm text-slate-200">
             <li className="flex items-start gap-2">
