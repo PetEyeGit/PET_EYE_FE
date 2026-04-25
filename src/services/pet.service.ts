@@ -18,6 +18,22 @@ export const petService = {
     return response.data.result!;
   },
 
+  update: async (id: number, petData: any): Promise<Pet> => {
+    const response = await apiClient.put<ApiResponse<Pet>>(`/pets/${id}`, petData);
+    return response.data.result!;
+  },
+
+  uploadAvatar: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<string>>('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.result!;
+  },
+
   delete: async (id: number, reason: string): Promise<void> => {
     await apiClient.delete(`/pets/${id}`, { params: { reason } });
   }

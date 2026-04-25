@@ -19,13 +19,27 @@ export default function ShopLogin() {
     setError('');
     
     try {
-      // FAKE DATA - Skip approval check for testing
-      await login(email, password, 'shop');
+      await login(email, password);
       // Redirect to shop dashboard after successful login
       navigate('/shop/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      setError('Email hoặc mật khẩu không đúng');
+      const apiError = error.response?.data;
+      if (apiError && apiError.message) {
+        const errorCode = Number(apiError.code);
+        switch (errorCode) {
+          case 10010:
+            setError('Tài khoản cửa hàng không tồn tại trong hệ thống.');
+            break;
+          case 1012:
+            setError('Mật khẩu không chính xác. Vui lòng thử lại.');
+            break;
+          default:
+            setError(apiError.message || 'Đăng nhập thất bại. Vui lòng thử lại sau.');
+        }
+      } else {
+        setError('Email hoặc mật khẩu không đúng');
+      }
     } finally {
       setLoading(false);
     }

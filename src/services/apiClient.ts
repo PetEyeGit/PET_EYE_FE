@@ -28,7 +28,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
       // Handle unauthorized (e.g., logout or refresh token)
       localStorage.removeItem('Peteye_user');
       window.location.href = '/login';

@@ -25,18 +25,71 @@ export interface Clinic {
   badge?: string | null;
 }
 
+export interface PetMeal {
+  mealName: string;
+  foodType: string;
+  amount: string;
+}
+
+export interface PetMedicalRecord {
+  id?: number;
+  diagnosis: string;
+  treatment: string;
+  prescription: string;
+  visitDate: string;
+  veterinarianNote: string;
+}
+
+export interface PetVaccination {
+  id?: number;
+  name: string;
+  drug: string;
+  clinic: string;
+  date: string;
+  status: 'done' | 'upcoming';
+}
+
+export interface PetReminder {
+  id?: number;
+  title: string;
+  description: string;
+  date: string;
+  type: 'medicine' | 'spa' | 'checkup' | 'other';
+  status: 'active' | 'completed' | 'cancelled';
+}
+
+export interface PetImage {
+  id?: number;
+  imageUrl: string;
+  description?: string;
+  uploadDate?: string;
+}
+
 export interface Pet {
   id: number;
   name: string;
   species: string;
   breed: string;
+  gender: string;
+  color: string;
+  avatar: string;
+  sterilized: boolean;
   weight: number;
   dob: string;
   healthNote: string;
+  favoriteFood?: string;
+  allergies?: string;
+  hobbies?: string;
+  walkTime?: string;
+  nutritionPlan?: PetMeal[];
+  medicalRecords?: PetMedicalRecord[];
   ownerFullName?: string;
-  isActive: boolean;
+  active: boolean;
   unactiveReason?: string;
   documents?: PetDocument[];
+  vaccinations?: PetVaccination[];
+  reminders?: PetReminder[];
+  album?: PetImage[];
 }
 
 export interface PetDocument {

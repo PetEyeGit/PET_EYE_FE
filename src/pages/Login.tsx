@@ -10,12 +10,14 @@ export default function Login() {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
     try {
       const userData = await login(email, password);
       // Redirect based on role after successful login
@@ -26,8 +28,28 @@ export default function Login() {
       } else {
         navigate('/home');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+      const apiError = error.response?.data;
+      if (apiError && apiError.message) {
+        // Map backend error messages to user-friendly Vietnamese messages
+        const errorCode = Number(apiError.code);
+        switch (errorCode) {
+          case 10010:
+            setErrorMessage('Email không tồn tại trong hệ thống.');
+            break;
+          case 1012:
+            setErrorMessage('Mật khẩu không chính xác. Vui lòng thử lại.');
+            break;
+          case 1003:
+            setErrorMessage('Phiên đăng nhập hết hạn hoặc không hợp lệ.');
+            break;
+          default:
+            setErrorMessage(apiError.message || 'Đăng nhập thất bại. Vui lòng thử lại sau.');
+        }
+      } else {
+        setErrorMessage('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối.');
+      }
     } finally {
       setLoading(false);
     }
@@ -85,6 +107,17 @@ export default function Login() {
               </span>
             </button>
           </div>
+          
+          {errorMessage && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium flex items-center gap-3"
+            >
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              {errorMessage}
+            </motion.div>
+          )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="flex flex-col gap-2">
