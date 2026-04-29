@@ -1,12 +1,10 @@
-import apiClient from './apiClient';
 import { Clinic } from '../types';
-import { ApiResponse } from '../types/api';
+import { shopService } from './shop.service';
 
 export const clinicService = {
   getAll: async (): Promise<Clinic[]> => {
     try {
-      const response = await apiClient.get<ApiResponse<any[]>>('/shops');
-      const shops = response.data.result!;
+      const shops = await shopService.searchPublic();
       
       // Map BE Shop to FE Clinic
       return shops.map(shop => ({
@@ -19,8 +17,8 @@ export const clinicService = {
         hours: '08:00 - 20:00',
         distance: '---',
         price: '---',
-        tags: [],
-        image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=800&auto=format&fit=crop',
+        tags: [shop.shopType], // Use shopType as a tag
+        image: shop.licenseImageUrl || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=800&auto=format&fit=crop',
         verified: shop.isVerified,
         badge: shop.isVerified ? 'Verified' : null,
       }));
@@ -31,8 +29,7 @@ export const clinicService = {
   },
 
   getById: async (id: number): Promise<Clinic> => {
-    const response = await apiClient.get<ApiResponse<any>>(`/shops/${id}`);
-    const shop = response.data.result!;
+    const shop = await shopService.getPublicById(id);
     
     return {
       id: shop.id,
@@ -44,8 +41,8 @@ export const clinicService = {
       hours: '08:00 - 20:00',
       distance: '---',
       price: '---',
-      tags: [],
-      image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=800&auto=format&fit=crop',
+      tags: [shop.shopType],
+      image: shop.licenseImageUrl || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=800&auto=format&fit=crop',
       verified: shop.isVerified,
       badge: shop.isVerified ? 'Verified' : null,
     };
