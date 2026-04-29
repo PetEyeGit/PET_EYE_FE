@@ -15,19 +15,7 @@ export const authService = {
       throw new Error('Authentication failed');
     }
 
-    // Decode JWT payload to get user info
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    
-    // The BE adds "email" and "roles" claims
-    const user: User = {
-      id: payload.sub,
-      email: payload.email,
-      name: payload.email.split('@')[0], 
-      role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
-      token,
-    };
-
-    return user;
+    return authService._decodeAndCreateUser(token);
   },
 
   logout: async (token: string): Promise<void> => {
@@ -43,5 +31,43 @@ export const authService = {
       token,
     });
     return response.data.result!;
+  },
+
+  loginWithGoogle: async (token: string): Promise<User> => {
+    const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/google', {
+      token,
+    });
+    const { token: jwtToken, authenticated } = response.data.result!;
+    if (!authenticated) throw new Error('Authentication failed');
+    return authService._decodeAndCreateUser(jwtToken);
+  },
+
+  loginWithFacebook: async (token: string): Promise<User> => {
+    const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/facebook', {
+      token,
+    });
+    const { token: jwtToken, authenticated } = response.data.result!;
+    if (!authenticated) throw new Error('Authentication failed');
+    return authService._decodeAndCreateUser(jwtToken);
+  },
+
+  loginWithZalo: async (code: string): Promise<User> => {
+    const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/zalo', {
+      code,
+    });
+    const { token: jwtToken, authenticated } = response.data.result!;
+    if (!authenticated) throw new Error('Authentication failed');
+    return authService._decodeAndCreateUser(jwtToken);
+  },
+
+  _decodeAndCreateUser: (token: string): User => {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.email.split('@')[0], 
+      role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
+      token,
+    };
   }
 };

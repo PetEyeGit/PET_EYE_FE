@@ -4,16 +4,18 @@ import { authService } from '../services/auth.service';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   isLoggedIn: boolean;
+  setUserSession: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: async () => {},
+  login: async () => { throw new Error('Not implemented'); },
   logout: () => {},
   isLoggedIn: false,
+  setUserSession: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -46,8 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('Peteye_user');
   };
 
+  const setUserSession = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('Peteye_user', JSON.stringify(userData));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoggedIn: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoggedIn: !!user, setUserSession }}>
       {children}
     </AuthContext.Provider>
   );

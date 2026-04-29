@@ -31,10 +31,12 @@ import ProfilePets from './pages/ProfilePets';
 import ProfileSecurity from './pages/ProfileSecurity';
 import ProfileNotifications from './pages/ProfileNotifications';
 import CameraView from './pages/CameraView';
+import ZaloCallback from './pages/ZaloCallback';
+import FacebookCallback from './pages/FacebookCallback';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
-const NO_NAVBAR_ROUTES = ['/login', '/register'];
+const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback'];
 
 function AppLayout() {
   const location = useLocation();
@@ -67,6 +69,8 @@ function AppLayout() {
           <Route path="/" element={user ? <Navigate to="/home" replace /> : <Home />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/login/zalo/callback" element={<ZaloCallback />} />
+          <Route path="/login/facebook/callback" element={<FacebookCallback />} />
           <Route path="/register" element={<Register />} />
           <Route path="/shop/login" element={<ShopLogin />} />
           <Route path="/shop/register" element={<ShopRegister />} />
