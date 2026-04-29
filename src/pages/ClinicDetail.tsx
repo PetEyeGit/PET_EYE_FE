@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import React, { useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { shopService } from '../services/shop.service';
+import { petService } from '../services/pet.service';
+import { useAuth } from '../contexts/AuthContext';
+import type { ServiceResponse } from '../types/api';
+import type { Pet } from '../types';
 
 const SERVICES = [
   {
@@ -131,6 +137,8 @@ const CAMERA_OPTIONS = [
   { id: 'ai', label: 'AI Giám sát', price: 150000, desc: 'Cảnh báo tự động hành vi bất thường', icon: 'psychology' },
 ];
 
+const today = new Date();
+
 function StarRating({ rating, size = 'text-base' }: { rating: number; size?: string }) {
   return (
     <div className={`flex items-center gap-0.5 text-amber-400 ${size}`}>
@@ -144,24 +152,105 @@ function StarRating({ rating, size = 'text-base' }: { rating: number; size?: str
 }
 
 export default function ClinicDetail() {
+  const { id } = useParams<{ id: string }>();
+  const shopId = Number(id);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // ── Real data from API ──────────────────────────────────────────────────────
+  const { data: shop, isLoading: shopLoading } = useQuery({
+    queryKey: ['shop-public', shopId],
+    queryFn: () => shopService.getPublicById(shopId),
+    enabled: !!shopId,
+  });
+
+  const { data: apiServices = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['shop-services', shopId],
+    queryFn: () => shopService.getShopServices(shopId),
+    enabled: !!shopId,
+  });
+
+  const { data: myPets = [] } = useQuery({
+    queryKey: ['my-pets', user?.id],
+    queryFn: () => petService.getByOwner(Number(user?.id)),
+    enabled: !!user?.id,
+  });
+
+  // ── Booking state ───────────────────────────────────────────────────────────
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(today.toISOString().split('T')[0]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [reviewFilter, setReviewFilter] = useState('Tất cả');
-  const [selectedServices, setSelectedServices] = useState<string[]>(['Khám tổng quát']);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [isHotelSelected, setIsHotelSelected] = useState(false);
   const [selectedCameraOption, setSelectedCameraOption] = useState(CAMERA_OPTIONS[0]);
 
-  const toggleService = (serviceTitle: string) => {
-    setSelectedServices(prev =>
-      prev.includes(serviceTitle)
-        ? prev.filter(s => s !== serviceTitle)
-        : [...prev, serviceTitle]
+  // ── Pet selection modal ─────────────────────────────────────────────────────
+  const [showPetModal, setShowPetModal] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+  const [petNote, setPetNote] = useState('');
+
+  const toggleService = (serviceId: number) => {
+    setSelectedServiceIds(prev =>
+      prev.includes(serviceId)
+        ? prev.filter(id => id !== serviceId)
+        : [...prev, serviceId]
     );
   };
 
-  const today = new Date();
+  const totalPrice = selectedServiceIds.reduce((sum, id) => {
+    const svc = apiServices.find((s: ServiceResponse) => s.id === id);
+    return sum + (svc ? svc.price : 0);
+  }, 0) + (isHotelSelected ? (200000 + selectedCameraOption.price) : 0);
+
+  // ── Can book: need at least 1 service + date + time ─────────────────────────
+  const canBook = (selectedServiceIds.length > 0 || isHotelSelected) && selectedDate && selectedTime;
+
+  // ── Open pet modal or go straight to payment ────────────────────────────────
+  function handleBookClick() {
+    if (!canBook) return;
+    setShowPetModal(true);
+  }
+
+  // ── After pet selected → go to payment page with state ──────────────────────
+  function handleConfirmPet() {
+    if (!selectedPet) return;
+    setShowPetModal(false);
+
+    const firstServiceId = selectedServiceIds[0];
+    const firstService = apiServices.find((s: ServiceResponse) => s.id === firstServiceId);
+
+    navigate('/payment', {
+      state: {
+        shopId,
+        shopName: shop?.shopName,
+        shopAddress: shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '',
+        shopImage: shop?.licenseImageUrl,
+        serviceId: firstServiceId,
+        serviceName: firstService?.serviceName,
+        servicePrice: firstService?.price ?? 0,
+        petId: selectedPet.id,
+        petName: `${selectedPet.name} (${selectedPet.species})`,
+        petNote: petNote || undefined,
+        appointmentDatetime: `${selectedDate}T${selectedTime}:00`,
+        date: new Date(`${selectedDate}T${selectedTime}:00`).toLocaleDateString('vi-VN', {
+          weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+        }),
+        time: selectedTime,
+      }
+    });
+  }
+
   const dayName = today.toLocaleDateString('vi-VN', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+
+  if (shopLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a2b4c]" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-slate-50 dark:bg-slate-900">
@@ -186,32 +275,26 @@ export default function ClinicDetail() {
         <div className="flex flex-wrap justify-between items-start gap-4 pb-5">
           <div className="flex flex-col gap-2">
             <h1 className="text-slate-900 dark:text-slate-100 text-2xl md:text-4xl font-black leading-tight tracking-tight">
-              Phòng Khám Thú Y PetCare Sài Gòn
+              {shop?.shopName ?? 'Đang tải...'}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
               <span className="flex items-center text-amber-500 gap-1">
                 <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
                   star
                 </span>
-                4.8
-              </span>
-              <span>•</span>
-              <span className="underline decoration-slate-300 cursor-pointer hover:text-[#1a2b4c]">
-                120 đánh giá
+                {shop?.ratingAvg ? shop.ratingAvg.toFixed(1) : 'Mới'}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm text-teal-500">location_on</span>
-                Quận 7, TP. Hồ Chí Minh
+                {shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '---'}
               </span>
-              <span className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-bold">
-                <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                Đang mở cửa
-              </span>
-              <span className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold text-xs">
-                <span className="material-symbols-outlined text-sm">verified</span>
-                Đối tác xác minh
-              </span>
+              {shop?.isVerified && (
+                <span className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold text-xs">
+                  <span className="material-symbols-outlined text-sm">verified</span>
+                  Đối tác xác minh
+                </span>
+              )}
             </div>
           </div>
           <div className="flex gap-2">
@@ -276,42 +359,15 @@ export default function ClinicDetail() {
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Giới thiệu</h2>
               <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-base">
-                Phòng khám thú y PetCare Sài Gòn cam kết mang lại dịch vụ chăm sóc sức khỏe tốt nhất cho thú cưng
-                của bạn. Với hơn 10 năm kinh nghiệm, đội ngũ bác sĩ của chúng tôi không chỉ giỏi chuyên môn mà
-                còn yêu thương động vật như chính người nhà. Cơ sở vật chất đạt chuẩn quốc tế, trang thiết bị
-                chẩn đoán hình ảnh hiện đại và khu vực lưu trú sạch sẽ, thoáng mát.
+                {shop?.description ?? 'Đang tải thông tin...'}
               </p>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {['Siêu âm màu', 'Phẫu thuật', 'Spa & Grooming', 'Cấp cứu 24/7', 'X-quang', 'Chứng nhận ISO'].map(
-                  (tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-xs font-semibold"
-                    >
-                      {tag}
-                    </span>
-                  )
-                )}
-              </div>
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                {[
-                  { label: 'Năm hoạt động', value: '10+', icon: 'work_history' },
-                  { label: 'Bệnh nhân/tháng', value: '500+', icon: 'pets' },
-                  { label: 'Bác sĩ chuyên môn', value: '8', icon: 'stethoscope' },
-                ].map(({ label, value, icon }) => (
-                  <div
-                    key={label}
-                    className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700"
-                  >
-                    <span className="material-symbols-outlined text-2xl text-[#1a2b4c] dark:text-teal-400 block mb-1">
-                      {icon}
-                    </span>
-                    <span className="block text-2xl font-black text-slate-900 dark:text-slate-100">{value}</span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label}</span>
-                  </div>
-                ))}
-              </div>
+              {shop?.shopType && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-xs font-semibold">
+                    {shop.shopType}
+                  </span>
+                </div>
+              )}
             </section>
 
             {/* Doctors */}
@@ -351,7 +407,8 @@ export default function ClinicDetail() {
               </div>
             </section>
   
-            {/* Pet Hotel & Camera Options */}
+            {/* Pet Hotel & Camera Options — chỉ hiển thị nếu shop có dịch vụ BOARDING */}
+            {apiServices.some((s: ServiceResponse) => s.category === 'BOARDING') && (
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -440,74 +497,87 @@ export default function ClinicDetail() {
                 </div>
               </div>
             </section>
+            )} {/* end BOARDING conditional */}
 
             {/* Featured Services */}
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-5">Dịch vụ nổi bật</h2>
-              <div className="flex flex-col gap-3">
-                {SERVICES.map((svc) => {
-                  const isSelected = selectedServices.includes(svc.title);
 
-                  return (
-                    <div key={svc.title}>
-                      <div
-                        onClick={() => toggleService(svc.title)}
-                        className={`flex items-center gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-[#1a2b4c]/5 dark:hover:bg-teal-900/10 transition-colors group cursor-pointer border ${
-                          isSelected
-                            ? 'border-[#1a2b4c]/40 bg-[#1a2b4c]/10 dark:bg-teal-900/40'
-                            : 'border-transparent hover:border-[#1a2b4c]/20'
-                        }`}
-                      >
-                        {/* Service Image */}
-                        <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 shadow-sm">
-                          <img
-                            src={svc.image}
-                            alt={svc.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                          <div className="absolute bottom-1 right-1 p-1.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-md">
-                            <span className="material-symbols-outlined text-teal-600 dark:text-teal-400 text-sm">
-                              {svc.icon}
+              {servicesLoading && (
+                <div className="flex flex-col gap-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" />
+                  ))}
+                </div>
+              )}
+
+              {!servicesLoading && apiServices.length === 0 && (
+                <p className="text-slate-400 text-sm py-4">Cơ sở này chưa có dịch vụ nào.</p>
+              )}
+
+              {!servicesLoading && apiServices.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  {apiServices.map((svc: ServiceResponse) => {
+                    const isSelected = selectedServiceIds.includes(svc.id);
+                    return (
+                      <div key={svc.id}>
+                        <div
+                          onClick={() => toggleService(svc.id)}
+                          className={`flex items-center gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-[#1a2b4c]/5 dark:hover:bg-teal-900/10 transition-colors group cursor-pointer border ${
+                            isSelected
+                              ? 'border-[#1a2b4c]/40 bg-[#1a2b4c]/10 dark:bg-teal-900/40'
+                              : 'border-transparent hover:border-[#1a2b4c]/20'
+                          }`}
+                        >
+                          {/* Service Image */}
+                          <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 shadow-sm bg-slate-200 dark:bg-slate-700">
+                            {svc.imageUrl ? (
+                              <img
+                                src={svc.imageUrl}
+                                alt={svc.serviceName}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-slate-400 text-2xl">pets</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Service Info */}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
+                              {svc.serviceName}
+                            </h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
+                              {svc.description}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">⏱ {svc.durationMinutes} phút</p>
+                          </div>
+
+                          {/* Price */}
+                          <div className="text-right shrink-0">
+                            <span className="block font-bold text-slate-900 dark:text-slate-100 text-sm">
+                              {svc.price.toLocaleString('vi-VN')}đ
                             </span>
+                            <span className="text-xs text-slate-400">/lần</span>
                           </div>
                         </div>
 
-                        {/* Service Info */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                            {svc.title}
-                          </h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{svc.desc}</p>
-                        </div>
-
-                        {/* Price */}
-                        <div className="text-right shrink-0">
-                          <span className="block font-bold text-slate-900 dark:text-slate-100 text-sm">{svc.price}</span>
-                          <span className="text-xs text-slate-400">{svc.unit}</span>
-                        </div>
+                        {isSelected && svc.description && (
+                          <div className="mt-2 px-4 pb-4 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between mb-2 pt-3">
+                              <span className="font-semibold text-slate-900 dark:text-slate-100">Chi tiết dịch vụ</span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">Nhấn để ẩn</span>
+                            </div>
+                            <p>{svc.description}</p>
+                          </div>
+                        )}
                       </div>
-
-                      {isSelected && (
-                        <div className="mt-2 px-4 pb-4 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-semibold text-slate-900 dark:text-slate-100">Chi tiết dịch vụ</span>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">Nhấn để ẩn</span>
-                          </div>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {svc.details.map((detail) => (
-                              <li key={detail}>{detail}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <button className="w-full mt-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">
-                Xem toàn bộ bảng giá
-              </button>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             {/* Live Camera Promo */}
@@ -650,18 +720,16 @@ export default function ClinicDetail() {
             <div className="sticky top-24 flex flex-col gap-5">
               {/* Booking Card */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none p-6 flex flex-col gap-5">
-                <div className="flex justify-between items-center pb-4 border-b border-dashed border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium text-sm">Giá khám tư vấn</span>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100">150.000đ</span>
-                </div>
 
                 {/* Service Select */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
                     Chọn dịch vụ
                   </label>
-                    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 max-h-[240px] overflow-y-auto">
-                      {/* Hotel Service Special Case in Sidebar */}
+                  <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 max-h-[240px] overflow-y-auto">
+
+                    {/* Hotel — chỉ hiển thị nếu shop có service BOARDING */}
+                    {apiServices.some((s: ServiceResponse) => s.category === 'BOARDING') && (
                       <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors group mb-1 border-b border-slate-100 dark:border-slate-700/50 pb-3">
                         <input
                           type="checkbox"
@@ -683,125 +751,143 @@ export default function ClinicDetail() {
                           </p>
                         </div>
                       </label>
+                    )}
 
-                      {SERVICES.map((svc) => (
+                    {/* Regular services */}
+                    {apiServices
+                      .filter((s: ServiceResponse) => s.category !== 'BOARDING')
+                      .map((svc: ServiceResponse) => (
                         <label
-                          key={svc.title}
+                          key={svc.id}
                           className="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors group"
                         >
                           <input
                             type="checkbox"
-                            checked={selectedServices.includes(svc.title)}
-                            onChange={() => toggleService(svc.title)}
+                            checked={selectedServiceIds.includes(svc.id)}
+                            onChange={() => toggleService(svc.id)}
                             className="mt-1 w-4 h-4 rounded border-slate-300 text-[#1a2b4c] focus:ring-[#1a2b4c] cursor-pointer"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                                {svc.title}
+                                {svc.serviceName}
                               </span>
                               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                                {svc.price}
+                                {svc.price.toLocaleString('vi-VN')}đ
                               </span>
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                              {svc.desc}
+                              {svc.description}
                             </p>
                           </div>
                         </label>
                       ))}
-                    </div>
-                    {/* Summary row */}
-                    {(selectedServices.length > 0 || isHotelSelected) && (
-                      <div className="mt-3 p-3 bg-slate-900 dark:bg-slate-800 rounded-xl text-white">
-                        <div className="flex justify-between items-center text-xs opacity-80 mb-1">
-                          <span>Dịch vụ đã chọn:</span>
-                          <span>{selectedServices.length + (isHotelSelected ? 1 : 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-bold">Tổng cộng:</span>
-                          <span className="text-base font-black text-teal-400">
-                            {(
-                              selectedServices.reduce((sum, title) => {
-                                const svc = SERVICES.find(s => s.title === title);
-                                return sum + (svc ? parseInt(svc.price.replace(/\D/g, '')) : 0);
-                              }, 0) + 
-                              (isHotelSelected ? (200000 + selectedCameraOption.price) : 0)
-                            ).toLocaleString()}đ
-                          </span>
-                        </div>
+                  </div>
+
+                  {/* Summary row */}
+                  {(selectedServiceIds.length > 0 || isHotelSelected) && (
+                    <div className="mt-3 p-3 bg-slate-900 dark:bg-slate-800 rounded-xl text-white">
+                      <div className="flex justify-between items-center text-xs opacity-80 mb-1">
+                        <span>Dịch vụ đã chọn:</span>
+                        <span>{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
                       </div>
-                    )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold">Tổng cộng:</span>
+                        <span className="text-base font-black text-teal-400">
+                          {totalPrice.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Date */}
+                {/* Date — controlled input */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
                     Ngày hẹn
                   </label>
                   <input
                     type="date"
+                    min={today.toISOString().split('T')[0]}
+                    value={selectedDate}
+                    onChange={e => { setSelectedDate(e.target.value); setSelectedTime(null); }}
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]"
-                    defaultValue={today.toISOString().split('T')[0]}
                   />
                 </div>
 
-                {/* Time Slots */}
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-                      Khung giờ trống
-                    </span>
-                    <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
-                      {dayName}, {dateStr}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TIME_SLOTS.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className={`py-2 text-xs font-semibold rounded border transition-all ${selectedTime === time
-                          ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
-                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c]'
-                          }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                    <button className="py-2 text-xs font-semibold rounded border bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed border-slate-200 dark:border-slate-700">
-                      17:00
-                    </button>
-                  </div>
-                </div>
+               {/* Time Slots */}
+<div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
+  <div className="flex items-center justify-between mb-3">
+    <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+      Khung giờ trống
+    </span>
 
-                {/* CTA */}
-                <Link
-                  to="/payment"
-                  className="w-full h-12 flex items-center justify-center gap-2 rounded-xl bg-[#1a2b4c] text-white font-bold hover:bg-[#243d6b] hover:scale-[1.02] transition-all shadow-lg shadow-[#1a2b4c]/25 text-base"
-                >
-                  <span className="material-symbols-outlined">calendar_month</span>
-                  Đặt lịch ngay
-                </Link>
+    <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
+      {selectedDate
+        ? new Date(selectedDate + "T00:00:00").toLocaleDateString("vi-VN", {
+            weekday: "short",
+            day: "2-digit",
+            month: "2-digit",
+          })
+        : `${dayName}, ${dateStr}`}
+    </span>
+  </div>
 
-                <div className="flex gap-3">
-                  <button className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
-                    <span className="material-symbols-outlined text-lg">call</span> Gọi điện
-                  </button>
-                  <Link
-                    to="/messages"
-                    className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-lg">chat</span> Nhắn tin
-                  </Link>
-                </div>
+  <div className="grid grid-cols-3 gap-2">
+    {TIME_SLOTS.map((time) => (
+      <button
+        key={time}
+        onClick={() => setSelectedTime(time)}
+        className={`py-2 text-xs font-semibold rounded border transition-all ${
+          selectedTime === time
+            ? "bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md"
+            : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c]"
+        }`}
+      >
+        {time}
+      </button>
+    ))}
 
-                <div className="flex items-center justify-center gap-1 text-xs text-slate-400 font-medium">
-                  <span className="material-symbols-outlined text-sm text-teal-500">verified_user</span>
-                  Đặt lịch miễn phí · Hủy dễ dàng
-                </div>
-              </div>
+    <button className="py-2 text-xs font-semibold rounded border bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed border-slate-200 dark:border-slate-700">
+      17:00
+    </button>
+  </div>
+</div>
+            {/* CTA */}
+<button
+  onClick={handleBookClick}
+  disabled={!canBook}
+  className={`w-full h-12 flex items-center justify-center gap-2 rounded-xl font-bold transition-all text-base ${
+    canBook
+      ? "bg-[#1a2b4c] text-white hover:bg-[#243d6b] hover:scale-[1.02] shadow-lg shadow-[#1a2b4c]/25 cursor-pointer"
+      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+  }`}
+>
+  <span className="material-symbols-outlined">calendar_month</span>
+  {canBook ? "Đặt lịch ngay" : "Chọn dịch vụ & giờ"}
+</button>
 
+<div className="flex gap-3">
+  <button className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
+    <span className="material-symbols-outlined text-lg">call</span>
+    Gọi điện
+  </button>
+
+  <Link
+    to="/messages"
+    className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
+  >
+    <span className="material-symbols-outlined text-lg">chat</span>
+    Nhắn tin
+  </Link>
+</div>
+
+<div className="flex items-center justify-center gap-1 text-xs text-slate-400 font-medium">
+  <span className="material-symbols-outlined text-sm text-teal-500">
+    verified_user
+  </span>
+  Đặt lịch miễn phí · Hủy dễ dàng
+</div>
               {/* Map Card */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 flex flex-col gap-3">
                 <div
@@ -825,7 +911,7 @@ export default function ClinicDetail() {
                 <div className="flex items-start gap-3 px-1">
                   <span className="material-symbols-outlined text-slate-400 mt-0.5 text-xl">map</span>
                   <p className="text-sm text-slate-600 dark:text-slate-300">
-                    123 Nguyễn Thị Thập, Phường Tân Phú, Quận 7, TP. Hồ Chí Minh
+                    {shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '---'}
                   </p>
                 </div>
                 <div className="flex items-start gap-3 px-1">
@@ -837,8 +923,8 @@ export default function ClinicDetail() {
                 </div>
                 <div className="flex items-center gap-3 px-1">
                   <span className="material-symbols-outlined text-slate-400 text-xl">phone</span>
-                  <a href="tel:+84909123456" className="text-sm text-[#1a2b4c] dark:text-teal-400 font-semibold hover:underline">
-                    0909 123 456
+                  <a href={`tel:${shop?.phone}`} className="text-sm text-[#1a2b4c] dark:text-teal-400 font-semibold hover:underline">
+                    {shop?.phone ?? '---'}
                   </a>
                 </div>
               </div>
@@ -902,6 +988,90 @@ export default function ClinicDetail() {
 
       {/* Space for mobile bottom bar */}
       <div className="lg:hidden h-24" />
+
+      {/* ── Pet Selection Modal ─────────────────────────────────────────────── */}
+      {showPetModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Chọn thú cưng</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Bé nào sẽ sử dụng dịch vụ hôm nay?</p>
+              </div>
+              <button
+                onClick={() => setShowPetModal(false)}
+                className="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
+              >
+                <span className="material-symbols-outlined text-slate-500">close</span>
+              </button>
+            </div>
+
+            {/* Pet list */}
+            <div className="p-5 space-y-3 max-h-72 overflow-y-auto">
+              {myPets.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <span className="material-symbols-outlined text-4xl block mb-2">pets</span>
+                  <p className="text-sm font-semibold">Bạn chưa có thú cưng nào</p>
+                  <Link
+                    to="/profile/pets"
+                    className="mt-2 inline-block text-sm text-[#1a2b4c] dark:text-teal-400 font-bold hover:underline"
+                    onClick={() => setShowPetModal(false)}
+                  >
+                    + Thêm thú cưng
+                  </Link>
+                </div>
+              ) : (
+                myPets.filter((p: any) => p.active).map((pet: any) => (
+                  <button
+                    key={pet.id}
+                    onClick={() => setSelectedPet(pet)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                      selectedPet?.id === pet.id
+                        ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40'
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 border-2 border-white dark:border-slate-600 shadow">
+                      {pet.avatar
+                        ? <img src={pet.avatar} alt={pet.name} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-slate-400">pets</span>
+                          </div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-white">{pet.name}</p>
+                      <p className="text-xs text-slate-500">{pet.species} · {pet.breed} · {pet.weight}kg</p>
+                    </div>
+                    {selectedPet?.id === pet.id && (
+                      <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 shrink-0" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex gap-3">
+              <button
+                onClick={() => setShowPetModal(false)}
+                className="flex-1 py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmPet}
+                disabled={!selectedPet}
+                className="flex-1 py-3 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                Tiếp tục thanh toán →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
