@@ -14,6 +14,9 @@ export interface ShopPublicResponse {
   isVerified: boolean;
   ratingAvg: number;
   ownerId: number;
+  openTime?: string;
+  closeTime?: string;
+  workingDays?: string;
 }
 
 export interface ShopRegistrationRequest {
@@ -29,7 +32,30 @@ export interface ShopRegistrationRequest {
   licenseImageUrl?: string;
 }
 
+export interface ShopUpdateRequest {
+  shopName?: string;
+  shopType?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  description?: string;
+  openTime?: string;
+  closeTime?: string;
+  workingDays?: string;
+}
+
 export const shopService = {
+  getMyShop: async (): Promise<ShopPublicResponse> => {
+    const response = await apiClient.get<ApiResponse<ShopPublicResponse>>('/shops/my-shop');
+    return response.data.result!;
+  },
+
+  updateMyShop: async (data: ShopUpdateRequest): Promise<ShopPublicResponse> => {
+    const response = await apiClient.put<ApiResponse<ShopPublicResponse>>('/shops/my-shop', data);
+    return response.data.result!;
+  },
+
   register: async (data: ShopRegistrationRequest) => {
     const response = await apiClient.post('/shops/register', data);
     return response.data;

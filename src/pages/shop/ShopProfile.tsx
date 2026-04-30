@@ -1,26 +1,81 @@
-import React, { useState } from 'react';
-import { Store, MapPin, Phone, Mail, Clock, Camera, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2 } from 'lucide-react';
+import { shopService } from '../../services/shop.service';
 
 export default function ShopProfile() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [shopInfo, setShopInfo] = useState({
-    name: 'PetCare Sài Gòn',
-    type: 'Phòng khám thú y',
-    email: 'petcare@example.com',
-    phone: '0901234567',
-    address: '123 Nguyễn Thị Thập, Quận 7, TP.HCM',
-    city: 'TP. Hồ Chí Minh',
-    description: 'Phòng khám thú y chuyên nghiệp với đội ngũ bác sĩ giàu kinh nghiệm',
+    name: '',
+    type: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    description: '',
     openTime: '08:00',
     closeTime: '20:00',
-    workingDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
+    workingDays: [] as string[],
+    imageUrl: '',
   });
 
-  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    fetchShopProfile();
+  }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const fetchShopProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await shopService.getMyShop();
+      setShopInfo({
+        name: data.shopName,
+        type: data.shopType,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        city: data.city,
+        description: data.description || '',
+        openTime: data.openTime || '08:00',
+        closeTime: data.closeTime || '20:00',
+        workingDays: data.workingDays ? data.workingDays.split(',') : [],
+        imageUrl: data.licenseImageUrl || '', // Fallback or use a dedicated logo field if available
+      });
+    } catch (err) {
+      console.error('Failed to fetch shop profile:', err);
+      setError('Không thể tải thông tin cửa hàng.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      setSaving(true);
+      setError(null);
+      await shopService.updateMyShop({
+        shopName: shopInfo.name,
+        shopType: shopInfo.type,
+        email: shopInfo.email,
+        phone: shopInfo.phone,
+        address: shopInfo.address,
+        city: shopInfo.city,
+        description: shopInfo.description,
+        openTime: shopInfo.openTime,
+        closeTime: shopInfo.closeTime,
+        workingDays: shopInfo.workingDays.join(','),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to update shop profile:', err);
+      setError('Cập nhật thông tin thất bại.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const weekDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
@@ -43,26 +98,37 @@ export default function ShopProfile() {
           <p className="text-slate-600">Quản lý thông tin và cài đặt cửa hàng của bạn</p>
         </div>
 
-        {saved && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3 text-green-700 mb-6">
-            <Save size={20} />
-            <span className="font-semibold">Thông tin đã được lưu thành công!</span>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700 mb-6">
+            <span className="font-semibold">{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Shop Image */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-bold text-lg mb-4">Hình ảnh cửa hàng</h3>
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="relative">
-                <div className="size-32 rounded-xl bg-slate-100 overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=200"
-                    alt="Shop"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm">
+            <Loader2 size={40} className="animate-spin text-[#1a2b4c] mb-4" />
+            <p className="text-slate-500 font-medium">Đang tải thông tin cửa hàng...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-6">
+            {/* Shop Image */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="font-bold text-lg mb-4">Hình ảnh cửa hàng</h3>
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="relative">
+                  <div className="size-32 rounded-xl bg-slate-100 overflow-hidden">
+                    {shopInfo.imageUrl ? (
+                      <img
+                        src={shopInfo.imageUrl}
+                        alt="Shop"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Store size={40} className="text-slate-300" />
+                      </div>
+                    )}
+                  </div>
                 <button
                   type="button"
                   className="absolute bottom-2 right-2 size-8 bg-[#1a2b4c] text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
@@ -224,23 +290,26 @@ export default function ShopProfile() {
             </div>
           </div>
 
-          {/* Submit */}
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-all"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-[#1a2b4c] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg"
-            >
-              <Save size={20} />
-              Lưu thay đổi
-            </button>
-          </div>
-        </form>
+            {/* Submit */}
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-all"
+                disabled={saving}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-[#1a2b4c] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg disabled:opacity-70"
+              >
+                {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
