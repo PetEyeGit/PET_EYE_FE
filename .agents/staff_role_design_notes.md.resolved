@@ -1,0 +1,70 @@
+# Tài liệu Phân tích & Thiết kế hệ thống Staff - Pet Eye
+
+Tài liệu này tổng hợp toàn bộ các ý tưởng, luồng logic và thiết kế đã được thống nhất để phát triển tính năng nhân viên (Staff) cho hệ thống Pet Eye.
+
+---
+
+## 1. Định nghĩa vai trò (Role Definition)
+
+- **Shop Owner (Chủ cửa hàng):** Vai trò quản trị cao nhất tại cửa hàng. Tập trung vào chiến lược, doanh thu, quản lý dịch vụ và giám sát nhân sự.
+- **Staff (Nhân viên):** Vai trò thực thi trực tiếp các dịch vụ (Grooming, Clinic, Boarding). Tập trung vào hoàn thành công việc, báo cáo trạng thái và tương tác với thú cưng.
+
+---
+
+## 2. Mô hình quản lý tài khoản (Account Management)
+
+Hệ thống sử dụng mô hình **Doanh nghiệp đóng (Closed Enterprise)**:
+- **Người tạo:** Shop Owner trực tiếp tạo tài khoản cho Staff trong màn hình "Quản lý nhân sự".
+- **Quy trình:** Nhập thông tin cơ bản -> Hệ thống gán `shop_id` -> Cấp tài khoản/mật khẩu.
+- **Tính năng mở rộng:** Giới hạn số lượng tài khoản Staff dựa trên gói dịch vụ của Shop (Ví dụ: Gói Free tối đa 2 Staff).
+- **Quyền hạn:** Owner có quyền khóa/mở tài khoản nhân viên bất cứ lúc nào.
+
+---
+
+## 3. Các chế độ phân công công việc (Assignment Modes)
+
+Hệ thống hỗ trợ 3 chế độ linh hoạt, cho phép Shop Owner tùy chỉnh trong phần cài đặt:
+
+1.  **Chỉ định trực tiếp (Manual Assign):** Chủ shop chọn đích danh người làm cho từng đơn hàng. Phù hợp shop chuyên nghiệp, kiểm soát chặt.
+2.  **Nhân viên tự nhận (Self-Service/Open Pool):** Đơn vào kho chung, nhân viên nào rảnh thì tự nhận (Claim). Phù hợp shop đông khách, kích thích năng suất.
+3.  **Tự động gán (Auto-Assign):** Hệ thống tự gán dựa trên chuyên môn (Specialty) và khối lượng việc hiện tại của nhân viên. Phù hợp shop nhỏ hoặc muốn tối ưu quy trình tự động.
+
+---
+
+## 4. Thiết kế giao diện & Trải nghiệm người dùng (UI/UX Strategy)
+
+Sử dụng chung bộ nhận diện thương hiệu (Deep Blue `#1a2b4c`, Modern Soft-UI), nhưng phân hóa về công năng:
+
+### A. Phía STAFF (Tối giản - Task-oriented)
+- **Staff Dashboard:** Ưu tiên hiển thị "Ca trực hiện tại" và các nút hành động lớn (Mobile-friendly).
+- **My Tasks:** Danh sách đơn được gán, tập trung vào 3 trạng thái: *Chờ làm -> Đang làm -> Hoàn thành*.
+- **Media Reporting:** Tích hợp tính năng chụp ảnh/quay video nhanh để đẩy lên Live Tracking cho khách hàng.
+
+### B. Phía SHOP OWNER (Quản trị - Management-oriented)
+- **Staff Management:** Quản lý danh sách, chuyên môn và hiệu suất của nhân viên.
+- **Operation Settings:** Nơi cấu hình Chế độ phân đơn (Manual/Self/Auto).
+- **Booking Update:** Nâng cấp màn hình đơn hàng để có chức năng "Gán nhân viên".
+
+---
+
+## 5. Lộ trình triển khai kỹ thuật (Technical Roadmap)
+
+### Giai đoạn 1: Backend Foundation (Cần thực hiện tiếp)
+- [ ] Cập nhật DB: Thêm cột `staff_id` và `assignment_mode` vào bảng `Shop/Booking`.
+- [ ] Xây dựng API tạo Staff và gán Role.
+- [ ] Xây dựng API lấy danh sách Task theo nhân viên và theo Shop (đơn chưa gán).
+
+### Giai đoạn 2: Frontend Integration (Đã có khung giao diện)
+- [x] Tạo màn hình Staff Dashboard & Task list.
+- [x] Tạo màn hình Quản lý nhân viên cho Shop Owner.
+- [x] Cấu hình Routing và Phân quyền Sidebar.
+- [ ] Kết nối các màn hình này với API sau khi Backend hoàn thiện.
+
+### Giai đoạn 3: Tối ưu & Live Tracking
+- [ ] Tích hợp tính năng Staff cập nhật ảnh/video thực tế vào luồng Live Tracking của khách hàng.
+- [ ] Xây dựng báo cáo hiệu suất nhân viên.
+
+---
+
+> [!TIP]
+> **Triết lý thiết kế:** "Quy trình chuyên nghiệp nhưng thao tác tối giản". Staff không nên phải click quá 3 lần để cập nhật xong một trạng thái công việc.

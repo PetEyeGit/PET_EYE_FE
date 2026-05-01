@@ -18,6 +18,12 @@ import ShopCustomers from './pages/shop/ShopCustomers';
 import ShopProfile from './pages/shop/ShopProfile';
 import ShopCamera from './pages/shop/ShopCamera';
 import ShopMessages from './pages/shop/ShopMessages';
+import ShopStaff from './pages/shop/ShopStaff';
+
+import StaffLayout from './pages/staff/StaffLayout';
+import StaffDashboard from './pages/staff/StaffDashboard';
+import StaffTasks from './pages/staff/StaffTasks';
+
 import Profile, { ProfileLayout } from './pages/Profile';
 import OrderHistory from './pages/OrderHistory';
 import BookingHistory from './pages/BookingHistory';
@@ -36,6 +42,7 @@ import FacebookCallback from './pages/FacebookCallback';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
+const STAFF_ROUTES_PREFIX = '/staff';
 const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback'];
 
 function AppLayout() {
@@ -43,6 +50,7 @@ function AppLayout() {
   const { user } = useAuth();
   
   const isShopRoute = location.pathname.startsWith(SHOP_ROUTES_PREFIX);
+  const isStaffRoute = location.pathname.startsWith(STAFF_ROUTES_PREFIX);
   const isNoNavbarRoute = NO_NAVBAR_ROUTES.includes(location.pathname);
   const isHomePage = location.pathname === '/home';
   const isCameraPage = location.pathname === '/camera';
@@ -51,7 +59,17 @@ function AppLayout() {
   // - Landing page (/) when not logged in
   // - Customer pages when logged in
   // Hide for: shop routes, login/register pages, home page (has its own header), camera page
-  const shouldShowCustomerNav = !isShopRoute && !isNoNavbarRoute && !isHomePage && !isCameraPage;
+  const shouldShowCustomerNav = !isShopRoute && !isStaffRoute && !isNoNavbarRoute && !isHomePage && !isCameraPage;
+
+  const getRedirectPath = () => {
+    if (!user) return "/";
+    switch (user.role) {
+      case 'SHOP_OWNER': return "/shop/dashboard";
+      case 'STAFF': return "/staff/dashboard";
+      case 'ADMIN': return "/admin/dashboard";
+      default: return "/home";
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans">
@@ -66,7 +84,7 @@ function AppLayout() {
         )}
 
         <Routes>
-          <Route path="/" element={user ? <Navigate to="/home" replace /> : <Home />} />
+          <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Home />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/zalo/callback" element={<ZaloCallback />} />
@@ -84,8 +102,17 @@ function AppLayout() {
             <Route path="customers" element={<ShopCustomers />} />
             <Route path="camera" element={<ShopCamera />} />
             <Route path="messages" element={<ShopMessages />} />
+            <Route path="staff" element={<ShopStaff />} />
             <Route path="profile" element={<ShopProfile />} />
           </Route>
+
+          {/* Staff Routes with Layout */}
+          <Route path="/staff" element={<StaffLayout />}>
+            <Route path="dashboard" element={<StaffDashboard />} />
+            <Route path="tasks" element={<StaffTasks />} />
+            <Route path="messages" element={<Messaging />} />
+          </Route>
+
           {/* profile area with persistent sidebar */}
           <Route path="/profile" element={<ProfileLayout />}>
             <Route index element={<Profile />} />
