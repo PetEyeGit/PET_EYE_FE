@@ -30,6 +30,8 @@ export default function FacebookCallback() {
           navigate('/admin/dashboard');
         } else if (userData.role === 'SHOP_OWNER') {
           navigate('/shop/dashboard');
+        } else if (userData.role === 'STAFF') {
+          navigate('/staff/dashboard');
         } else {
           navigate('/home');
         }

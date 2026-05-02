@@ -106,14 +106,7 @@ export default function StaffNavbar() {
                     <p className="text-[13px] font-bold text-slate-900 truncate">{user?.name || 'Nhân viên'}</p>
                     <p className="text-[10px] text-slate-500">Mã NV: STAFF_01</p>
                   </div>
-                  <div className="border-b border-slate-100 mb-1">
-                    <button 
-                      onClick={() => { navigate('/shop/dashboard'); setUserMenuOpen(false); }}
-                      className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-indigo-600 hover:bg-indigo-50 w-full text-left transition-colors font-semibold"
-                    >
-                      <BarChart3 size={14} /> Chuyển sang Chủ Shop
-                    </button>
-                  </div>
+
                   <button onClick={handleLogout} className="flex items-center gap-2.5 px-4 py-2 text-[13px] text-red-500 hover:bg-red-50 w-full text-left transition-colors font-medium">
                     <LogOut size={14} /> Đăng xuất
                   </button>

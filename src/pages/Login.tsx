@@ -22,6 +22,8 @@ export default function Login() {
       navigate('/admin/dashboard');
     } else if (userData.role === 'SHOP_OWNER') {
       navigate('/shop/dashboard');
+    } else if (userData.role === 'STAFF') {
+      navigate('/staff/dashboard');
     } else {
       navigate('/home');
     }
@@ -80,6 +82,8 @@ export default function Login() {
         navigate('/admin/dashboard');
       } else if (userData.role === 'SHOP_OWNER') {
         navigate('/shop/dashboard');
+      } else if (userData.role === 'STAFF') {
+        navigate('/staff/dashboard');
       } else {
         navigate('/home');
       }
@@ -115,7 +119,7 @@ export default function Login() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 md:p-8 bg-slate-50">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-5xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
@@ -124,9 +128,9 @@ export default function Login() {
         <div className="hidden md:flex md:w-1/2 bg-slate-100 items-center justify-center p-12 relative overflow-hidden">
           <div className="relative z-10 text-center">
             <div className="w-full aspect-square max-w-[400px] mx-auto mb-8 rounded-2xl shadow-lg overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop" 
-                alt="Happy Dog" 
+              <img
+                src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop"
+                alt="Happy Dog"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -165,9 +169,9 @@ export default function Login() {
               </span>
             </button>
           </div>
-          
+
           {errorMessage && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium flex items-center gap-3"
@@ -182,9 +186,9 @@ export default function Login() {
               <label className="text-sm font-semibold text-slate-700">Địa chỉ Email</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/20 focus:border-[#1a2b4c] outline-none transition-all" 
-                  placeholder="example@Peteye.vn" 
+                <input
+                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/20 focus:border-[#1a2b4c] outline-none transition-all"
+                  placeholder="example@Peteye.vn"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -200,15 +204,15 @@ export default function Login() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input 
-                  className="w-full pl-12 pr-12 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/20 focus:border-[#1a2b4c] outline-none transition-all" 
-                  placeholder="••••••••" 
+                <input
+                  className="w-full pl-12 pr-12 py-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/20 focus:border-[#1a2b4c] outline-none transition-all"
+                  placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
@@ -218,7 +222,7 @@ export default function Login() {
               </div>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="w-full py-4 bg-[#1a2b4c] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -242,10 +246,10 @@ export default function Login() {
                 </svg>
                 <span className="text-sm font-semibold hidden lg:inline">Google</span>
               </button>
-              
+
               <button onClick={handleFacebookLogin} type="button" className="flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                 <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
                 <span className="text-sm font-semibold hidden lg:inline">Facebook</span>
               </button>

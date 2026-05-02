@@ -1,153 +1,211 @@
-import React from 'react';
-import { 
-    Calendar, Clock, CheckCircle, ArrowRight, Video, 
-    MessageCircle, Play, ClipboardList, Camera, Bell
+import React, { useState, useEffect } from 'react';
+import {
+    ClipboardList, CheckCircle2, Clock, PlayCircle,
+    ChevronRight, Loader2, RefreshCw, XCircle, Bell, Camera, MessageCircle
 } from 'lucide-react';
+import { taskService, type TaskResponse, type TaskStatus } from '../../services/task.service';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
+
+const STATUS_CONFIG = {
+    CONFIRMED:       { label: 'Chờ làm',        color: 'bg-amber-50 text-amber-600 border-amber-200',   dot: 'bg-amber-500' },
+    IN_PROGRESS:     { label: 'Đang làm',        color: 'bg-blue-50 text-blue-600 border-blue-200',      dot: 'bg-blue-500'  },
+    COMPLETED:       { label: 'Hoàn thành',      color: 'bg-green-50 text-green-600 border-green-200',   dot: 'bg-green-500' },
+    CANCELLED:       { label: 'Đã huỷ',          color: 'bg-red-50 text-red-400 border-red-200',         dot: 'bg-red-400'   },
+    PENDING_PAYMENT: { label: 'Chờ thanh toán',  color: 'bg-slate-50 text-slate-500 border-slate-200',   dot: 'bg-slate-400' },
+} as const;
+
+const NEXT_STATUS: Record<string, TaskStatus | null> = {
+    CONFIRMED: 'IN_PROGRESS', IN_PROGRESS: 'COMPLETED', COMPLETED: null, CANCELLED: null, PENDING_PAYMENT: null,
+};
+const NEXT_LABEL: Record<string, string> = { CONFIRMED: 'Bắt đầu làm', IN_PROGRESS: 'Hoàn thành' };
+
+const fmt = (iso: string) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
 
 export default function StaffDashboard() {
-  const { user } = useAuth();
+    const { user } = useAuth();
+    const [myTasks, setMyTasks]     = useState<TaskResponse[]>([]);
+    const [poolTasks, setPoolTasks] = useState<TaskResponse[]>([]);
+    const [activeTab, setActiveTab] = useState<'mine' | 'pool'>('mine');
+    const [loading, setLoading]     = useState(false);
+    const [updating, setUpdating]   = useState<number | null>(null);
 
-  const myStats = [
-    { label: 'Ca trực hôm nay', value: '5', icon: Calendar, color: 'blue' },
-    { label: 'Hoàn thành', value: '3', icon: CheckCircle, color: 'green' },
-    { label: 'Đang xử lý', value: '1', icon: Play, color: 'orange' },
-    { label: 'Tin nhắn', value: '2', icon: MessageCircle, color: 'purple' },
-  ];
+    const load = async () => {
+        setLoading(true);
+        try {
+            const [mine, pool] = await Promise.all([
+                taskService.getMyTasks(),
+                taskService.getUnassignedTasks().catch(() => []),
+            ]);
+            setMyTasks(mine);
+            setPoolTasks(pool);
+        } catch { toast.error('Không thể tải danh sách công việc'); }
+        finally { setLoading(false); }
+    };
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
-      {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-        <div>
-           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Staff Workspace</h1>
-           <p className="text-slate-500 font-medium mt-1">Chào {user?.name || 'Nhân viên'}. Hãy hoàn thành các ca trực hôm nay nhé!</p>
-        </div>
-        <div className="flex items-center gap-3">
-            <button className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-slate-400 hover:text-[#1a2b4c] transition-all relative">
-                <Bell size={20} />
-                <span className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+    useEffect(() => { load(); }, []);
+
+    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus) => {
+        setUpdating(bookingId);
+        try {
+            const updated = await taskService.updateStatus(bookingId, nextStatus);
+            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
+            toast.success(`Đã cập nhật: ${STATUS_CONFIG[updated.status]?.label}`);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Cập nhật thất bại');
+        } finally { setUpdating(null); }
+    };
+
+    const handleClaim = async (bookingId: number) => {
+        setUpdating(bookingId);
+        try {
+            const claimed = await taskService.claimTask(bookingId);
+            setPoolTasks(prev => prev.filter(t => t.bookingId !== bookingId));
+            setMyTasks(prev => [claimed, ...prev]);
+            toast.success('Đã nhận task!');
+            setActiveTab('mine');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Nhận task thất bại');
+        } finally { setUpdating(null); }
+    };
+
+    const activeTasks = myTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS'].includes(t.status));
+    const doneTasks   = myTasks.filter(t => ['COMPLETED', 'CANCELLED'].includes(t.status));
+
+    const TaskCard = ({ task }: { task: TaskResponse }) => {
+        const cfg  = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.CONFIRMED;
+        const next = NEXT_STATUS[task.status];
+        const busy = updating === task.bookingId;
+        return (
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-4">
+                    <div>
+                        <p className="font-black text-slate-900 text-lg">{task.petName}</p>
+                        <p className="text-sm text-slate-500">KH: {task.customerName}</p>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase border ${cfg.color}`}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${cfg.dot}`} />{cfg.label}
+                    </span>
+                </div>
+                <div className="space-y-2 mb-5">
+                    <div className="flex items-center gap-2 text-sm text-slate-600"><ClipboardList size={14} className="text-indigo-400 shrink-0" />{task.serviceName}</div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600"><Clock size={14} className="text-indigo-400 shrink-0" />{fmt(task.appointmentDatetime)}</div>
+                    {task.note && <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">📝 {task.note}</div>}
+                </div>
+                {next && (
+                    <button disabled={busy} onClick={() => handleUpdateStatus(task.bookingId, next)}
+                        className={`w-full py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${next === 'IN_PROGRESS' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-green-600 text-white hover:bg-green-700'} disabled:opacity-60`}>
+                        {busy ? <Loader2 size={18} className="animate-spin" /> : next === 'IN_PROGRESS' ? <PlayCircle size={18} /> : <CheckCircle2 size={18} />}
+                        {busy ? 'Đang cập nhật...' : NEXT_LABEL[task.status]}
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    const PoolCard = ({ task }: { task: TaskResponse }) => (
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-4">
+                <div><p className="font-black text-slate-900 text-lg">{task.petName}</p><p className="text-sm text-slate-500">KH: {task.customerName}</p></div>
+                <span className="px-3 py-1.5 rounded-full text-[10px] font-black uppercase border bg-purple-50 text-purple-600 border-purple-200">Chưa nhận</span>
+            </div>
+            <div className="space-y-2 mb-5">
+                <div className="flex items-center gap-2 text-sm text-slate-600"><ClipboardList size={14} className="text-indigo-400" />{task.serviceName}</div>
+                <div className="flex items-center gap-2 text-sm text-slate-600"><Clock size={14} className="text-indigo-400" />{fmt(task.appointmentDatetime)}</div>
+            </div>
+            <button disabled={updating === task.bookingId} onClick={() => handleClaim(task.bookingId)}
+                className="w-full py-3.5 rounded-2xl bg-[#1a2b4c] text-white font-black text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-all">
+                {updating === task.bookingId ? <Loader2 size={18} className="animate-spin"/> : <ChevronRight size={18} />}
+                {updating === task.bookingId ? 'Đang nhận...' : 'Nhận task này'}
             </button>
         </div>
-      </header>
+    );
 
-      {/* Grid Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {myStats.map((s) => (
-            <div key={s.label} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-lg transition-all group">
-                <div className={`w-10 h-10 rounded-xl mb-4 flex items-center justify-center text-white bg-${s.color}-500 shadow-lg shadow-${s.color}-500/20 group-hover:scale-110 transition-transform`}>
-                    <s.icon size={20} />
-                </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
-                <h3 className="text-2xl font-black text-slate-900 mt-1">{s.value}</h3>
-            </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Urgent Tasks */}
-        <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-xl font-bold text-slate-900">Ca trực hiện tại</h3>
-                    <span className="px-3 py-1 bg-orange-100 text-orange-600 text-xs font-bold rounded-full animate-pulse">ĐANG DIỄN RA</span>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="w-full md:w-48 h-48 bg-slate-100 rounded-[2rem] overflow-hidden relative group">
-                        <img 
-                            src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=2071&auto=format&fit=crop" 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                            alt="pet"
-                        />
-                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            <button className="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/40">
-                                <Video size={24} />
-                            </button>
-                        </div>
+    return (
+        <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+            <div className="max-w-5xl mx-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900">Công việc của tôi</h1>
+                        <p className="text-slate-500 mt-1">Chào {user?.name || 'Nhân viên'}! Hãy hoàn thành các ca trực hôm nay nhé.</p>
                     </div>
-                    
-                    <div className="flex-1 space-y-4">
-                        <div>
-                            <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Grooming Premium</p>
-                            <h2 className="text-3xl font-black text-slate-900">Cún Lu - Poodle</h2>
-                        </div>
-                        <div className="flex flex-wrap gap-4">
-                            <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-                                <Clock size={16} className="text-indigo-500" />
-                                <span>Còn 45 phút</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-                                <ClipboardList size={16} className="text-indigo-500" />
-                                <span>Ghi chú: Sợ tiếng sấy to</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button className="px-6 py-3 bg-[#1a2b4c] text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-900/20 hover:scale-105 transition-transform">
-                                Chụp ảnh báo cáo
-                            </button>
-                            <button className="px-6 py-3 bg-green-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-500/20 hover:scale-105 transition-transform">
-                                Hoàn thành
-                            </button>
-                        </div>
+                    <div className="flex gap-3">
+                        <button className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-red-500 transition-all relative">
+                            <Bell size={20} /><span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+                        </button>
+                        <button onClick={load} disabled={loading} className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-500 hover:text-[#1a2b4c] transition-all disabled:opacity-50">
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold text-slate-900 mb-6">Việc cần làm tiếp theo</h3>
-                <div className="space-y-4">
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-8">
                     {[
-                        { time: '14:00', name: 'Mèo Mướp', service: 'Tiêm phòng', status: 'Sắp tới' },
-                        { time: '15:30', name: 'Husky Ngáo', service: 'Tắm & Sấy', status: 'Sắp tới' },
-                    ].map((task, i) => (
-                        <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-transparent hover:border-slate-100 hover:bg-white hover:shadow-md transition-all group">
-                            <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center border border-slate-100">
-                                <span className="text-[10px] font-black text-slate-400">{task.time.split(' ')[1]}</span>
-                                <span className="text-sm font-black text-slate-900">{task.time.split(' ')[0]}</span>
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="text-sm font-bold text-slate-900">{task.name}</h4>
-                                <p className="text-[11px] text-slate-500">{task.service}</p>
-                            </div>
-                            <button className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-400 group-hover:bg-[#1a2b4c] group-hover:text-white transition-all shadow-sm">
-                                <ArrowRight size={18} />
-                            </button>
+                        { label: 'Chờ làm',    count: myTasks.filter(t => t.status === 'CONFIRMED').length,   color: 'text-amber-500', bg: 'bg-amber-50' },
+                        { label: 'Đang làm',   count: myTasks.filter(t => t.status === 'IN_PROGRESS').length, color: 'text-blue-500',  bg: 'bg-blue-50' },
+                        { label: 'Hoàn thành', count: myTasks.filter(t => t.status === 'COMPLETED').length,   color: 'text-green-500', bg: 'bg-green-50' },
+                    ].map(s => (
+                        <div key={s.label} className={`${s.bg} rounded-2xl p-5 text-center`}>
+                            <p className={`text-3xl font-black ${s.color}`}>{s.count}</p>
+                            <p className="text-xs font-bold text-slate-500 mt-1">{s.label}</p>
                         </div>
                     ))}
                 </div>
-            </div>
-        </div>
 
-        {/* Quick Actions Sidebar */}
-        <div className="space-y-8">
-            <div className="bg-gradient-to-br from-[#1a2b4c] to-slate-800 p-8 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden">
-                <div className="relative z-10">
-                    <Camera size={40} className="mb-6 opacity-80" />
-                    <h3 className="text-xl font-black mb-2">Báo cáo nhanh</h3>
-                    <p className="text-xs opacity-70 mb-6">Chụp ảnh và gửi cập nhật tức thì cho khách hàng</p>
-                    <button className="w-full py-4 bg-white text-[#1a2b4c] rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
-                        Mở Camera
+                {/* Tabs */}
+                <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-100 mb-6 w-fit">
+                    <button onClick={() => setActiveTab('mine')} className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'mine' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                        Của tôi {activeTasks.length > 0 && <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded-full">{activeTasks.length}</span>}
+                    </button>
+                    <button onClick={() => setActiveTab('pool')} className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'pool' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                        Kho chung {poolTasks.length > 0 && <span className="ml-1.5 bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">{poolTasks.length}</span>}
                     </button>
                 </div>
-                <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-white/5 rounded-full blur-3xl" />
-            </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold text-slate-900 mb-6">Trợ giúp nhanh</h3>
-                <div className="grid grid-cols-1 gap-3">
-                    <button className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition-colors">
-                        <Bell size={18} />
-                        Cần hỗ trợ khẩn cấp
+                {/* Content */}
+                {loading ? (
+                    <div className="flex justify-center py-20"><Loader2 size={32} className="animate-spin text-slate-400" /></div>
+                ) : activeTab === 'mine' ? (
+                    <div className="space-y-8">
+                        {activeTasks.length > 0 && (<>
+                            <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Đang thực hiện ({activeTasks.length})</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{activeTasks.map(t => <TaskCard key={t.bookingId} task={t} />)}</div>
+                        </>)}
+                        {doneTasks.length > 0 && (<>
+                            <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Đã xử lý</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-70">{doneTasks.map(t => <TaskCard key={t.bookingId} task={t} />)}</div>
+                        </>)}
+                        {myTasks.length === 0 && (
+                            <div className="text-center py-20 text-slate-400">
+                                <XCircle size={40} className="mx-auto mb-3 opacity-30" />
+                                <p className="font-medium">Bạn chưa có task nào được gán</p>
+                                <p className="text-sm mt-1">Chuyển qua tab "Kho chung" để nhận task</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    poolTasks.length === 0 ? (
+                        <div className="text-center py-20 text-slate-400">
+                            <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
+                            <p className="font-medium">Kho chung đang trống</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{poolTasks.map(t => <PoolCard key={t.bookingId} task={t} />)}</div>
+                    )
+                )}
+
+                {/* Quick actions floating bar */}
+                <div className="fixed bottom-6 right-6 flex flex-col gap-3">
+                    <button className="w-14 h-14 bg-[#1a2b4c] rounded-2xl shadow-xl text-white flex items-center justify-center hover:scale-110 transition-transform" title="Báo cáo ảnh">
+                        <Camera size={24} />
                     </button>
-                    <button className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-50 text-indigo-600 font-bold text-sm hover:bg-indigo-100 transition-colors">
-                        <MessageCircle size={18} />
-                        Chat với Chủ Shop
+                    <button className="w-14 h-14 bg-indigo-500 rounded-2xl shadow-xl text-white flex items-center justify-center hover:scale-110 transition-transform" title="Chat chủ shop">
+                        <MessageCircle size={24} />
                     </button>
                 </div>
             </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

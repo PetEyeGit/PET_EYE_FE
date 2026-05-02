@@ -17,6 +17,7 @@ export interface ShopPublicResponse {
   openTime?: string;
   closeTime?: string;
   workingDays?: string;
+  assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
 }
 
 export interface ShopRegistrationRequest {
@@ -43,6 +44,7 @@ export interface ShopUpdateRequest {
   openTime?: string;
   closeTime?: string;
   workingDays?: string;
+  assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
 }
 
 export const shopService = {

@@ -173,14 +173,7 @@ export default function ShopNavbar() {
                     </Link>
                   ))}
 
-                  <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
-                    <button 
-                      onClick={() => { navigate('/staff/dashboard'); setUserMenuOpen(false); }}
-                      className="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 w-full transition-colors font-semibold"
-                    >
-                      <UsersIcon className="w-3.5 h-3.5" /> Chuyển sang Staff
-                    </button>
-                  </div>
+
 
                   <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
                     <button onClick={() => { handleLogout(); setUserMenuOpen(false); }}

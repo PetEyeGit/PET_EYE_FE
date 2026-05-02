@@ -19,9 +19,13 @@ export default function ShopLogin() {
     setError('');
     
     try {
-      await login(email, password);
-      // Redirect to shop dashboard after successful login
-      navigate('/shop/dashboard');
+      const userData = await login(email, password);
+      // Redirect based on role
+      if (userData.role === 'STAFF') {
+        navigate('/staff/dashboard');
+      } else {
+        navigate('/shop/dashboard');
+      }
     } catch (error: any) {
       console.error('Login failed:', error);
       const apiError = error.response?.data;
