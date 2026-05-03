@@ -40,12 +40,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    if (user?.token) {
-      await authService.logout(user.token);
-    }
+  const logout = () => {
+    const token = user?.token;
+    
+    // 1. Clear local state IMMEDIATELY for snappy UI
     setUser(null);
     localStorage.removeItem('Peteye_user');
+
+    // 2. Notify server in the background
+    if (token) {
+      authService.logout(token).catch(err => console.error('Background logout error:', err));
+    }
   };
 
   const setUserSession = (userData: User) => {
