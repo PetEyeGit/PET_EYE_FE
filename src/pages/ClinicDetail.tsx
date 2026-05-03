@@ -130,12 +130,17 @@ const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80',
 ];
 
-const CAMERA_OPTIONS = [
-  { id: 'basic', label: 'Cơ bản (720p)', price: 0, desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: 'visibility' },
-  { id: 'hd', label: 'Sắc nét (1080p HD)', price: 50000, desc: 'Hình ảnh sắc nét, màu sắc trung thực', icon: 'hd' },
-  { id: '360', label: 'Toàn cảnh (360°)', price: 100000, desc: 'Xoay 360 độ, không góc chết', icon: 'flip_camera_android' },
-  { id: 'ai', label: 'AI Giám sát', price: 150000, desc: 'Cảnh báo tự động hành vi bất thường', icon: 'psychology' },
-];
+// Camera tier metadata — used to render options from API data
+const CAMERA_TIER_META: Record<string, { label: string; desc: string; icon: string; extraPrice: number }> = {
+  BASIC:     { label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: 'visibility',       extraPrice: 0      },
+  HD:        { label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: 'hd',               extraPrice: 50000  },
+  PANORAMIC: { label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: 'flip_camera_android', extraPrice: 100000 },
+  AI:        { label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: 'psychology',       extraPrice: 150000 },
+};
+
+const CAMERA_TIER_PRICES: Record<string, number> = {
+  BASIC: 0, HD: 50000, PANORAMIC: 100000, AI: 150000,
+};
 
 const today = new Date();
 
@@ -183,7 +188,15 @@ export default function ClinicDetail() {
   const [reviewFilter, setReviewFilter] = useState('Tất cả');
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [isHotelSelected, setIsHotelSelected] = useState(false);
-  const [selectedCameraOption, setSelectedCameraOption] = useState(CAMERA_OPTIONS[0]);
+  // selectedCameraOption now stores a tier ID from the boarding service's cameraTiers
+  const [selectedCameraTier, setSelectedCameraTier] = useState<string>('BASIC');
+
+  // Derive the boarding service from API data
+  const boardingService = apiServices.find((s: ServiceResponse) => s.category === 'BOARDING' && s.active);
+  // Camera tiers supported by this shop's boarding service
+  const supportedCameraTiers = boardingService?.cameraTiers ?? [];
+  // Non-boarding services for "Dịch vụ nổi bật"
+  const nonBoardingServices = apiServices.filter((s: ServiceResponse) => s.category !== 'BOARDING');
 
   // ── Pet selection modal ─────────────────────────────────────────────────────
   const [showPetModal, setShowPetModal] = useState(false);
@@ -201,7 +214,7 @@ export default function ClinicDetail() {
   const totalPrice = selectedServiceIds.reduce((sum, id) => {
     const svc = apiServices.find((s: ServiceResponse) => s.id === id);
     return sum + (svc ? svc.price : 0);
-  }, 0) + (isHotelSelected ? (200000 + selectedCameraOption.price) : 0);
+  }, 0) + (isHotelSelected ? (boardingService?.price ?? 0) + CAMERA_TIER_PRICES[selectedCameraTier] : 0);
 
   // ── Can book: need at least 1 service + date + time ─────────────────────────
   const canBook = (selectedServiceIds.length > 0 || isHotelSelected) && selectedDate && selectedTime;
@@ -408,7 +421,7 @@ export default function ClinicDetail() {
             </section>
   
             {/* Pet Hotel & Camera Options — chỉ hiển thị nếu shop có dịch vụ BOARDING */}
-            {apiServices.some((s: ServiceResponse) => s.category === 'BOARDING') && (
+            {boardingService && (
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
@@ -416,14 +429,14 @@ export default function ClinicDetail() {
                     <span className="material-symbols-outlined text-2xl">hotel</span>
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Dịch vụ Lưu trú Khách sạn</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">Tiêu chuẩn quốc tế, giám sát 24/7</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{boardingService.serviceName}</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">{boardingService.description}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">200.000đ</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{boardingService.price.toLocaleString('vi-VN')}đ</span>
                   <span className="text-xs text-slate-400">/ngày</span>
-                  <div 
+                  <div
                     onClick={() => setIsHotelSelected(!isHotelSelected)}
                     className={`relative w-12 h-6 rounded-full cursor-pointer transition-all duration-300 ml-2 ${isHotelSelected ? 'bg-indigo-600 shadow-inner' : 'bg-slate-200 dark:bg-slate-700'}`}
                   >
@@ -434,66 +447,57 @@ export default function ClinicDetail() {
 
               <div className={`transition-all duration-500 overflow-hidden ${isHotelSelected ? 'max-h-[800px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                 <div className="bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-indigo-800 shadow-sm overflow-hidden mb-6">
-                  <div className="p-5 flex flex-col md:flex-row gap-6">
-                    <div className="w-full md:w-1/3 h-48 rounded-xl overflow-hidden shadow-md">
-                      <img 
-                        src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=80" 
-                        className="w-full h-full object-cover"
-                        alt="Pet Hotel"
-                      />
+                  {/* Service image */}
+                  {boardingService.imageUrl && (
+                    <div className="p-5 pb-0">
+                      <div className="w-full h-48 rounded-xl overflow-hidden shadow-md">
+                        <img src={boardingService.imageUrl} className="w-full h-full object-cover" alt={boardingService.serviceName} />
+                      </div>
                     </div>
-                    <div className="flex-1 space-y-4">
-                      <h4 className="font-bold text-slate-900 dark:text-white text-lg">Gói lưu trú Premium</h4>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                        {[
-                          'Phòng riêng điều hòa 24/7',
-                          '2 bữa ăn/ngày theo yêu cầu',
-                          'Vệ sinh khay cát/chuồng sạch sẽ',
-                          'Theo dõi sức khỏe hàng ngày',
-                          'Thời gian vui chơi tập thể',
-                          'Camera giám sát trực tiếp'
-                        ].map(item => (
-                          <li key={item} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                            <span className="material-symbols-outlined text-indigo-500 text-sm">check_circle</span>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 border-t border-indigo-100 dark:border-indigo-900">
-                    <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-400 uppercase tracking-wider mb-4">Nâng cấp Camera Giám sát</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {CAMERA_OPTIONS.map((opt) => (
-                        <div 
-                          key={opt.id}
-                          onClick={() => setSelectedCameraOption(opt)}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group ${
-                            selectedCameraOption.id === opt.id 
-                              ? 'bg-white dark:bg-indigo-900/40 border-indigo-500 shadow-md' 
-                              : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${selectedCameraOption.id === opt.id ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-500'}`}>
-                              <span className="material-symbols-outlined text-xl">{opt.icon}</span>
+                  {/* Camera tiers — only if shop configured camera */}
+                  {boardingService.cameraEnabled && supportedCameraTiers.length > 0 && (
+                    <div className="bg-indigo-50/50 dark:bg-indigo-950/20 p-5 border-t border-indigo-100 dark:border-indigo-900 mt-5">
+                      <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-400 uppercase tracking-wider mb-4">
+                        Nâng cấp Camera Giám sát
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {supportedCameraTiers.map((tierId: string) => {
+                          const meta = CAMERA_TIER_META[tierId];
+                          if (!meta) return null;
+                          const isSelected = selectedCameraTier === tierId;
+                          return (
+                            <div
+                              key={tierId}
+                              onClick={() => setSelectedCameraTier(tierId)}
+                              className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between group ${
+                                isSelected
+                                  ? 'bg-white dark:bg-indigo-900/40 border-indigo-500 shadow-md'
+                                  : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-500'}`}>
+                                  <span className="material-symbols-outlined text-xl">{meta.icon}</span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{meta.label}</p>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{meta.desc}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className={`text-xs font-bold ${meta.extraPrice === 0 ? 'text-teal-600' : 'text-slate-900 dark:text-white'}`}>
+                                  {meta.extraPrice === 0 ? 'MIỄN PHÍ' : `+${meta.extraPrice.toLocaleString()}đ`}
+                                </p>
+                                {meta.extraPrice > 0 && <p className="text-[8px] text-slate-400">/ngày</p>}
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-900 dark:text-white">{opt.label}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400">{opt.desc}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-xs font-bold ${opt.price === 0 ? 'text-teal-600' : 'text-slate-900 dark:text-white'}`}>
-                              {opt.price === 0 ? 'MIỄN PHÍ' : `+${opt.price.toLocaleString()}đ`}
-                            </p>
-                            {opt.price > 0 && <p className="text-[8px] text-slate-400">/ngày</p>}
-                          </div>
-                        </div>
-                      ))}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -511,13 +515,13 @@ export default function ClinicDetail() {
                 </div>
               )}
 
-              {!servicesLoading && apiServices.length === 0 && (
+              {!servicesLoading && nonBoardingServices.length === 0 && (
                 <p className="text-slate-400 text-sm py-4">Cơ sở này chưa có dịch vụ nào.</p>
               )}
 
               {!servicesLoading && apiServices.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  {apiServices.map((svc: ServiceResponse) => {
+                  {nonBoardingServices.map((svc: ServiceResponse) => {
                     const isSelected = selectedServiceIds.includes(svc.id);
                     return (
                       <div key={svc.id}>
@@ -729,7 +733,7 @@ export default function ClinicDetail() {
                   <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 max-h-[240px] overflow-y-auto">
 
                     {/* Hotel — chỉ hiển thị nếu shop có service BOARDING */}
-                    {apiServices.some((s: ServiceResponse) => s.category === 'BOARDING') && (
+                    {boardingService && (
                       <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors group mb-1 border-b border-slate-100 dark:border-slate-700/50 pb-3">
                         <input
                           type="checkbox"
@@ -740,15 +744,17 @@ export default function ClinicDetail() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform inline-block">
-                              Lưu trú Khách sạn
+                              {boardingService.serviceName}
                             </span>
                             <span className="text-xs font-black text-slate-900 dark:text-slate-100 shrink-0">
-                              {(200000 + selectedCameraOption.price).toLocaleString()}đ/ng
+                              {(boardingService.price + (CAMERA_TIER_PRICES[selectedCameraTier] ?? 0)).toLocaleString('vi-VN')}đ/ng
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            Camera: {selectedCameraOption.label}
-                          </p>
+                          {boardingService.cameraEnabled && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              Camera: {CAMERA_TIER_META[selectedCameraTier]?.label ?? selectedCameraTier}
+                            </p>
+                          )}
                         </div>
                       </label>
                     )}

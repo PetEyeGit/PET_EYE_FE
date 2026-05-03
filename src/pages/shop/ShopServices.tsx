@@ -3,6 +3,15 @@ import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleL
 import { serviceService } from '../../services/service.service';
 import type { ServiceResponse, ServiceCreationRequest, ServiceUpdateRequest } from '../../types/api';
 
+// ─── Camera tier options ──────────────────────────────────────────────────────
+
+const CAMERA_TIERS = [
+  { id: 'BASIC',     label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: '👁️',  extraPrice: 0      },
+  { id: 'HD',        label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: '📺',  extraPrice: 50000  },
+  { id: 'PANORAMIC', label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: '🔄',  extraPrice: 100000 },
+  { id: 'AI',        label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: '🤖',  extraPrice: 150000 },
+];
+
 // ─── Category helpers ────────────────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -27,6 +36,10 @@ interface ServiceForm {
   imageUrl: string;
   category: string;
   active: boolean;
+  // BOARDING-only
+  cameraEnabled: boolean;
+  cameraTiers: string[];       // which tiers the shop supports (multi-select)
+  cameraDescription: string;
 }
 
 const EMPTY_FORM: ServiceForm = {
@@ -37,6 +50,9 @@ const EMPTY_FORM: ServiceForm = {
   imageUrl: '',
   category: 'GROOMING',
   active: true,
+  cameraEnabled: false,
+  cameraTiers: [],
+  cameraDescription: '',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -124,6 +140,9 @@ export default function ShopServices() {
       imageUrl: service.imageUrl ?? '',
       category: service.category,
       active: service.active,
+      cameraEnabled: service.cameraEnabled ?? false,
+      cameraTiers: service.cameraTiers ?? [],
+      cameraDescription: service.cameraDescription ?? '',
     });
     setImagePreview(service.imageUrl ?? '');
     setShowModal(true);
@@ -179,6 +198,11 @@ export default function ShopServices() {
           durationMinutes: form.durationMinutes,
           description: form.description,
           imageUrl: form.imageUrl || undefined,
+          ...(form.category === 'BOARDING' && {
+            cameraEnabled: form.cameraEnabled,
+            cameraTiers: form.cameraEnabled ? form.cameraTiers : [],
+            cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
+          }),
         };
         const created = await serviceService.createService(payload);
         setServices((prev) => [...prev, created]);
@@ -193,6 +217,11 @@ export default function ShopServices() {
           description: form.description,
           imageUrl: form.imageUrl || undefined,
           active: form.active,
+          ...(form.category === 'BOARDING' && {
+            cameraEnabled: form.cameraEnabled,
+            cameraTiers: form.cameraEnabled ? form.cameraTiers : [],
+            cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
+          }),
         };
         const updated = await serviceService.updateService(editingId, payload);
         setServices((prev) => prev.map((s) => (s.id === editingId ? updated : s)));
@@ -368,6 +397,11 @@ export default function ShopServices() {
                       <Clock size={15} className="text-[#1a2b4c]" />
                       <span>{service.durationMinutes} phút</span>
                     </div>
+                    {service.category === 'BOARDING' && service.cameraEnabled && (
+                      <div className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+                        📷 {service.cameraTiers?.length ?? 0} loại camera
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -530,6 +564,146 @@ export default function ShopServices() {
                   placeholder="Mô tả chi tiết về dịch vụ..."
                 />
               </div>
+
+              {/* ── BOARDING: Camera config ─────────────────────────────────── */}
+              {form.category === 'BOARDING' && (
+                <div className="border border-indigo-200 rounded-2xl overflow-hidden">
+                  {/* Header toggle */}
+                  <div className="flex items-center justify-between px-5 py-4 bg-indigo-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                        <span className="text-xl">📷</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-indigo-900 text-sm">Camera giám sát</p>
+                        <p className="text-xs text-indigo-500">Chọn các loại camera shop hỗ trợ — User sẽ chọn 1 khi đặt lịch</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({
+                        ...prev,
+                        cameraEnabled: !prev.cameraEnabled,
+                        cameraTiers: !prev.cameraEnabled ? [] : prev.cameraTiers,
+                      }))}
+                      className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                        form.cameraEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${
+                        form.cameraEnabled ? 'left-7' : 'left-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                  {/* Camera tier multi-select — only when enabled */}
+                  {form.cameraEnabled && (
+                    <div className="p-5 space-y-4 bg-white">
+                      <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                        Chọn loại camera shop hỗ trợ <span className="text-indigo-400 font-normal">(có thể chọn nhiều)</span>
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {CAMERA_TIERS.map((tier) => {
+                          const isChecked = form.cameraTiers.includes(tier.id);
+                          return (
+                            <button
+                              key={tier.id}
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({
+                                  ...prev,
+                                  cameraTiers: isChecked
+                                    ? prev.cameraTiers.filter(t => t !== tier.id)
+                                    : [...prev.cameraTiers, tier.id],
+                                }));
+                              }}
+                              className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                                isChecked
+                                  ? 'border-indigo-500 bg-indigo-50'
+                                  : 'border-slate-200 bg-white hover:border-indigo-300'
+                              }`}
+                            >
+                              {/* Checkbox indicator */}
+                              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isChecked ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'
+                              }`}>
+                                {isChecked && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+
+                              {/* Icon */}
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 transition-colors ${
+                                isChecked ? 'bg-indigo-500 text-white' : 'bg-slate-100'
+                              }`}>
+                                {tier.icon}
+                              </div>
+
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-bold leading-tight ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
+                                  {tier.label}
+                                </p>
+                                <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{tier.desc}</p>
+                              </div>
+
+                              {/* Price */}
+                              <div className="text-right shrink-0">
+                                {tier.extraPrice === 0 ? (
+                                  <span className="text-xs font-black text-indigo-600">MIỄN PHÍ</span>
+                                ) : (
+                                  <>
+                                    <p className="text-xs font-black text-slate-800">+{tier.extraPrice.toLocaleString('vi-VN')}đ</p>
+                                    <p className="text-[10px] text-slate-400">/ngày</p>
+                                  </>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Validation hint */}
+                      {form.cameraTiers.length === 0 && (
+                        <p className="text-xs text-amber-600 flex items-center gap-1">
+                          <span>⚠️</span> Vui lòng chọn ít nhất 1 loại camera
+                        </p>
+                      )}
+
+                      {/* Selected summary */}
+                      {form.cameraTiers.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {form.cameraTiers.map(tid => {
+                            const t = CAMERA_TIERS.find(x => x.id === tid)!;
+                            return (
+                              <span key={tid} className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
+                                {t.icon} {t.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Camera description */}
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                          Mô tả camera <span className="font-normal text-slate-400">(tuỳ chọn)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={form.cameraDescription}
+                          onChange={(e) => setForm((prev) => ({ ...prev, cameraDescription: e.target.value }))}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none text-sm"
+                          placeholder="Ví dụ: Camera góc rộng, xem được toàn bộ phòng..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Active toggle (edit mode only) */}
               {modalMode === 'edit' && (

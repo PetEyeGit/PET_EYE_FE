@@ -41,6 +41,9 @@ import ProfileNotifications from './pages/ProfileNotifications';
 import CameraView from './pages/CameraView';
 import ZaloCallback from './pages/ZaloCallback';
 import FacebookCallback from './pages/FacebookCallback';
+import BookingSuccess from './pages/BookingSuccess';
+import PaymentFailure from './pages/PaymentFailure';
+import PaymentResult from './pages/PaymentResult';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
@@ -132,6 +135,9 @@ function AppLayout() {
           <Route path="/camera" element={<CameraView />} />
           <Route path="/search" element={<VetSearch />} />
           <Route path="/payment" element={<Payment />} />
+          <Route path="/payment/result" element={<PaymentResult />} />
+          <Route path="/booking/success" element={<BookingSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
         </Routes>
       </main>
 

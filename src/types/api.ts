@@ -37,6 +37,11 @@ export interface ServiceResponse {
   imageUrl: string;
   active: boolean;
   createdAt: string;
+  // BOARDING-only
+  cameraEnabled: boolean;
+  /** Tiers the shop supports, e.g. ["BASIC","HD","AI"] */
+  cameraTiers?: string[];
+  cameraDescription?: string;
 }
 
 export interface ServiceCreationRequest {
@@ -46,6 +51,10 @@ export interface ServiceCreationRequest {
   durationMinutes: number;
   description: string;
   imageUrl?: string;
+  // BOARDING-only
+  cameraEnabled?: boolean;
+  cameraTiers?: string[];
+  cameraDescription?: string;
 }
 
 export interface ServiceUpdateRequest {
@@ -56,6 +65,10 @@ export interface ServiceUpdateRequest {
   description?: string;
   imageUrl?: string;
   active?: boolean;
+  // BOARDING-only
+  cameraEnabled?: boolean;
+  cameraTiers?: string[];
+  cameraDescription?: string;
 }
 
 export interface StaffResponse {
