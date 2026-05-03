@@ -16,6 +16,7 @@ export default function ShopStaff() {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
+    const [editingStaff, setEditingStaff] = useState<StaffResponse | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [showPass, setShowPass] = useState(false);
     const [assignMode, setAssignMode] = useState<'MANUAL' | 'OPEN_POOL' | 'AUTO'>('MANUAL');
@@ -48,17 +49,41 @@ export default function ShopStaff() {
         } catch { /* silent */ }
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
+    const handleOpenCreate = () => {
+        setEditingStaff(null);
+        setForm({ fullName: '', email: '', password: '', phone: '', role: '', specialization: '' });
+        setShowForm(true);
+    };
+
+    const handleOpenEdit = (staff: StaffResponse) => {
+        setEditingStaff(staff);
+        setForm({
+            fullName: staff.fullName,
+            email: staff.email || '',
+            password: '', // Password not required for edit
+            phone: staff.phone || '',
+            role: staff.role || '',
+            specialization: staff.specialization || ''
+        });
+        setShowForm(true);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const created = await staffService.createStaff(form);
-            setStaffList(prev => [created, ...prev]);
+            if (editingStaff) {
+                const updated = await staffService.updateStaff(editingStaff.id, form);
+                setStaffList(prev => prev.map(s => s.id === editingStaff.id ? updated : s));
+                toast.success(`Cập nhật thông tin ${updated.fullName} thành công!`);
+            } else {
+                const created = await staffService.createStaff(form);
+                setStaffList(prev => [created, ...prev]);
+                toast.success(`Tạo tài khoản cho ${created.fullName} thành công!`);
+            }
             setShowForm(false);
-            setForm({ fullName: '', email: '', password: '', phone: '', role: '', specialization: '' });
-            toast.success(`Tạo tài khoản cho ${created.fullName} thành công!`);
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Tạo nhân viên thất bại');
+            toast.error(err?.response?.data?.message || 'Thao tác thất bại');
         } finally { 
             setSubmitting(false); 
         }
@@ -121,7 +146,7 @@ export default function ShopStaff() {
                                     onChange={e => setSearch(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-[#1a2b4c] outline-none transition-all" />
                             </div>
-                            <button onClick={() => setShowForm(true)}
+                            <button onClick={handleOpenCreate}
                                 className="px-6 py-3 bg-[#1a2b4c] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20 hover:scale-105 transition-transform">
                                 <UserPlus size={20} /> Thêm nhân viên
                             </button>
@@ -132,10 +157,10 @@ export default function ShopStaff() {
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                                 <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8">
                                     <div className="flex items-center justify-between mb-6">
-                                        <h2 className="text-xl font-black text-slate-900">Tạo tài khoản nhân viên</h2>
+                                        <h2 className="text-xl font-black text-slate-900">{editingStaff ? 'Cập nhật nhân viên' : 'Tạo tài khoản nhân viên'}</h2>
                                         <button onClick={() => setShowForm(false)} className="p-2 rounded-xl hover:bg-slate-100"><X size={20} /></button>
                                     </div>
-                                    <form onSubmit={handleCreate} className="space-y-4">
+                                    <form onSubmit={handleSubmit} className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="col-span-2">
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Họ tên *</label>
@@ -144,20 +169,22 @@ export default function ShopStaff() {
                                             </div>
                                             <div>
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email *</label>
-                                                <input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                                                    className="w-full mt-1.5 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1a2b4c] outline-none" placeholder="nv@shop.com" />
+                                                <input required type="email" value={form.email} disabled={!!editingStaff} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                                                    className="w-full mt-1.5 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1a2b4c] outline-none disabled:bg-slate-50 disabled:text-slate-400" placeholder="nv@shop.com" />
                                             </div>
                                             <div>
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Số điện thoại</label>
                                                 <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                                                     className="w-full mt-1.5 px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1a2b4c] outline-none" placeholder="09xxxxxxxx" />
                                             </div>
-                                            <div className="relative">
-                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mật khẩu *</label>
-                                                <input required type={showPass ? 'text' : 'password'} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                                                    className="w-full mt-1.5 px-4 py-3 pr-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1a2b4c] outline-none" placeholder="Mật khẩu ban đầu" />
-                                                <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-3 top-9 text-slate-400">{showPass ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
-                                            </div>
+                                            {!editingStaff && (
+                                                <div className="relative">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mật khẩu *</label>
+                                                    <input required type={showPass ? 'text' : 'password'} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                                                        className="w-full mt-1.5 px-4 py-3 pr-10 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1a2b4c] outline-none" placeholder="Mật khẩu ban đầu" />
+                                                    <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-3 top-9 text-slate-400">{showPass ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
+                                                </div>
+                                            )}
                                             <div>
                                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Vai trò</label>
                                                 <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
@@ -179,8 +206,8 @@ export default function ShopStaff() {
                                             <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50">Hủy</button>
                                             <button type="submit" disabled={submitting}
                                                 className="flex-1 py-3 bg-[#1a2b4c] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60">
-                                                {submitting ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-                                                {submitting ? 'Đang tạo...' : 'Tạo tài khoản'}
+                                                {submitting ? <Loader2 size={18} className="animate-spin" /> : (editingStaff ? <Save size={18} /> : <UserPlus size={18} />)}
+                                                {submitting ? 'Đang lưu...' : (editingStaff ? 'Cập nhật' : 'Tạo tài khoản')}
                                             </button>
                                         </div>
                                     </form>
@@ -240,10 +267,16 @@ export default function ShopStaff() {
                                                     </div>
                                                 </td>
                                                 <td className="px-8 py-6">
-                                                    <button onClick={() => handleToggle(s.id, s.fullName)}
-                                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${s.isActive ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
-                                                        {s.isActive ? <><XCircle size={14} className="inline mr-1"/>Vô hiệu hóa</> : <><CheckCircle size={14} className="inline mr-1"/>Kích hoạt</>}
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => handleOpenEdit(s)}
+                                                            className="p-2 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-all" title="Chỉnh sửa">
+                                                            <Settings size={14} />
+                                                        </button>
+                                                        <button onClick={() => handleToggle(s.id, s.fullName)}
+                                                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${s.isActive ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                                                            {s.isActive ? <><XCircle size={14} className="inline mr-1"/>Vô hiệu hóa</> : <><CheckCircle size={14} className="inline mr-1"/>Kích hoạt</>}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

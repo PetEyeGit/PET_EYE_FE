@@ -52,4 +52,10 @@ export const staffService = {
     );
     return response.data.result!;
   },
+
+  /** PUT /staff/:id — Owner: update staff details */
+  updateStaff: async (id: number, data: Partial<StaffCreationRequest>): Promise<StaffResponse> => {
+    const response = await apiClient.put<ApiResponse<StaffResponse>>(`/staff/${id}`, data);
+    return response.data.result!;
+  },
 };
