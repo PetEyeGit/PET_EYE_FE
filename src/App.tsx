@@ -24,6 +24,7 @@ import ShopStaff from './pages/shop/ShopStaff';
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffDashboard from './pages/staff/StaffDashboard';
 import StaffTasks from './pages/staff/StaffTasks';
+import StaffProfile from './pages/staff/StaffProfile';
 
 import Profile, { ProfileLayout } from './pages/Profile';
 import OrderHistory from './pages/OrderHistory';
@@ -111,6 +112,7 @@ function AppLayout() {
           <Route path="/staff" element={<StaffLayout />}>
             <Route path="dashboard" element={<StaffDashboard />} />
             <Route path="tasks" element={<StaffTasks />} />
+            <Route path="profile" element={<StaffProfile />} />
             <Route path="messages" element={<Messaging />} />
           </Route>
 

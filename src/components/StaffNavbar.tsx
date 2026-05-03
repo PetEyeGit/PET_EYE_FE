@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Store, Bell, LogOut, Menu, X, ChevronDown, BarChart3, Calendar, MessageCircle } from 'lucide-react';
+import { Store, Bell, LogOut, Menu, X, ChevronDown, BarChart3, Calendar, MessageCircle, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
@@ -34,6 +34,7 @@ export default function StaffNavbar() {
   const navItems = [
     { label: 'Workspace', path: '/staff/dashboard', icon: <BarChart3 className="w-4 h-4" /> },
     { label: 'Ca trực của tôi', path: '/staff/tasks', icon: <Calendar className="w-4 h-4" /> },
+    { label: 'Hồ sơ & Bằng cấp', path: '/staff/profile', icon: <Award className="w-4 h-4" /> },
     { label: 'Tin nhắn', path: '/staff/messages', icon: <MessageCircle className="w-4 h-4" /> },
   ];
 
