@@ -62,4 +62,14 @@ export const bookingService = {
     const response = await apiClient.get<ApiResponse<StaffResponse[]>>(`/bookings/staff/${shopId}`);
     return response.data.result ?? [];
   },
+
+  /** Get all bookings for the authenticated shop owner within a range */
+  getShopBookings: async (start?: string, end?: string): Promise<BookingResponse[]> => {
+    const params: any = {};
+    if (start) params.start = start;
+    if (end) params.end = end;
+    
+    const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/bookings/shop', { params });
+    return response.data.result ?? [];
+  },
 };

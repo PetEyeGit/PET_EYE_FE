@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { ApiResponse, ServiceResponse } from '../types/api';
+import type { ApiResponse, ServiceResponse, ShopDashboardResponse } from '../types/api';
 
 export interface ShopPublicResponse {
   id: number;
@@ -11,6 +11,8 @@ export interface ShopPublicResponse {
   city: string;
   description: string;
   licenseImageUrl: string;
+  logoUrl?: string;
+  bannerUrl?: string;
   isVerified: boolean;
   ratingAvg: number;
   ownerId: number;
@@ -44,6 +46,8 @@ export interface ShopUpdateRequest {
   openTime?: string;
   closeTime?: string;
   workingDays?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
 }
 
@@ -55,6 +59,11 @@ export const shopService = {
 
   updateMyShop: async (data: ShopUpdateRequest): Promise<ShopPublicResponse> => {
     const response = await apiClient.put<ApiResponse<ShopPublicResponse>>('/shops/my-shop', data);
+    return response.data.result!;
+  },
+
+  getDashboard: async (): Promise<ShopDashboardResponse> => {
+    const response = await apiClient.get<ApiResponse<ShopDashboardResponse>>('/shops/my-shop/dashboard');
     return response.data.result!;
   },
 

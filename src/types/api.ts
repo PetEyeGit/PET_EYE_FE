@@ -120,3 +120,62 @@ export interface BookingResponse {
   checkoutUrl?: string;
   paymentStatus?: string;
 }
+
+export interface CustomerItemResponse {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  pets: number;
+  totalBookings: number;
+  totalSpent: string;
+  lastVisit: string;
+  tier: string;
+}
+
+export interface ShopCustomerResponse {
+  totalCustomers: number;
+  newCustomersThisMonth: number;
+  loyalCustomers: number;
+  customers: CustomerItemResponse[];
+}
+
+export interface PetResponse {
+  id: number;
+  name: string;
+  species: string;
+  breed: string;
+  gender: string;
+  birthDate: string;
+  weight: number;
+  avatar: string;
+  ownerId: number;
+}
+
+export interface CustomerDetailResponse {
+  customerInfo: CustomerItemResponse;
+  pets: PetResponse[];
+  bookingHistory: BookingResponse[];
+}
+
+export interface RevenueChartData {
+  date: string;
+  amount: number;
+}
+
+export interface ServiceStat {
+  name: string;
+  count: number;
+}
+
+export interface ShopDashboardResponse {
+  totalRevenue: number;
+  revenueThisMonth: number;
+  totalBookings: number;
+  pendingBookings: number;
+  totalCustomers: number;
+  totalPets: number;
+  revenueChart: RevenueChartData[];
+  topServices: ServiceStat[];
+}

@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2 } from 'lucide-react';
+import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { shopService } from '../../services/shop.service';
+import { fileService } from '../../services/file.service';
+import toast from 'react-hot-toast';
 
 export default function ShopProfile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
+  const bannerInputRef = React.useRef<HTMLInputElement>(null);
 
   const [shopInfo, setShopInfo] = useState({
     name: '',
@@ -19,8 +25,15 @@ export default function ShopProfile() {
     openTime: '08:00',
     closeTime: '20:00',
     workingDays: [] as string[],
-    imageUrl: '',
+    logoUrl: '',
+    bannerUrl: '',
+    isVerified: false,
   });
+
+  const VIETNAM_CITIES = [
+    'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 
+    'Bình Dương', 'Đồng Nai', 'Khánh Hòa', 'Lâm Đồng', 'Quảng Ninh'
+  ];
 
   useEffect(() => {
     fetchShopProfile();
@@ -30,22 +43,26 @@ export default function ShopProfile() {
     try {
       setLoading(true);
       const data = await shopService.getMyShop();
-      setShopInfo({
-        name: data.shopName,
-        type: data.shopType,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        city: data.city,
-        description: data.description || '',
-        openTime: data.openTime || '08:00',
-        closeTime: data.closeTime || '20:00',
-        workingDays: data.workingDays ? data.workingDays.split(',') : [],
-        imageUrl: data.licenseImageUrl || '', // Fallback or use a dedicated logo field if available
-      });
+      console.log('API getMyShop returned:', data);
+      setShopInfo(prev => ({
+        ...prev,
+        name: data.shopName || prev.name,
+        type: data.shopType || prev.type,
+        email: data.email || prev.email,
+        phone: data.phone || prev.phone,
+        address: data.address || prev.address,
+        city: data.city || prev.city,
+        description: data.description || prev.description,
+        openTime: data.openTime || prev.openTime,
+        closeTime: data.closeTime || prev.closeTime,
+        workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
+        logoUrl: data.logoUrl || prev.logoUrl,
+        bannerUrl: data.bannerUrl || prev.bannerUrl,
+        isVerified: data.isVerified,
+      }));
     } catch (err) {
       console.error('Failed to fetch shop profile:', err);
-      setError('Không thể tải thông tin cửa hàng.');
+      toast.error('Không thể tải thông tin cửa hàng.');
     } finally {
       setLoading(false);
     }
@@ -53,10 +70,11 @@ export default function ShopProfile() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted. Current shopInfo:', shopInfo);
     try {
       setSaving(true);
       setError(null);
-      await shopService.updateMyShop({
+      const updateData = {
         shopName: shopInfo.name,
         shopType: shopInfo.type,
         email: shopInfo.email,
@@ -67,14 +85,65 @@ export default function ShopProfile() {
         openTime: shopInfo.openTime,
         closeTime: shopInfo.closeTime,
         workingDays: shopInfo.workingDays.join(','),
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+        logoUrl: shopInfo.logoUrl,
+        bannerUrl: shopInfo.bannerUrl,
+      };
+      console.log('Sending update request with data:', updateData);
+      const data = await shopService.updateMyShop(updateData);
+      
+      // Update state safely using prev state
+      setShopInfo(prev => ({
+        ...prev,
+        name: data.shopName || prev.name,
+        type: data.shopType || prev.type,
+        email: data.email || prev.email,
+        phone: data.phone || prev.phone,
+        address: data.address || prev.address,
+        city: data.city || prev.city,
+        description: data.description || prev.description,
+        openTime: data.openTime || prev.openTime,
+        closeTime: data.closeTime || prev.closeTime,
+        workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
+        logoUrl: data.logoUrl || prev.logoUrl,
+        bannerUrl: data.bannerUrl || prev.bannerUrl,
+        isVerified: data.isVerified,
+      }));
+      
+      toast.success('Đã cập nhật thông tin cửa hàng!');
     } catch (err) {
       console.error('Failed to update shop profile:', err);
-      setError('Cập nhật thông tin thất bại.');
+      toast.error('Cập nhật thông tin thất bại.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (e.g., 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kích thước ảnh không được vượt quá 5MB');
+      return;
+    }
+
+    try {
+      if (type === 'logo') setUploadingLogo(true);
+      else setUploadingBanner(true);
+
+      const url = await fileService.upload(file);
+      setShopInfo(prev => ({
+        ...prev,
+        [type === 'logo' ? 'logoUrl' : 'bannerUrl']: url
+      }));
+      toast.success(`Đã tải ${type === 'logo' ? 'logo' : 'ảnh bìa'} lên thành công!`);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      toast.error('Tải ảnh lên thất bại');
+    } finally {
+      if (type === 'logo') setUploadingLogo(false);
+      else setUploadingBanner(false);
     }
   };
 
@@ -88,6 +157,8 @@ export default function ShopProfile() {
         : [...shopInfo.workingDays, day],
     });
   };
+
+  console.log('Rendering ShopProfile with logo:', shopInfo.logoUrl);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -111,44 +182,98 @@ export default function ShopProfile() {
           </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6">
-            {/* Shop Image */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg mb-4">Hình ảnh cửa hàng</h3>
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="relative">
-                  <div className="size-32 rounded-xl bg-slate-100 overflow-hidden">
-                    {shopInfo.imageUrl ? (
-                      <img
-                        src={shopInfo.imageUrl}
-                        alt="Shop"
-                        className="w-full h-full object-cover"
-                      />
+            {/* Shop Media */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4">
+                {shopInfo.isVerified && (
+                  <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-bold border border-green-100">
+                    <ShieldCheck size={14} />
+                    Đã xác minh
+                  </div>
+                )}
+              </div>
+              
+              <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                <Store size={20} className="text-primary" />
+                Hình ảnh cửa hàng
+              </h3>
+              
+              <div className="space-y-8">
+                {/* Banner Section */}
+                <div className="relative group">
+                  <div className="w-full h-48 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200">
+                    {uploadingBanner ? (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                        <Loader2 className="animate-spin text-primary" size={32} />
+                      </div>
+                    ) : shopInfo.bannerUrl ? (
+                      <img src={shopInfo.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Store size={40} className="text-slate-300" />
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                        <ImageIcon size={40} className="mb-2" />
+                        <p className="text-xs font-medium">Chưa có ảnh bìa</p>
                       </div>
                     )}
                   </div>
-                <button
-                  type="button"
-                  className="absolute bottom-2 right-2 size-8 bg-[#1a2b4c] text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform"
-                >
-                  <Camera size={16} />
-                </button>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-slate-600 mb-3">
-                  Tải lên ảnh đại diện cho cửa hàng của bạn. Ảnh nên có kích thước tối thiểu 400x400px.
-                </p>
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-[#1a2b4c] text-white rounded-lg font-semibold hover:opacity-90 transition-all"
-                >
-                  Tải ảnh mới
-                </button>
+                  <input 
+                    type="file" 
+                    ref={bannerInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, 'banner')}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="absolute bottom-4 right-4 p-2 bg-white/90 backdrop-blur shadow-lg rounded-xl text-slate-700 hover:bg-white transition-all flex items-center gap-2 text-xs font-bold border border-slate-200 disabled:opacity-50"
+                  >
+                    <Camera size={14} />
+                    {uploadingBanner ? 'Đang tải...' : 'Thay ảnh bìa'}
+                  </button>
+                </div>
+
+                {/* Logo & Info */}
+                <div className="flex flex-col md:flex-row gap-8 items-start">
+                  <div className="relative">
+                    <div className="size-32 rounded-3xl bg-white p-1 shadow-xl border border-slate-100 -mt-16 md:-mt-20 ml-4 relative z-10 overflow-hidden">
+                      <div className="w-full h-full rounded-[1.25rem] bg-slate-50 overflow-hidden flex items-center justify-center">
+                        {uploadingLogo ? (
+                          <Loader2 className="animate-spin text-primary" size={24} />
+                        ) : shopInfo.logoUrl ? (
+                          <img src={shopInfo.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <Store size={40} className="text-slate-200" />
+                        )}
+                      </div>
+                      <input 
+                        type="file" 
+                        ref={logoInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, 'logo')}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                        className="absolute bottom-2 right-2 p-1.5 bg-primary text-white rounded-lg shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                      >
+                        <Camera size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex-1 pt-2">
+                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                      {shopInfo.name || 'Tên cửa hàng'}
+                    </h2>
+                    <p className="text-sm text-slate-500 font-medium mt-1">
+                      {shopInfo.type || 'Chưa cập nhật loại hình'} • {shopInfo.city || 'Chưa cập nhật địa chỉ'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
           {/* Basic Info */}
           <div className="bg-white rounded-xl p-6 shadow-sm">
@@ -206,8 +331,26 @@ export default function ShopProfile() {
                   value={shopInfo.phone}
                   onChange={(e) => setShopInfo({ ...shopInfo, phone: e.target.value })}
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  placeholder="Ví dụ: 0912345678"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Thành phố/Tỉnh *
+                </label>
+                <select
+                  value={shopInfo.city}
+                  onChange={(e) => setShopInfo({ ...shopInfo, city: e.target.value })}
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  required
+                >
+                  <option value="">Chọn thành phố</option>
+                  {VIETNAM_CITIES.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="md:col-span-2">
