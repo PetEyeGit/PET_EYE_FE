@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
+import { useNotifications } from '../hooks/useNotifications';
 
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
   useEffect(() => {
@@ -44,13 +45,7 @@ export default function ShopNavbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const notifications = [
-    { id: 1, text: 'Đơn đặt lịch mới từ Nguyễn Văn A', time: '5 phút trước', unread: true },
-    { id: 2, text: 'Khách hàng đã đánh giá 5 sao', time: '1 giờ trước', unread: true },
-    { id: 3, text: 'Thanh toán đơn hàng #1234 thành công', time: '2 giờ trước', unread: false },
-  ];
-
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const { notifications, unreadCount, markRead } = useNotifications(!!user);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
@@ -116,14 +111,22 @@ export default function ShopNavbar() {
                       Đọc tất cả
                     </button>
                   </div>
-                  <div className="py-1">
-                    {notifications.map(n => (
-                      <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12.5px] text-slate-700 dark:text-slate-200 leading-snug">{n.text}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">{n.time}</p>
+                  <div className="py-1 max-h-[400px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-[12px] text-slate-400">Không có thông báo nào</div>
+                    ) : notifications.map(n => (
+                      <div key={n.id}
+                        onClick={() => { if (!n.isRead) markRead(n.id); }}
+                        className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${n.isRead ? 'bg-slate-100' : 'bg-blue-100'}`}>
+                          <Bell size={13} className={n.isRead ? 'text-slate-400' : 'text-blue-600'} />
                         </div>
-                        {n.unread && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 leading-snug">{n.title}</p>
+                          <p className="text-[11.5px] text-slate-500 leading-snug mt-0.5 line-clamp-2">{n.content}</p>
+                          <p className="text-[11px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString('vi-VN')}</p>
+                        </div>
+                        {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
                       </div>
                     ))}
                   </div>

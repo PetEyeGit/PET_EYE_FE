@@ -6,8 +6,10 @@ import {
   Bell, ChevronDown, LogOut, User, Settings,
   PawPrint, Menu, X, Video, Calendar, MessageCircle
 } from 'lucide-react';
+import { useNotifications } from '../hooks/useNotifications';
 
 /* ─── helpers ─────────────────────────────────────────────── */
+
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
   useEffect(() => {
     const fn = (e: MouseEvent) => {
@@ -24,11 +26,6 @@ function scrollTo(id: string) {
 }
 
 /* ─── mock data ───────────────────────────────────────────── */
-const NOTIFICATIONS = [
-  { id: 1, icon: '💉', text: 'Miu Miu cần tiêm phòng trong 5 ngày nữa', time: '1 giờ trước', unread: true },
-  { id: 2, icon: '📅', text: 'Lịch hẹn khám ngày 05/03/2026 lúc 09:30', time: '3 giờ trước', unread: true },
-  { id: 3, icon: '📦', text: 'Đơn hàng thức ăn đã giao thành công', time: 'Hôm qua', unread: false },
-];
 
 /* ─────────────────────────────────────────────────────────────
    GUEST NAVBAR
@@ -145,7 +142,7 @@ function AuthNavbar() {
   useOutsideClick(userRef, () => setUserOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
 
-  const unread = NOTIFICATIONS.filter(n => n.unread).length;
+  const { notifications, unreadCount, markRead } = useNotifications(!!user);
   const active = (p: string) => location.pathname === p;
 
   const NAV = [
@@ -210,7 +207,7 @@ function AuthNavbar() {
               className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-colors
                 ${notifOpen ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
               <Bell className="w-[17px] h-[17px]" />
-              {unread > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 w-[7px] h-[7px] bg-red-500 rounded-full border-[1.5px] border-white dark:border-slate-900" />
               )}
             </button>
@@ -223,16 +220,22 @@ function AuthNavbar() {
                     Đọc tất cả
                   </button>
                 </div>
-                <div className="py-1">
-                  {NOTIFICATIONS.map(n => (
+                <div className="py-1 max-h-[400px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-[12px] text-slate-400">Không có thông báo nào</div>
+                  ) : notifications.map(n => (
                     <div key={n.id}
+                      onClick={() => { if (!n.isRead) markRead(n.id); }}
                       className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors group">
-                      <span className="text-[18px] mt-0.5 shrink-0">{n.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] text-slate-700 dark:text-slate-200 leading-snug">{n.text}</p>
-                        <p className="text-[11px] text-slate-400 mt-1">{n.time}</p>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${n.isRead ? 'bg-slate-100' : 'bg-blue-100'}`}>
+                        <Bell size={13} className={n.isRead ? 'text-slate-400' : 'text-blue-600'} />
                       </div>
-                      {n.unread && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 leading-snug">{n.title}</p>
+                        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">{n.content}</p>
+                        <p className="text-[11px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString('vi-VN')}</p>
+                      </div>
+                      {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
                     </div>
                   ))}
                 </div>

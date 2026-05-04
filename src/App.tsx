@@ -37,7 +37,6 @@ import VetSearch from './pages/VetSearch';
 import Payment from './pages/Payment';
 import ProfilePets from './pages/ProfilePets';
 import ProfileSecurity from './pages/ProfileSecurity';
-import ProfileNotifications from './pages/ProfileNotifications';
 import CameraView from './pages/CameraView';
 import ZaloCallback from './pages/ZaloCallback';
 import FacebookCallback from './pages/FacebookCallback';
@@ -47,10 +46,17 @@ import PaymentResult from './pages/PaymentResult';
 import CompleteProfile from './pages/CompleteProfile';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminShops from './pages/admin/AdminShops';
+import AdminMembers from './pages/admin/AdminMembers';
+import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminMessages from './pages/admin/AdminMessages';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
 const STAFF_ROUTES_PREFIX = '/staff';
+const ADMIN_ROUTES_PREFIX = '/admin';
 const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile', '/verify-email', '/forgot-password'];
 
 function AppLayout() {
@@ -59,6 +65,7 @@ function AppLayout() {
   
   const isShopRoute = location.pathname.startsWith(SHOP_ROUTES_PREFIX);
   const isStaffRoute = location.pathname.startsWith(STAFF_ROUTES_PREFIX);
+  const isAdminRoute = location.pathname.startsWith(ADMIN_ROUTES_PREFIX);
   const isNoNavbarRoute = NO_NAVBAR_ROUTES.includes(location.pathname);
   const isHomePage = location.pathname === '/home';
   const isCameraPage = location.pathname === '/camera';
@@ -67,7 +74,7 @@ function AppLayout() {
   // - Landing page (/) when not logged in
   // - Customer pages when logged in
   // Hide for: shop routes, login/register pages, home page (has its own header), camera page
-  const shouldShowCustomerNav = !isShopRoute && !isStaffRoute && !isNoNavbarRoute && !isHomePage && !isCameraPage;
+  const shouldShowCustomerNav = !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isHomePage && !isCameraPage;
 
   const getRedirectPath = () => {
     if (!user) return "/";
@@ -106,6 +113,15 @@ function AppLayout() {
           <Route path="/shop/register" element={<ShopRegister />} />
           <Route path="/shop/register/success" element={<ShopRegisterSuccess />} />
           
+          {/* Admin Routes with Layout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="shops" element={<AdminShops />} />
+            <Route path="members" element={<AdminMembers />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="messages" element={<AdminMessages />} />
+          </Route>
+
           {/* Shop Routes with Layout */}
           <Route path="/shop" element={<ShopLayout />}>
             <Route path="dashboard" element={<ShopDashboard />} />
@@ -133,7 +149,6 @@ function AppLayout() {
             <Route path="bookings" element={<BookingHistory />} />
             <Route path="orders" element={<OrderHistory />} />
             <Route path="security" element={<ProfileSecurity />} />
-            <Route path="notifications" element={<ProfileNotifications />} />
           </Route>
           <Route path="/clinic/:id" element={<ClinicDetail />} />
           <Route path="/pet/:id" element={<PetProfile />} />

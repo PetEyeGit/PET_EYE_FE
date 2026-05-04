@@ -34,10 +34,13 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/register');
-    
-    if (error.response?.status === 401 && !isAuthPage) {
-      // Handle unauthorized (e.g., logout or refresh token)
+    const pathname = window.location.pathname;
+    const isAuthPage = pathname.includes('/login') || pathname.includes('/register');
+    // Also skip redirect if the request itself was to an auth endpoint
+    const requestUrl = error.config?.url ?? '';
+    const isAuthRequest = requestUrl.includes('/auth/');
+
+    if (error.response?.status === 401 && !isAuthPage && !isAuthRequest) {
       localStorage.removeItem('Peteye_user');
       window.location.href = '/login';
     }

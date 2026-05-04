@@ -21,7 +21,9 @@ export default function ShopLogin() {
     try {
       const userData = await login(email, password);
       // Redirect based on role
-      if (userData.role === 'STAFF') {
+      if (userData.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (userData.role === 'STAFF') {
         navigate('/staff/dashboard');
       } else {
         navigate('/shop/dashboard');

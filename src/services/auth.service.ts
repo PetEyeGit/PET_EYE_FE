@@ -9,7 +9,14 @@ export const authService = {
       password,
     });
 
-    const { token, authenticated, requiresEmailUpdate } = response.data.result!;
+    console.log('[auth] login raw response:', response.data);
+
+    const result = response.data.result;
+    if (!result) {
+      throw new Error('No result in response');
+    }
+
+    const { token, authenticated, requiresEmailUpdate } = result;
 
     if (!authenticated) {
       throw new Error('Authentication failed');
