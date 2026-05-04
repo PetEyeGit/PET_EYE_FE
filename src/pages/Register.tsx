@@ -43,16 +43,6 @@ export default function Register() {
     }
   };
 
-  const handleDemoRegister = async () => {
-    // In demo mode, we might just try a mock login or predefined account
-    try {
-      await login('admin@peteye.com', '12345678');
-      navigate('/home');
-    } catch (error) {
-      navigate('/home');
-    }
-  };
-
   return (
     <div className="flex-1 flex items-center justify-center p-4 md:p-8 bg-slate-50 dark:bg-slate-900">
       <motion.div
@@ -246,15 +236,6 @@ export default function Register() {
               className="w-full py-4 bg-primary text-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? 'Đang thực hiện...' : (accountType === 'shop' ? 'Tiếp tục đăng ký' : 'Đăng ký ngay')}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDemoRegister}
-              className="w-full py-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-semibold rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-lg">play_circle</span>
-              Demo — Vào HomePage ngay
             </button>
           </form>
 

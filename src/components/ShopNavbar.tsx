@@ -34,10 +34,9 @@ export default function ShopNavbar() {
 
   const navItems = [
     { label: 'Dashboard', path: '/shop/dashboard', icon: <BarChart3 className="w-4 h-4" /> },
-    { label: 'Đơn đặt lịch', path: '/shop/bookings', icon: <Calendar className="w-4 h-4" /> },
+    { label: 'Lịch đặt hẹn', path: '/shop/bookings', icon: <Calendar className="w-4 h-4" /> },
     { label: 'Dịch vụ', path: '/shop/services', icon: <Package className="w-4 h-4" /> },
     { label: 'Camera', path: '/shop/camera', icon: <Video className="w-4 h-4" /> },
-    { label: 'Tin nhắn', path: '/shop/messages', icon: <MessageCircle className="w-4 h-4" /> },
     { label: 'Nhân viên', path: '/shop/staff', icon: <UsersIcon className="w-4 h-4" /> },
     { label: 'Khách hàng', path: '/shop/customers', icon: <UsersIcon className="w-4 h-4" /> },
   ];
