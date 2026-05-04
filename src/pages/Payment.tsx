@@ -8,17 +8,23 @@ function formatVND(n: number) {
   return n.toLocaleString('vi-VN') + 'đ';
 }
 
+interface BookingService {
+  id: number;
+  name: string;
+  price: number;
+}
+
 export default function Payment() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Booking context passed from ClinicDetail via navigate state
   const booking = location.state as {
     shopId: number;
     shopName: string;
     shopAddress: string;
     shopImage?: string;
     serviceId: number;
+    services?: BookingService[];
     serviceName: string;
     servicePrice: number;
     petId: number;
@@ -35,7 +41,6 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // If no booking state, redirect back
   if (!booking) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50 p-8">
@@ -50,6 +55,13 @@ export default function Payment() {
     );
   }
 
+  // Dùng services[] nếu có, fallback về serviceName/servicePrice cũ
+  const serviceList: BookingService[] = booking.services && booking.services.length > 0
+    ? booking.services
+    : [{ id: booking.serviceId, name: booking.serviceName, price: booking.servicePrice }];
+
+  const totalPrice = serviceList.reduce((sum, s) => sum + s.price, 0);
+
   async function handlePay() {
     if (!agreed || loading) return;
     setLoading(true);
@@ -58,12 +70,12 @@ export default function Payment() {
     if (payMethod === 'cash') {
       try {
         const result = await bookingService.createCashBooking({
-          shopId: booking!.shopId,
-          serviceId: booking!.serviceId,
-          petId: booking!.petId,
-          staffId: booking!.staffId,
-          appointmentDatetime: booking!.appointmentDatetime,
-          note: booking!.petNote,
+          shopId: booking.shopId,
+          serviceId: booking.serviceId,
+          petId: booking.petId,
+          staffId: booking.staffId,
+          appointmentDatetime: booking.appointmentDatetime,
+          note: booking.petNote,
           paymentMethod: 'CASH',
         });
         navigate('/booking/success', { state: { booking: result, bookingInfo: booking } });
@@ -74,15 +86,14 @@ export default function Payment() {
       return;
     }
 
-    // PayOS: initiate payment → redirect to checkoutUrl (no booking saved yet)
     try {
       const result = await bookingService.initiatePayment({
-        shopId: booking!.shopId,
-        serviceId: booking!.serviceId,
-        petId: booking!.petId,
-        staffId: booking!.staffId,
-        appointmentDatetime: booking!.appointmentDatetime,
-        note: booking!.petNote,
+        shopId: booking.shopId,
+        serviceId: booking.serviceId,
+        petId: booking.petId,
+        staffId: booking.staffId,
+        appointmentDatetime: booking.appointmentDatetime,
+        note: booking.petNote,
       });
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
@@ -135,6 +146,7 @@ export default function Payment() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* Left: Payment form */}
           <div className="flex flex-col gap-5">
+
             {/* Order Summary Card */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
               <h2 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -152,8 +164,13 @@ export default function Payment() {
                     <span className="material-symbols-outlined text-xs text-teal-500">location_on</span>
                     {booking.shopAddress}
                   </p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-semibold rounded-lg">{booking.serviceName}</span>
+                  {/* Danh sách dịch vụ đã chọn */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {serviceList.map((svc) => (
+                      <span key={svc.id} className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-semibold rounded-lg">
+                        {svc.name}
+                      </span>
+                    ))}
                     <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-lg">
                       {booking.date} • {booking.time}
                     </span>
@@ -249,16 +266,19 @@ export default function Payment() {
             <div className="sticky top-24 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
               <h2 className="font-bold text-slate-800 dark:text-slate-100 text-base">Tổng đơn hàng</h2>
 
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>{booking.serviceName}</span>
-                  <span>{formatVND(booking.servicePrice)}</span>
-                </div>
+              {/* Từng dịch vụ */}
+              <div className="space-y-2 text-sm">
+                {serviceList.map((svc) => (
+                  <div key={svc.id} className="flex justify-between text-slate-600 dark:text-slate-400">
+                    <span className="flex-1 pr-2 leading-snug">{svc.name}</span>
+                    <span className="shrink-0 font-semibold">{formatVND(svc.price)}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 flex justify-between items-center">
                 <span className="font-bold text-slate-900 dark:text-slate-100">Tổng cộng</span>
-                <span className="text-xl font-black text-[#1a2b4c] dark:text-teal-400">{formatVND(booking.servicePrice)}</span>
+                <span className="text-xl font-black text-[#1a2b4c] dark:text-teal-400">{formatVND(totalPrice)}</span>
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 space-y-2 text-xs text-slate-500 dark:text-slate-400">

@@ -45,11 +45,13 @@ import BookingSuccess from './pages/BookingSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import PaymentResult from './pages/PaymentResult';
 import CompleteProfile from './pages/CompleteProfile';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
 const STAFF_ROUTES_PREFIX = '/staff';
-const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile'];
+const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile', '/verify-email', '/forgot-password'];
 
 function AppLayout() {
   const location = useLocation();
@@ -98,6 +100,8 @@ function AppLayout() {
           <Route path="/login/facebook/callback" element={<FacebookCallback />} />
           <Route path="/register" element={<Register />} />
           <Route path="/complete-profile" element={<CompleteProfile />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/shop/login" element={<ShopLogin />} />
           <Route path="/shop/register" element={<ShopRegister />} />
           <Route path="/shop/register/success" element={<ShopRegisterSuccess />} />

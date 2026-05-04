@@ -3,13 +3,13 @@ import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleL
 import { serviceService } from '../../services/service.service';
 import type { ServiceResponse, ServiceCreationRequest, ServiceUpdateRequest } from '../../types/api';
 
-// ─── Camera tier options ──────────────────────────────────────────────────────
+// ─── Camera tier options (defaults — shop can override label & price) ─────────
 
 const CAMERA_TIERS = [
-  { id: 'BASIC',     label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: '👁️',  extraPrice: 0      },
-  { id: 'HD',        label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: '📺',  extraPrice: 50000  },
-  { id: 'PANORAMIC', label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: '🔄',  extraPrice: 100000 },
-  { id: 'AI',        label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: '🤖',  extraPrice: 150000 },
+  { id: 'BASIC',     label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: '👁️',  defaultPrice: 0      },
+  { id: 'HD',        label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: '📺',  defaultPrice: 50000  },
+  { id: 'PANORAMIC', label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: '🔄',  defaultPrice: 100000 },
+  { id: 'AI',        label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: '🤖',  defaultPrice: 150000 },
 ];
 
 // ─── Category helpers ────────────────────────────────────────────────────────
@@ -31,27 +31,33 @@ function categoryLabel(cat: string): string {
 interface ServiceForm {
   serviceName: string;
   price: number;
-  durationMinutes: number;
+  durationMinutes: number;   // for BOARDING: stored as days in UI, converted to minutes on save
+  durationDays: number;      // UI-only field for BOARDING
   description: string;
   imageUrl: string;
   category: string;
   active: boolean;
   // BOARDING-only
   cameraEnabled: boolean;
-  cameraTiers: string[];       // which tiers the shop supports (multi-select)
+  cameraTiers: string[];
+  cameraTierPrices: Record<string, number>;   // custom price per tier
+  cameraTierLabels: Record<string, string>;   // custom label per tier
   cameraDescription: string;
 }
 
 const EMPTY_FORM: ServiceForm = {
   serviceName: '',
   price: 0,
-  durationMinutes: 30,
+  durationMinutes: 1440,  // 1 day default for BOARDING
+  durationDays: 1,
   description: '',
   imageUrl: '',
   category: 'GROOMING',
   active: true,
   cameraEnabled: false,
   cameraTiers: [],
+  cameraTierPrices: {},
+  cameraTierLabels: {},
   cameraDescription: '',
 };
 
@@ -132,16 +138,22 @@ export default function ShopServices() {
   function openEditModal(service: ServiceResponse) {
     setModalMode('edit');
     setEditingId(service.id);
+    const durationDays = service.category === 'BOARDING'
+      ? Math.round(service.durationMinutes / 1440) || 1
+      : 1;
     setForm({
       serviceName: service.serviceName,
       price: service.price,
       durationMinutes: service.durationMinutes,
+      durationDays,
       description: service.description ?? '',
       imageUrl: service.imageUrl ?? '',
       category: service.category,
       active: service.active,
       cameraEnabled: service.cameraEnabled ?? false,
       cameraTiers: service.cameraTiers ?? [],
+      cameraTierPrices: service.cameraTierPrices ?? {},
+      cameraTierLabels: service.cameraTierLabels ?? {},
       cameraDescription: service.cameraDescription ?? '',
     });
     setImagePreview(service.imageUrl ?? '');
@@ -190,17 +202,24 @@ export default function ShopServices() {
     try {
       setSaving(true);
 
+      // For BOARDING: convert days → minutes
+      const durationMinutes = form.category === 'BOARDING'
+        ? form.durationDays * 1440
+        : form.durationMinutes;
+
       if (modalMode === 'add') {
         const payload: ServiceCreationRequest = {
           serviceName: form.serviceName,
           category: form.category,
           price: form.price,
-          durationMinutes: form.durationMinutes,
+          durationMinutes,
           description: form.description,
           imageUrl: form.imageUrl || undefined,
           ...(form.category === 'BOARDING' && {
             cameraEnabled: form.cameraEnabled,
             cameraTiers: form.cameraEnabled ? form.cameraTiers : [],
+            cameraTierPrices: form.cameraEnabled ? form.cameraTierPrices : {},
+            cameraTierLabels: form.cameraEnabled ? form.cameraTierLabels : {},
             cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
           }),
         };
@@ -213,13 +232,15 @@ export default function ShopServices() {
           serviceName: form.serviceName,
           category: form.category,
           price: form.price,
-          durationMinutes: form.durationMinutes,
+          durationMinutes,
           description: form.description,
           imageUrl: form.imageUrl || undefined,
           active: form.active,
           ...(form.category === 'BOARDING' && {
             cameraEnabled: form.cameraEnabled,
             cameraTiers: form.cameraEnabled ? form.cameraTiers : [],
+            cameraTierPrices: form.cameraEnabled ? form.cameraTierPrices : {},
+            cameraTierLabels: form.cameraEnabled ? form.cameraTierLabels : {},
             cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
           }),
         };
@@ -526,7 +547,9 @@ export default function ShopServices() {
               {/* Price & Duration */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Giá (đ) *</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Giá (đ) * <span className="font-normal text-slate-400">{form.category === 'BOARDING' ? '/ngày' : '/lần'}</span>
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -539,17 +562,38 @@ export default function ShopServices() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Thời gian (phút) *</label>
-                  <input
-                    type="number"
-                    min={1}
-                    step={5}
-                    value={form.durationMinutes}
-                    onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
-                    placeholder="60"
-                    required
-                  />
+                  {form.category === 'BOARDING' ? (
+                    <>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">
+                        Số ngày tối thiểu *
+                        <span className="ml-1 text-xs font-normal text-slate-400">(tự lưu thành phút)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={form.durationDays}
+                        onChange={(e) => setForm((prev) => ({ ...prev, durationDays: Number(e.target.value) }))}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                        placeholder="1"
+                        required
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Thời gian (phút) *</label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={5}
+                        value={form.durationMinutes}
+                        onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                        placeholder="60"
+                        required
+                      />
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -603,65 +647,96 @@ export default function ShopServices() {
                         Chọn loại camera shop hỗ trợ <span className="text-indigo-400 font-normal">(có thể chọn nhiều)</span>
                       </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-3">
                         {CAMERA_TIERS.map((tier) => {
                           const isChecked = form.cameraTiers.includes(tier.id);
+                          const customLabel = form.cameraTierLabels[tier.id] ?? '';
+                          const customPrice = form.cameraTierPrices[tier.id] ?? tier.defaultPrice;
                           return (
-                            <button
-                              key={tier.id}
-                              type="button"
-                              onClick={() => {
-                                setForm((prev) => ({
-                                  ...prev,
-                                  cameraTiers: isChecked
-                                    ? prev.cameraTiers.filter(t => t !== tier.id)
-                                    : [...prev.cameraTiers, tier.id],
-                                }));
-                              }}
-                              className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                                isChecked
-                                  ? 'border-indigo-500 bg-indigo-50'
-                                  : 'border-slate-200 bg-white hover:border-indigo-300'
-                              }`}
-                            >
-                              {/* Checkbox indicator */}
-                              <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                                isChecked ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'
-                              }`}>
-                                {isChecked && (
-                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </div>
+                            <div key={tier.id} className={`rounded-xl border-2 overflow-hidden transition-all ${
+                              isChecked ? 'border-indigo-500' : 'border-slate-200'
+                            }`}>
+                              {/* Tier header — click to toggle */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    cameraTiers: isChecked
+                                      ? prev.cameraTiers.filter(t => t !== tier.id)
+                                      : [...prev.cameraTiers, tier.id],
+                                  }));
+                                }}
+                                className={`w-full flex items-center gap-3 p-3 text-left transition-colors ${
+                                  isChecked ? 'bg-indigo-50' : 'bg-white hover:bg-slate-50'
+                                }`}
+                              >
+                                {/* Checkbox */}
+                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                                  isChecked ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'
+                                }`}>
+                                  {isChecked && (
+                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                {/* Icon */}
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
+                                  isChecked ? 'bg-indigo-500 text-white' : 'bg-slate-100'
+                                }`}>
+                                  {tier.icon}
+                                </div>
+                                {/* Default info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-bold ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
+                                    {tier.label}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400">{tier.desc}</p>
+                                </div>
+                                {/* Default price hint */}
+                                <span className="text-xs text-slate-400 shrink-0">
+                                  mặc định: {tier.defaultPrice === 0 ? 'Miễn phí' : `+${tier.defaultPrice.toLocaleString('vi-VN')}đ`}
+                                </span>
+                              </button>
 
-                              {/* Icon */}
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 transition-colors ${
-                                isChecked ? 'bg-indigo-500 text-white' : 'bg-slate-100'
-                              }`}>
-                                {tier.icon}
-                              </div>
-
-                              {/* Info */}
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-bold leading-tight ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
-                                  {tier.label}
-                                </p>
-                                <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{tier.desc}</p>
-                              </div>
-
-                              {/* Price */}
-                              <div className="text-right shrink-0">
-                                {tier.extraPrice === 0 ? (
-                                  <span className="text-xs font-black text-indigo-600">MIỄN PHÍ</span>
-                                ) : (
-                                  <>
-                                    <p className="text-xs font-black text-slate-800">+{tier.extraPrice.toLocaleString('vi-VN')}đ</p>
-                                    <p className="text-[10px] text-slate-400">/ngày</p>
-                                  </>
-                                )}
-                              </div>
-                            </button>
+                              {/* Custom label & price inputs — only when tier is selected */}
+                              {isChecked && (
+                                <div className="px-4 pb-4 pt-2 bg-indigo-50/60 border-t border-indigo-100 grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-semibold text-indigo-700 mb-1">
+                                      Tên hiển thị <span className="font-normal text-slate-400">(tuỳ chọn)</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={customLabel}
+                                      onChange={(e) => setForm((prev) => ({
+                                        ...prev,
+                                        cameraTierLabels: { ...prev.cameraTierLabels, [tier.id]: e.target.value },
+                                      }))}
+                                      placeholder={tier.label}
+                                      className="w-full px-3 py-1.5 text-sm border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold text-indigo-700 mb-1">
+                                      Giá thêm (đ/ngày)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      step={1000}
+                                      value={customPrice}
+                                      onChange={(e) => setForm((prev) => ({
+                                        ...prev,
+                                        cameraTierPrices: { ...prev.cameraTierPrices, [tier.id]: Number(e.target.value) },
+                                      }))}
+                                      className="w-full px-3 py-1.5 text-sm border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none bg-white"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -673,31 +748,17 @@ export default function ShopServices() {
                         </p>
                       )}
 
-                      {/* Selected summary */}
-                      {form.cameraTiers.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {form.cameraTiers.map(tid => {
-                            const t = CAMERA_TIERS.find(x => x.id === tid)!;
-                            return (
-                              <span key={tid} className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
-                                {t.icon} {t.label}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
-
                       {/* Camera description */}
                       <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">
-                          Mô tả camera <span className="font-normal text-slate-400">(tuỳ chọn)</span>
+                          Mô tả camera <span className="font-normal text-slate-400">(hiển thị riêng trong phần camera, không phải mô tả chung)</span>
                         </label>
-                        <input
-                          type="text"
+                        <textarea
                           value={form.cameraDescription}
                           onChange={(e) => setForm((prev) => ({ ...prev, cameraDescription: e.target.value }))}
-                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none text-sm"
-                          placeholder="Ví dụ: Camera góc rộng, xem được toàn bộ phòng..."
+                          rows={3}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none text-sm resize-none"
+                          placeholder="Ví dụ: Camera góc rộng, xem được toàn bộ phòng, lưu trữ 24h..."
                         />
                       </div>
                     </div>
