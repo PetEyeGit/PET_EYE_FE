@@ -44,11 +44,12 @@ import FacebookCallback from './pages/FacebookCallback';
 import BookingSuccess from './pages/BookingSuccess';
 import PaymentFailure from './pages/PaymentFailure';
 import PaymentResult from './pages/PaymentResult';
+import CompleteProfile from './pages/CompleteProfile';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
 const STAFF_ROUTES_PREFIX = '/staff';
-const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback'];
+const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile'];
 
 function AppLayout() {
   const location = useLocation();
@@ -68,6 +69,7 @@ function AppLayout() {
 
   const getRedirectPath = () => {
     if (!user) return "/";
+    if (user.requiresEmailUpdate) return "/complete-profile";
     switch (user.role) {
       case 'SHOP_OWNER': return "/shop/dashboard";
       case 'STAFF': return "/staff/dashboard";
@@ -95,6 +97,7 @@ function AppLayout() {
           <Route path="/login/zalo/callback" element={<ZaloCallback />} />
           <Route path="/login/facebook/callback" element={<FacebookCallback />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/shop/login" element={<ShopLogin />} />
           <Route path="/shop/register" element={<ShopRegister />} />
           <Route path="/shop/register/success" element={<ShopRegisterSuccess />} />

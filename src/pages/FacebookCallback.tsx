@@ -19,13 +19,12 @@ export default function FacebookCallback() {
 
     const verifyFacebook = async () => {
       try {
-        const apiClient = (await import('../services/apiClient')).default;
-        const response = await apiClient.post<any>('/auth/facebook', { code });
-        const { token: jwtToken, authenticated } = response.data.result;
-        if (!authenticated) throw new Error('Facebook auth failed');
-        const { authService } = await import('../services/auth.service');
-        const userData = authService._decodeAndCreateUser(jwtToken);
+        const userData = await authService.loginWithFacebook(code);
         setUserSession(userData);
+        if (userData.requiresEmailUpdate) {
+          navigate('/complete-profile');
+          return;
+        }
         if (userData.role === 'ADMIN') {
           navigate('/admin/dashboard');
         } else if (userData.role === 'SHOP_OWNER') {

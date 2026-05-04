@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   token?: string;
+  requiresEmailUpdate?: boolean;
 }
 
 export interface Clinic {

@@ -9,13 +9,13 @@ export const authService = {
       password,
     });
 
-    const { token, authenticated } = response.data.result!;
+    const { token, authenticated, requiresEmailUpdate } = response.data.result!;
 
     if (!authenticated) {
       throw new Error('Authentication failed');
     }
 
-    return authService._decodeAndCreateUser(token);
+    return authService._decodeAndCreateUser(token, requiresEmailUpdate);
   },
 
   logout: async (token: string): Promise<void> => {
@@ -37,30 +37,39 @@ export const authService = {
     const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/google', {
       token,
     });
-    const { token: jwtToken, authenticated } = response.data.result!;
+    const { token: jwtToken, authenticated, requiresEmailUpdate } = response.data.result!;
     if (!authenticated) throw new Error('Authentication failed');
-    return authService._decodeAndCreateUser(jwtToken);
+    return authService._decodeAndCreateUser(jwtToken, requiresEmailUpdate);
   },
 
-  loginWithFacebook: async (token: string): Promise<User> => {
+  loginWithFacebook: async (code: string): Promise<User> => {
     const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/facebook', {
-      token,
+      code,
     });
-    const { token: jwtToken, authenticated } = response.data.result!;
+    const { token: jwtToken, authenticated, requiresEmailUpdate } = response.data.result!;
     if (!authenticated) throw new Error('Authentication failed');
-    return authService._decodeAndCreateUser(jwtToken);
+    return authService._decodeAndCreateUser(jwtToken, requiresEmailUpdate);
   },
 
   loginWithZalo: async (code: string): Promise<User> => {
     const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/zalo', {
       code,
     });
-    const { token: jwtToken, authenticated } = response.data.result!;
+    const { token: jwtToken, authenticated, requiresEmailUpdate } = response.data.result!;
     if (!authenticated) throw new Error('Authentication failed');
-    return authService._decodeAndCreateUser(jwtToken);
+    return authService._decodeAndCreateUser(jwtToken, requiresEmailUpdate);
   },
 
-  _decodeAndCreateUser: (token: string): User => {
+  updateEmail: async (email: string): Promise<User> => {
+    const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/update-email', {
+      email,
+    });
+    const { token, authenticated } = response.data.result!;
+    if (!authenticated) throw new Error('Failed to update email');
+    return authService._decodeAndCreateUser(token);
+  },
+
+  _decodeAndCreateUser: (token: string, requiresEmailUpdate?: boolean): User => {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return {
       id: payload.sub,
@@ -68,6 +77,7 @@ export const authService = {
       name: payload.email.split('@')[0], 
       role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
       token,
+      requiresEmailUpdate,
     };
   }
 };

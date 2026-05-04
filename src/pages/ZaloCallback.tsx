@@ -21,6 +21,10 @@ export default function ZaloCallback() {
       try {
         const userData = await authService.loginWithZalo(code);
         setUserSession(userData);
+        if (userData.requiresEmailUpdate) {
+          navigate('/complete-profile');
+          return;
+        }
         if (userData.role === 'ADMIN') {
           navigate('/admin/dashboard');
         } else if (userData.role === 'SHOP_OWNER') {

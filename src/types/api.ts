@@ -7,6 +7,7 @@ export interface ApiResponse<T> {
 export interface AuthenticationResponse {
   authenticated: boolean;
   token: string;
+  requiresEmailUpdate: boolean;
 }
 
 export interface RoleResponse {
