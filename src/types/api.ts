@@ -40,8 +40,12 @@ export interface ServiceResponse {
   createdAt: string;
   // BOARDING-only
   cameraEnabled: boolean;
-  /** Tiers the shop supports, e.g. ["BASIC","HD","AI"] */
+  /** Tier IDs the shop supports, e.g. ["BASIC","HD","AI"] */
   cameraTiers?: string[];
+  /** Custom prices per tier (extra VND/day), e.g. {"BASIC":0,"HD":60000} */
+  cameraTierPrices?: Record<string, number>;
+  /** Custom display labels per tier, e.g. {"BASIC":"Tiêu chuẩn","HD":"Nét cao"} */
+  cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
 }
 
@@ -55,6 +59,8 @@ export interface ServiceCreationRequest {
   // BOARDING-only
   cameraEnabled?: boolean;
   cameraTiers?: string[];
+  cameraTierPrices?: Record<string, number>;
+  cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
 }
 
@@ -69,6 +75,8 @@ export interface ServiceUpdateRequest {
   // BOARDING-only
   cameraEnabled?: boolean;
   cameraTiers?: string[];
+  cameraTierPrices?: Record<string, number>;
+  cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
 }
 

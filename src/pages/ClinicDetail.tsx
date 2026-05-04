@@ -130,17 +130,25 @@ const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80',
 ];
 
-// Camera tier metadata — used to render options from API data
-const CAMERA_TIER_META: Record<string, { label: string; desc: string; icon: string; extraPrice: number }> = {
-  BASIC:     { label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: 'visibility',       extraPrice: 0      },
-  HD:        { label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: 'hd',               extraPrice: 50000  },
-  PANORAMIC: { label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: 'flip_camera_android', extraPrice: 100000 },
-  AI:        { label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: 'psychology',       extraPrice: 150000 },
+// Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
+const CAMERA_TIER_META: Record<string, { label: string; desc: string; icon: string; defaultPrice: number }> = {
+  BASIC:     { label: 'Cơ bản (720p)',     desc: 'Giám sát tiêu chuẩn, đã bao gồm trong gói', icon: 'visibility',          defaultPrice: 0      },
+  HD:        { label: 'Sắc nét (1080p HD)', desc: 'Hình ảnh sắc nét, màu sắc trung thực',       icon: 'hd',                  defaultPrice: 50000  },
+  PANORAMIC: { label: 'Toàn cảnh (360°)',   desc: 'Xoay 360 độ, không góc chết',                icon: 'flip_camera_android', defaultPrice: 100000 },
+  AI:        { label: 'AI Giám sát',         desc: 'Cảnh báo tự động hành vi bất thường',        icon: 'psychology',          defaultPrice: 150000 },
 };
 
-const CAMERA_TIER_PRICES: Record<string, number> = {
-  BASIC: 0, HD: 50000, PANORAMIC: 100000, AI: 150000,
-};
+/** Resolve effective price for a tier: use shop's custom price if set, else default */
+function tierPrice(tierId: string, tierPrices?: Record<string, number>): number {
+  if (tierPrices && tierId in tierPrices) return tierPrices[tierId];
+  return CAMERA_TIER_META[tierId]?.defaultPrice ?? 0;
+}
+
+/** Resolve effective label for a tier: use shop's custom label if set, else default */
+function tierLabel(tierId: string, tierLabels?: Record<string, string>): string {
+  if (tierLabels && tierLabels[tierId]) return tierLabels[tierId];
+  return CAMERA_TIER_META[tierId]?.label ?? tierId;
+}
 
 const today = new Date();
 
@@ -184,11 +192,16 @@ export default function ClinicDetail() {
   // ── Booking state ───────────────────────────────────────────────────────────
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(today.toISOString().split('T')[0]);
+  // BOARDING: check-in / check-out dates
+  const [checkInDate, setCheckInDate] = useState(today.toISOString().split('T')[0]);
+  const [checkOutDate, setCheckOutDate] = useState(() => {
+    const d = new Date(today); d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
   const [isFavorited, setIsFavorited] = useState(false);
   const [reviewFilter, setReviewFilter] = useState('Tất cả');
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [isHotelSelected, setIsHotelSelected] = useState(false);
-  // selectedCameraOption now stores a tier ID from the boarding service's cameraTiers
   const [selectedCameraTier, setSelectedCameraTier] = useState<string>('BASIC');
 
   // Derive the boarding service from API data
@@ -197,6 +210,11 @@ export default function ClinicDetail() {
   const supportedCameraTiers = boardingService?.cameraTiers ?? [];
   // Non-boarding services for "Dịch vụ nổi bật"
   const nonBoardingServices = apiServices.filter((s: ServiceResponse) => s.category !== 'BOARDING');
+
+  // Number of boarding days
+  const boardingDays = isHotelSelected
+    ? Math.max(1, Math.round((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
+    : 0;
 
   // ── Pet selection modal ─────────────────────────────────────────────────────
   const [showPetModal, setShowPetModal] = useState(false);
@@ -211,15 +229,27 @@ export default function ClinicDetail() {
     );
   };
 
+  const cameraTierExtraPrice = isHotelSelected
+    ? tierPrice(selectedCameraTier, boardingService?.cameraTierPrices)
+    : 0;
+
   const totalPrice = selectedServiceIds.reduce((sum, id) => {
     const svc = apiServices.find((s: ServiceResponse) => s.id === id);
     return sum + (svc ? svc.price : 0);
-  }, 0) + (isHotelSelected ? (boardingService?.price ?? 0) + CAMERA_TIER_PRICES[selectedCameraTier] : 0);
+  }, 0) + (isHotelSelected
+    ? ((boardingService?.price ?? 0) + cameraTierExtraPrice) * boardingDays
+    : 0);
 
-  // ── Can book: need at least 1 service + date + time ─────────────────────────
-  const canBook = (selectedServiceIds.length > 0 || isHotelSelected) && selectedDate && selectedTime;
+  // ── Can book ────────────────────────────────────────────────────────────────
+  // - Boarding only: cần checkIn + checkOut
+  // - Dịch vụ thường only: cần ít nhất 1 service + date + time
+  // - Cả 2: cần đủ cả boarding dates VÀ date+time cho dịch vụ thường
+  const hasNormalServices = selectedServiceIds.length > 0;
+  const boardingReady = isHotelSelected ? (!!checkInDate && !!checkOutDate && checkInDate < checkOutDate) : true;
+  const normalReady = hasNormalServices ? (!!selectedDate && !!selectedTime) : true;
+  const canBook = (isHotelSelected || hasNormalServices) && boardingReady && normalReady;
 
-  // ── Open pet modal or go straight to payment ────────────────────────────────
+  // ── Open pet modal ──────────────────────────────────────────────────────────
   function handleBookClick() {
     if (!canBook) return;
     setShowPetModal(true);
@@ -230,8 +260,36 @@ export default function ClinicDetail() {
     if (!selectedPet) return;
     setShowPetModal(false);
 
-    const firstServiceId = selectedServiceIds[0];
-    const firstService = apiServices.find((s: ServiceResponse) => s.id === firstServiceId);
+    // Tập hợp tất cả services đã chọn (thường + boarding)
+    const selectedServices = selectedServiceIds.map((id) => {
+      const svc = apiServices.find((s: ServiceResponse) => s.id === id)!;
+      return { id: svc.id, name: svc.serviceName, price: svc.price };
+    });
+
+    if (isHotelSelected && boardingService) {
+      const boardingPrice = ((boardingService.price ?? 0) + cameraTierExtraPrice) * boardingDays;
+      selectedServices.unshift({
+        id: boardingService.id,
+        name: `${boardingService.serviceName} · Camera ${tierLabel(selectedCameraTier, boardingService.cameraTierLabels)} · ${boardingDays} ngày`,
+        price: boardingPrice,
+      });
+    }
+
+    // serviceId chính để gửi lên BE:
+    // - Nếu có dịch vụ thường → dùng service thường đầu tiên (có datetime cụ thể)
+    // - Nếu chỉ có boarding → dùng boardingService
+    const primaryServiceId = hasNormalServices
+      ? selectedServiceIds[0]
+      : boardingService?.id;
+
+    // appointmentDatetime:
+    // - Nếu có dịch vụ thường → dùng date+time của dịch vụ thường (BE validate @Future)
+    // - Nếu chỉ có boarding → dùng check-in date lúc 12:00
+    const appointmentDatetime = hasNormalServices
+      ? `${selectedDate}T${selectedTime}:00`
+      : `${checkInDate}T12:00:00`;
+
+    const totalServicePrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
     navigate('/payment', {
       state: {
@@ -239,17 +297,36 @@ export default function ClinicDetail() {
         shopName: shop?.shopName,
         shopAddress: shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '',
         shopImage: shop?.licenseImageUrl,
-        serviceId: firstServiceId,
-        serviceName: firstService?.serviceName,
-        servicePrice: firstService?.price ?? 0,
+        serviceId: primaryServiceId,
+        // Danh sách đầy đủ để hiển thị trên Payment
+        services: selectedServices,
+        // Giữ lại để tương thích ngược
+        serviceName: selectedServices.map(s => s.name).join(', '),
+        servicePrice: totalServicePrice,
         petId: selectedPet.id,
         petName: `${selectedPet.name} (${selectedPet.species})`,
         petNote: petNote || undefined,
-        appointmentDatetime: `${selectedDate}T${selectedTime}:00`,
-        date: new Date(`${selectedDate}T${selectedTime}:00`).toLocaleDateString('vi-VN', {
-          weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
-        }),
-        time: selectedTime,
+        appointmentDatetime,
+        date: (() => {
+          const parts: string[] = [];
+          if (hasNormalServices && selectedDate && selectedTime) {
+            // Format: "Thứ Ba, 19/05/2026"
+            parts.push(new Date(`${selectedDate}T${selectedTime}:00`).toLocaleDateString('vi-VN', {
+              weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric'
+            }));
+          }
+          if (isHotelSelected) {
+            // Format: "Lưu trú: 04/05/2026 → 05/05/2026"
+            parts.push(`Lưu trú: ${new Date(checkInDate + 'T00:00:00').toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} → ${new Date(checkOutDate + 'T00:00:00').toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`);
+          }
+          return parts.join(' | ');
+        })(),
+        // time: giờ hẹn dịch vụ thường, hoặc "X ngày" nếu chỉ có boarding
+        time: hasNormalServices ? selectedTime! : `${boardingDays} ngày`,
+        // Truyền thêm để BookingSuccess hiển thị đúng
+        normalServiceNames: hasNormalServices
+          ? selectedServiceIds.map(id => apiServices.find((s: ServiceResponse) => s.id === id)?.serviceName).filter(Boolean).join(', ')
+          : undefined,
       }
     });
   }
@@ -445,16 +522,39 @@ export default function ClinicDetail() {
                 </div>
               </div>
 
-              <div className={`transition-all duration-500 overflow-hidden ${isHotelSelected ? 'max-h-[800px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                <div className={`transition-all duration-500 overflow-hidden ${isHotelSelected ? 'max-h-[900px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                 <div className="bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-indigo-800 shadow-sm overflow-hidden mb-6">
-                  {/* Service image */}
-                  {boardingService.imageUrl && (
-                    <div className="p-5 pb-0">
-                      <div className="w-full h-48 rounded-xl overflow-hidden shadow-md">
-                        <img src={boardingService.imageUrl} className="w-full h-full object-cover" alt={boardingService.serviceName} />
-                      </div>
+                  {/* Service image + description */}
+                  <div className="p-5 flex flex-col sm:flex-row gap-5">
+                    {/* Image */}
+                    <div className="w-full sm:w-48 h-40 rounded-xl overflow-hidden shadow-md shrink-0 bg-slate-100 dark:bg-slate-700">
+                      <img
+                        src={boardingService.imageUrl || 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80'}
+                        className="w-full h-full object-cover"
+                        alt={boardingService.serviceName}
+                      />
                     </div>
-                  )}
+
+                    {/* Description as feature list — dùng cameraDescription nếu có, fallback sang description chung */}
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-2">{boardingService.serviceName}</h4>
+                      {(() => {
+                        const descText = boardingService.cameraEnabled && boardingService.cameraDescription
+                          ? boardingService.cameraDescription
+                          : boardingService.description;
+                        return descText ? (
+                          <div className="flex flex-col gap-1.5">
+                            {descText.split(/[,;.\n]/).filter((s: string) => s.trim().length > 5).map((feature: string, i: number) => (
+                              <div key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                <span className="material-symbols-outlined text-indigo-500 text-base mt-0.5 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                <span>{feature.trim()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
 
                   {/* Camera tiers — only if shop configured camera */}
                   {boardingService.cameraEnabled && supportedCameraTiers.length > 0 && (
@@ -467,6 +567,8 @@ export default function ClinicDetail() {
                           const meta = CAMERA_TIER_META[tierId];
                           if (!meta) return null;
                           const isSelected = selectedCameraTier === tierId;
+                          const effectiveLabel = tierLabel(tierId, boardingService?.cameraTierLabels);
+                          const effectivePrice = tierPrice(tierId, boardingService?.cameraTierPrices);
                           return (
                             <div
                               key={tierId}
@@ -482,15 +584,15 @@ export default function ClinicDetail() {
                                   <span className="material-symbols-outlined text-xl">{meta.icon}</span>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{meta.label}</p>
+                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{effectiveLabel}</p>
                                   <p className="text-[10px] text-slate-500 dark:text-slate-400">{meta.desc}</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className={`text-xs font-bold ${meta.extraPrice === 0 ? 'text-teal-600' : 'text-slate-900 dark:text-white'}`}>
-                                  {meta.extraPrice === 0 ? 'MIỄN PHÍ' : `+${meta.extraPrice.toLocaleString()}đ`}
+                                <p className={`text-xs font-bold ${effectivePrice === 0 ? 'text-teal-600' : 'text-slate-900 dark:text-white'}`}>
+                                  {effectivePrice === 0 ? 'MIỄN PHÍ' : `+${effectivePrice.toLocaleString()}đ`}
                                 </p>
-                                {meta.extraPrice > 0 && <p className="text-[8px] text-slate-400">/ngày</p>}
+                                {effectivePrice > 0 && <p className="text-[8px] text-slate-400">/ngày</p>}
                               </div>
                             </div>
                           );
@@ -747,12 +849,12 @@ export default function ClinicDetail() {
                               {boardingService.serviceName}
                             </span>
                             <span className="text-xs font-black text-slate-900 dark:text-slate-100 shrink-0">
-                              {(boardingService.price + (CAMERA_TIER_PRICES[selectedCameraTier] ?? 0)).toLocaleString('vi-VN')}đ/ng
+                              {(boardingService.price + cameraTierExtraPrice).toLocaleString('vi-VN')}đ/ng
                             </span>
                           </div>
                           {boardingService.cameraEnabled && (
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                              Camera: {CAMERA_TIER_META[selectedCameraTier]?.label ?? selectedCameraTier}
+                              Camera: {tierLabel(selectedCameraTier, boardingService.cameraTierLabels)}
                             </p>
                           )}
                         </div>
@@ -807,58 +909,107 @@ export default function ClinicDetail() {
                   )}
                 </div>
 
-                {/* Date — controlled input */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
-                    Ngày hẹn
-                  </label>
-                  <input
-                    type="date"
-                    min={today.toISOString().split('T')[0]}
-                    value={selectedDate}
-                    onChange={e => { setSelectedDate(e.target.value); setSelectedTime(null); }}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]"
-                  />
-                </div>
+                {/* Date / Check-in-out — hiển thị theo loại dịch vụ đã chọn */}
 
-               {/* Time Slots */}
-<div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
-  <div className="flex items-center justify-between mb-3">
-    <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-      Khung giờ trống
-    </span>
+                {/* Boarding: check-in / check-out */}
+                {isHotelSelected && (
+                  <div className="flex flex-col gap-3">
+                    <label className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-0 block">
+                      Lưu trú — Ngày nhận & trả phòng
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 mb-1 block">Nhận phòng</label>
+                        <input
+                          type="date"
+                          min={today.toISOString().split('T')[0]}
+                          value={checkInDate}
+                          onChange={e => {
+                            setCheckInDate(e.target.value);
+                            if (e.target.value >= checkOutDate) {
+                              const d = new Date(e.target.value + 'T00:00:00');
+                              d.setDate(d.getDate() + 1);
+                              setCheckOutDate(d.toISOString().split('T')[0]);
+                            }
+                          }}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 mb-1 block">Trả phòng</label>
+                        <input
+                          type="date"
+                          min={(() => { const d = new Date(checkInDate + 'T00:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()}
+                          value={checkOutDate}
+                          onChange={e => setCheckOutDate(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    {boardingDays > 0 && (
+                      <div className="flex items-center justify-between px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-sm">
+                        <span className="text-indigo-700 dark:text-indigo-300 font-semibold">Tổng thời gian:</span>
+                        <span className="font-black text-indigo-900 dark:text-indigo-200">{boardingDays} ngày</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-    <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
-      {selectedDate
-        ? new Date(selectedDate + "T00:00:00").toLocaleDateString("vi-VN", {
-            weekday: "short",
-            day: "2-digit",
-            month: "2-digit",
-          })
-        : `${dayName}, ${dateStr}`}
-    </span>
-  </div>
+                {/* Dịch vụ thường: date + time slots */}
+                {hasNormalServices && (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
+                        {isHotelSelected ? 'Dịch vụ thường — Ngày hẹn' : 'Ngày hẹn'}
+                      </label>
+                      <input
+                        type="date"
+                        min={today.toISOString().split('T')[0]}
+                        value={selectedDate}
+                        onChange={e => { setSelectedDate(e.target.value); setSelectedTime(null); }}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]"
+                      />
+                    </div>
 
-  <div className="grid grid-cols-3 gap-2">
-    {TIME_SLOTS.map((time) => (
-      <button
-        key={time}
-        onClick={() => setSelectedTime(time)}
-        className={`py-2 text-xs font-semibold rounded border transition-all ${
-          selectedTime === time
-            ? "bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md"
-            : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c]"
-        }`}
-      >
-        {time}
-      </button>
-    ))}
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                          Khung giờ trống
+                        </span>
+                        <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
+                          {selectedDate
+                            ? new Date(selectedDate + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" })
+                            : `${dayName}, ${dateStr}`}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {TIME_SLOTS.map((time) => (
+                          <button
+                            key={time}
+                            onClick={() => setSelectedTime(time)}
+                            className={`py-2 text-xs font-semibold rounded border transition-all ${
+                              selectedTime === time
+                                ? "bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md"
+                                : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c]"
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                        <button className="py-2 text-xs font-semibold rounded border bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed border-slate-200 dark:border-slate-700">
+                          17:00
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
 
-    <button className="py-2 text-xs font-semibold rounded border bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed border-slate-200 dark:border-slate-700">
-      17:00
-    </button>
-  </div>
-</div>
+                {/* Nếu chưa chọn gì */}
+                {!isHotelSelected && !hasNormalServices && (
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
+                    Chọn dịch vụ để đặt lịch
+                  </div>
+                )}
             {/* CTA */}
 <button
   onClick={handleBookClick}
@@ -870,7 +1021,15 @@ export default function ClinicDetail() {
   }`}
 >
   <span className="material-symbols-outlined">calendar_month</span>
-  {canBook ? "Đặt lịch ngay" : "Chọn dịch vụ & giờ"}
+  {canBook
+    ? "Đặt lịch ngay"
+    : !isHotelSelected && !hasNormalServices
+      ? "Chọn dịch vụ trước"
+      : isHotelSelected && !boardingReady
+        ? "Chọn ngày nhận & trả phòng"
+        : hasNormalServices && !normalReady
+          ? "Chọn ngày & giờ hẹn"
+          : "Đặt lịch ngay"}
 </button>
 
 <div className="flex gap-3">
