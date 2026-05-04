@@ -60,6 +60,22 @@ export const authService = {
     return authService._decodeAndCreateUser(jwtToken, requiresEmailUpdate);
   },
 
+  verifyEmail: async (email: string, otp: string): Promise<void> => {
+    await apiClient.post('/auth/verify-email', null, { params: { email, otp } });
+  },
+
+  resendVerification: async (email: string): Promise<void> => {
+    await apiClient.post('/auth/resend-verification', null, { params: { email } });
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await apiClient.post('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string): Promise<void> => {
+    await apiClient.post('/auth/reset-password', { email, otp, newPassword });
+  },
+
   updateEmail: async (email: string): Promise<User> => {
     const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/update-email', {
       email,

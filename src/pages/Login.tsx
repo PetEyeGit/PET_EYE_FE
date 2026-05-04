@@ -200,7 +200,7 @@ export default function Login() {
             <div className="flex flex-col gap-2">
               <div className="flex justify-between">
                 <label className="text-sm font-semibold text-slate-700">Mật khẩu</label>
-                <a className="text-xs font-semibold text-[#1a2b4c] hover:underline" href="#">Quên mật khẩu?</a>
+                <a className="text-xs font-semibold text-[#1a2b4c] hover:underline" href="/forgot-password">Quên mật khẩu?</a>
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />

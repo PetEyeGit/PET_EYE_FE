@@ -2,11 +2,9 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Lock, Store } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/user.service';
 
 export default function Register() {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -33,9 +31,8 @@ export default function Register() {
         address
       });
 
-      // Automatically login after successful registration
-      await login(email, password);
-      navigate('/home');
+      // Redirect to email verification page
+      navigate('/verify-email', { state: { email, password } });
     } catch (error) {
       console.error('Registration failed:', error);
     } finally {
