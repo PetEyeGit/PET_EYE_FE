@@ -14,6 +14,7 @@ export default function VerifyEmail() {
   // email + password passed from Register page
   const email: string = location.state?.email ?? '';
   const password: string = location.state?.password ?? '';
+  const isShop: boolean = location.state?.isShop ?? false;
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,8 @@ export default function VerifyEmail() {
 
   // Redirect if no email in state
   useEffect(() => {
-    if (!email) navigate('/register', { replace: true });
-  }, [email, navigate]);
+    if (!email) navigate(isShop ? '/shop/register' : '/register', { replace: true });
+  }, [email, navigate, isShop]);
 
   // Countdown timer for resend
   useEffect(() => {
@@ -68,8 +69,10 @@ export default function VerifyEmail() {
     try {
       await authService.verifyEmail(email, code);
       toast.success('Xác thực email thành công!');
-      // Auto login after verify
-      if (password) {
+      if (isShop) {
+        // Shop cần admin duyệt — không auto login, redirect sang success page
+        navigate('/shop/register/success', { replace: true });
+      } else if (password) {
         await login(email, password);
         navigate('/home', { replace: true });
       } else {
@@ -79,8 +82,10 @@ export default function VerifyEmail() {
       const code = err.response?.data?.code;
       if (code === 6002) setError('OTP không đúng hoặc đã hết hạn. Vui lòng thử lại.');
       else if (code === 6003) {
-        toast.success('Email đã được xác thực. Đang đăng nhập...');
-        if (password) {
+        toast.success('Email đã được xác thực.');
+        if (isShop) {
+          navigate('/shop/register/success', { replace: true });
+        } else if (password) {
           await login(email, password);
           navigate('/home', { replace: true });
         } else {

@@ -18,6 +18,7 @@ export default function ShopRegister() {
     description: '',
     password: '',
     confirmPassword: '',
+    licenseNumber: '',
     licenseImageUrl: '',
     agreed: false
   });
@@ -85,6 +86,12 @@ export default function ShopRegister() {
       return;
     }
 
+    if (formData.description.length < 10) {
+      setError('Mô tả cửa hàng phải có ít nhất 10 ký tự');
+      setStep(2);
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -98,16 +105,17 @@ export default function ShopRegister() {
         city: formData.city,
         description: formData.description,
         password: formData.password,
+        licenseNumber: formData.licenseNumber,
         licenseImageUrl: formData.licenseImageUrl
       };
 
       await shopService.register(request);
       
-      // Navigate to success page
-      navigate('/shop/register/success');
+      // Redirect to email verification — same flow as user registration
+      navigate('/verify-email', { state: { email: formData.email, password: formData.password, isShop: true } });
     } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.');
+      const msg = err.response?.data?.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -121,7 +129,7 @@ export default function ShopRegister() {
       return formData.address && formData.city && formData.description;
     }
     if (step === 3) {
-      return formData.password && formData.confirmPassword && formData.licenseImageUrl && formData.agreed;
+      return formData.password && formData.confirmPassword && formData.licenseNumber && formData.licenseImageUrl && formData.agreed;
     }
     return false;
   };
@@ -306,7 +314,7 @@ export default function ShopRegister() {
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none resize-none"
                   required
                 />
-                <p className="text-xs text-slate-500 mt-2">Tối thiểu 100 ký tự</p>
+                <p className="text-xs text-slate-500 mt-2">Tối thiểu 10 ký tự ({formData.description.length}/10)</p>
               </div>
             </div>
           )}
@@ -347,6 +355,23 @@ export default function ShopRegister() {
                       required
                     />
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Số giấy phép kinh doanh *
+                </label>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="text"
+                    value={formData.licenseNumber}
+                    onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                    placeholder="Ví dụ: 0123456789"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
+                    required
+                  />
                 </div>
               </div>
 
