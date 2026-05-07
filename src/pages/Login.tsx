@@ -55,9 +55,9 @@ export default function Login() {
 
   const handleZaloLogin = () => {
     const appId = import.meta.env.VITE_ZALO_APP_ID;
-    const redirectUri = import.meta.env.VITE_ZALO_REDIRECT_URI;
-    if (!appId || !redirectUri) {
-      setErrorMessage('Chưa cấu hình Zalo Login');
+    const redirectUri = import.meta.env.VITE_ZALO_REDIRECT_URI || `${window.location.origin}/login/zalo/callback`;
+    if (!appId) {
+      setErrorMessage('Chưa cấu hình Zalo Login (Thiếu App ID)');
       return;
     }
     const state = Math.random().toString(36).substring(7);
