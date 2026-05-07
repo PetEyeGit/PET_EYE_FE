@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import apiClient from '../services/apiClient';
+import { useAuth } from '../contexts/AuthContext';
 import type { ApiResponse } from '../types/api';
 import type { ChatMessage } from '../services/admin.service';
 
@@ -11,10 +12,12 @@ export function useShopChat(
   shopId: number | null, 
   token: string | undefined, 
   channelType: string = 'ADMIN_SUPPORT',
-  recipientEmail?: string,
-  currentEmail?: string,
-  userRole?: string
+  recipientEmail?: string
 ) {
+  const { user } = useAuth();
+  const currentEmail = user?.email;
+  const userRole = user?.role;
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
@@ -87,7 +90,7 @@ export function useShopChat(
     });
 
     return () => sub.unsubscribe();
-  }, [connected, shopId, channelType, recipientEmail]);
+  }, [connected, shopId, channelType, recipientEmail, currentEmail, userRole]);
 
   const sendMessage = useCallback((content: string) => {
     const client = clientRef.current;

@@ -186,7 +186,7 @@ export default function ClinicDetail() {
   const { data: myPets = [] } = useQuery({
     queryKey: ['my-pets', user?.id],
     queryFn: () => petService.getByOwner(Number(user?.id)),
-    enabled: !!user?.id,
+    enabled: !!user?.id && !isNaN(Number(user.id)),
   });
 
   // ── Booking state ───────────────────────────────────────────────────────────

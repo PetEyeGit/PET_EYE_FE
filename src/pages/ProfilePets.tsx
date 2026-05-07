@@ -46,7 +46,7 @@ export default function ProfilePets() {
     const [deleteReason, setDeleteReason] = useState('');
 
     useEffect(() => {
-        if (user?.id) {
+        if (user?.id && !isNaN(Number(user.id))) {
             fetchPets();
         }
     }, [user]);
@@ -61,9 +61,14 @@ export default function ProfilePets() {
     }, [step, formData.medicalRecords.length]);
 
     const fetchPets = async () => {
+        const userId = Number(user?.id);
+        if (isNaN(userId)) {
+            console.warn('[ProfilePets] fetchPets skipped: userId is NaN');
+            return;
+        }
         try {
             setLoading(true);
-            const data = await petService.getByOwner(Number(user?.id));
+            const data = await petService.getByOwner(userId);
             setPets(data);
         } catch (error) {
             console.error('Failed to fetch pets:', error);
@@ -153,8 +158,9 @@ export default function ProfilePets() {
                 reminders: []
             });
             fetchPets();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to add pet:', error);
+            alert(error.message || 'Có lỗi xảy ra khi thêm thú cưng. Vui lòng thử lại.');
         } finally {
             setSubmitting(false);
         }

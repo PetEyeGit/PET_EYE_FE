@@ -8,6 +8,7 @@ import { useShopChat } from '../../hooks/useShopChat';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import ConversationThread from './shared/ConversationThread';
+import { shopService } from '../../services/shop.service';
 
 interface ChatWindowProps {
     shopId: number;
@@ -32,7 +33,7 @@ export default function ChatWindow({ shopId, title = 'Hỗ trợ & Quản trị'
     const { data: customers = [] } = useQuery({
         queryKey: ['my-shop-customers-mini', shopId],
         queryFn: () => shopService.getShopCustomers(shopId),
-        enabled: isOpen && !!user
+        enabled: isOpen && !!user && !!shopId
     });
 
     useEffect(() => {
@@ -53,9 +54,7 @@ export default function ChatWindow({ shopId, title = 'Hỗ trợ & Quản trị'
         shopId, 
         user?.token, 
         channelType,
-        recipientEmail,
-        user?.email,
-        user?.role
+        recipientEmail
     );
 
     const scrollToBottom = () => {
@@ -77,6 +76,17 @@ export default function ChatWindow({ shopId, title = 'Hỗ trợ & Quản trị'
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                             
                             <div className="p-6 flex items-center gap-4 relative z-10">
+                                {channelType === 'CUSTOMER_CHAT' && selectedCustomerEmail && (
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedCustomerEmail(null);
+                                            setSelectedCustomerName(null);
+                                        }}
+                                        className="p-2 hover:bg-white/10 rounded-xl text-white/80 transition-all -ml-2"
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                )}
                                 <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
                                     {channelType === 'ADMIN_SUPPORT' ? <Shield size={22} className="text-white" /> : <Users size={22} className="text-white" />}
                                 </div>
@@ -157,7 +167,9 @@ export default function ChatWindow({ shopId, title = 'Hỗ trợ & Quản trị'
                                 <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-slate-50/50 dark:bg-slate-900/50 scrollbar-hide">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Danh sách khách hàng</p>
                                     {customers.length === 0 ? (
-                                        <p className="text-xs text-slate-400 italic text-center py-10">Chưa có khách hàng nào</p>
+                                        <p className="text-xs text-slate-400 italic text-center py-10">
+                                            {isStaff ? "Chưa có khách hàng được phân công" : "Chưa có khách hàng nào"}
+                                        </p>
                                     ) : customers.map(c => (
                                         <button 
                                             key={c.email}

@@ -94,10 +94,16 @@ export const authService = {
 
   _decodeAndCreateUser: (token: string, requiresEmailUpdate?: boolean): User => {
     const payload = JSON.parse(atob(token.split('.')[1]));
+    console.log('[auth] decoded token payload:', payload);
+
+    // sub should now be the numeric ID (as string)
+    // We also added an explicit 'userId' claim in the backend
+    const rawId = payload.userId || payload.sub;
+    
     return {
-      id: payload.sub,
+      id: !isNaN(Number(rawId)) ? Number(rawId) : rawId,
       email: payload.email,
-      name: payload.email.split('@')[0], 
+      name: payload.email ? payload.email.split('@')[0] : 'User', 
       role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
       token,
       requiresEmailUpdate,
