@@ -7,57 +7,102 @@ import type { ChatMessage } from '../services/admin.service';
 
 const WS_URL = 'http://localhost:8080/api/ws';
 
-export function useShopChat(shopId: number | null, token: string | undefined) {
+export function useShopChat(
+  shopId: number | null, 
+  token: string | undefined, 
+  channelType: string = 'ADMIN_SUPPORT',
+  recipientEmail?: string,
+  currentEmail?: string,
+  userRole?: string
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
+
+  useEffect(() => {
+    console.log(`useShopChat [${channelType}] initialized. ShopId:`, shopId, "Role:", userRole);
+  }, [shopId, channelType, !!token, userRole]);
 
   // Load history
   useEffect(() => {
     if (!shopId) return;
     setMessages([]);
-    apiClient.get<ApiResponse<ChatMessage[]>>(`/chat/${shopId}/history`)
+    apiClient.get<ApiResponse<ChatMessage[]>>(`/chat/${shopId}/history`, {
+      params: { channelType, recipientEmail }
+    })
       .then(r => setMessages(r.data.result ?? []))
       .catch(() => {});
-    apiClient.patch(`/chat/${shopId}/read`).catch(() => {});
-  }, [shopId]);
+    apiClient.patch(`/chat/${shopId}/read`, null, {
+      params: { channelType, recipientEmail }
+    }).catch(() => {});
+  }, [shopId, channelType, recipientEmail]);
 
   // WebSocket
   useEffect(() => {
     if (!token) return;
+
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL),
-      connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: 5000,
-      onConnect: () => setConnected(true),
+      connectHeaders: {
+        Authorization: `Bearer ${token}`
+      },
+      onConnect: () => {
+        setConnected(true);
+      },
       onDisconnect: () => setConnected(false),
     });
+
     clientRef.current = client;
     client.activate();
-    return () => { client.deactivate(); };
+
+    return () => {
+      client.deactivate();
+    };
   }, [token]);
 
   // Subscribe
   useEffect(() => {
     const client = clientRef.current;
     if (!client || !connected || !shopId) return;
-    const sub = client.subscribe(`/topic/chat/${shopId}`, (frame) => {
+
+    let topic = `/topic/chat/${shopId}/${channelType}`;
+    
+    if (channelType === 'CUSTOMER_CHAT') {
+      topic = `/topic/chat/${shopId}/customer/${recipientEmail}`;
+    } else if (channelType === 'DIRECT') {
+      // 1-1 chat. Identifier is the staff's email.
+      const staffEmail = userRole === 'SHOP_OWNER' ? recipientEmail : currentEmail;
+      topic = `/topic/chat/${shopId}/direct/${staffEmail}`;
+    }
+      
+    console.log('Subscribing to:', topic);
+    
+    const sub = client.subscribe(topic, (frame) => {
       try {
         const msg: ChatMessage = JSON.parse(frame.body);
         setMessages(prev => [...prev, msg]);
-      } catch {}
+      } catch (err) {
+        console.error('Error parsing msg:', err);
+      }
     });
+
     return () => sub.unsubscribe();
-  }, [connected, shopId]);
+  }, [connected, shopId, channelType, recipientEmail]);
 
   const sendMessage = useCallback((content: string) => {
     const client = clientRef.current;
     if (!client || !connected || !shopId) return;
+
     client.publish({
       destination: '/app/chat',
-      body: JSON.stringify({ shopId, content }),
+      body: JSON.stringify({ 
+        shopId, 
+        channelType,
+        recipientEmail,
+        content 
+      }),
     });
-  }, [connected, shopId]);
+  }, [connected, shopId, channelType, recipientEmail]);
 
   return { messages, connected, sendMessage };
 }

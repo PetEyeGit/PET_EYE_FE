@@ -265,6 +265,12 @@ export default function BookingHistory() {
                     </button>
                   )}
                   <Link
+                    to="/messages"
+                    className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 text-[#122143] dark:text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-200 transition-all"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> Nhắn tin
+                  </Link>
+                  <Link
                     to="/clinic/1"
                     className="inline-flex items-center gap-1 text-[#122143] dark:text-[#2dd4bf] font-bold text-sm hover:underline"
                   >

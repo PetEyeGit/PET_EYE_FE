@@ -159,6 +159,7 @@ export default function ShopNavbar() {
 
                   {[
                     { to: '/shop/profile', icon: <Store className="w-3.5 h-3.5" />, label: 'Thông tin cửa hàng' },
+                    { to: '/shop/messages', icon: <MessageCircle className="w-3.5 h-3.5" />, label: 'Tin nhắn' },
                     { to: '/shop/dashboard', icon: <BarChart3 className="w-3.5 h-3.5" />, label: 'Dashboard' },
                     { to: '/shop/settings', icon: <Settings className="w-3.5 h-3.5" />, label: 'Cài đặt' },
                   ].map(item => (

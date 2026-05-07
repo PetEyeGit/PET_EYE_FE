@@ -156,12 +156,16 @@ export const adminService = {
   },
 
   // Chat
-  getChatHistory: async (shopId: number): Promise<ChatMessage[]> => {
-    const res = await apiClient.get<ApiResponse<ChatMessage[]>>(`/chat/${shopId}/history`);
+  getChatHistory: async (shopId: number, channelType: string = 'ADMIN_SUPPORT'): Promise<ChatMessage[]> => {
+    const res = await apiClient.get<ApiResponse<ChatMessage[]>>(`/chat/${shopId}/history`, {
+      params: { channelType }
+    });
     return res.data.result ?? [];
   },
 
-  markChatRead: async (shopId: number): Promise<void> => {
-    await apiClient.patch(`/chat/${shopId}/read`);
+  markChatRead: async (shopId: number, channelType: string = 'ADMIN_SUPPORT'): Promise<void> => {
+    await apiClient.patch(`/chat/${shopId}/read`, null, {
+      params: { channelType }
+    });
   },
 };

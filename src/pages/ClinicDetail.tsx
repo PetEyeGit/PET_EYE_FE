@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopService } from '../services/shop.service';
@@ -388,6 +388,10 @@ export default function ClinicDetail() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Link to="/messages" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-lg shadow-primary/20">
+              <span className="material-symbols-outlined text-base">chat</span>
+              Nhắn tin
+            </Link>
             <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold">
               <span className="material-symbols-outlined text-base">ios_share</span>
               Chia sẻ

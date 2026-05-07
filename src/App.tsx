@@ -32,7 +32,6 @@ import BookingHistory from './pages/BookingHistory';
 import ClinicDetail from './pages/ClinicDetail';
 import PetProfile from './pages/PetProfile';
 import Messaging from './pages/Messaging';
-import LiveTracking from './pages/LiveTracking';
 import VetSearch from './pages/VetSearch';
 import Payment from './pages/Payment';
 import ProfilePets from './pages/ProfilePets';
@@ -136,10 +135,10 @@ function AppLayout() {
 
           {/* Staff Routes with Layout */}
           <Route path="/staff" element={<StaffLayout />}>
+            <Route index element={<Navigate to="/staff/dashboard" replace />} />
             <Route path="dashboard" element={<StaffDashboard />} />
             <Route path="tasks" element={<StaffTasks />} />
             <Route path="profile" element={<StaffProfile />} />
-            <Route path="messages" element={<Messaging />} />
           </Route>
 
           {/* profile area with persistent sidebar */}
@@ -153,7 +152,6 @@ function AppLayout() {
           <Route path="/clinic/:id" element={<ClinicDetail />} />
           <Route path="/pet/:id" element={<PetProfile />} />
           <Route path="/messages" element={<Messaging />} />
-          <Route path="/live" element={<LiveTracking />} />
           <Route path="/camera" element={<CameraView />} />
           <Route path="/search" element={<VetSearch />} />
           <Route path="/payment" element={<Payment />} />

@@ -10,12 +10,14 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
   const [connected, setConnected] = useState(false);
   const clientRef = useRef<Client | null>(null);
 
+  const channelType = 'ADMIN_SUPPORT';
+
   // Load history when shopId changes
   useEffect(() => {
     if (!shopId) return;
     setMessages([]);
-    adminService.getChatHistory(shopId).then(setMessages).catch(() => {});
-    adminService.markChatRead(shopId).catch(() => {});
+    adminService.getChatHistory(shopId, channelType).then(setMessages).catch(() => {});
+    adminService.markChatRead(shopId, channelType).catch(() => {});
   }, [shopId]);
 
   // WebSocket connection
@@ -38,27 +40,36 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
     };
   }, [token]);
 
-  // Subscribe to shopId room
+  // Subscribe to shopId room with channelType
   useEffect(() => {
     const client = clientRef.current;
     if (!client || !connected || !shopId) return;
 
-    const sub = client.subscribe(`/topic/chat/${shopId}`, (frame) => {
+    const topic = `/topic/chat/${shopId}/${channelType}`;
+    console.log('Admin subscribing to:', topic);
+
+    const sub = client.subscribe(topic, (frame) => {
       try {
         const msg: ChatMessage = JSON.parse(frame.body);
         setMessages(prev => [...prev, msg]);
-      } catch {}
+      } catch (err) {
+        console.error('Admin parse error:', err);
+      }
     });
 
     return () => sub.unsubscribe();
   }, [connected, shopId]);
 
-  const sendMessage = useCallback((shopId: number, content: string) => {
+  const sendMessage = useCallback((targetShopId: number, content: string) => {
     const client = clientRef.current;
     if (!client || !connected) return;
     client.publish({
       destination: '/app/chat',
-      body: JSON.stringify({ shopId, content }),
+      body: JSON.stringify({ 
+        shopId: targetShopId, 
+        channelType,
+        content 
+      }),
     });
   }, [connected]);
 

@@ -105,4 +105,9 @@ export const shopService = {
     const response = await apiClient.get<ApiResponse<ServiceResponse[]>>(`/services/shop/${shopId}`);
     return response.data.result ?? [];
   },
+
+  getShopCustomers: async (shopId: number): Promise<{ id: number; email: string; fullName: string }[]> => {
+    const response = await apiClient.get<ApiResponse<{ id: number; email: string; fullName: string }[]>>(`/chat/${shopId}/customers`);
+    return response.data.result ?? [];
+  },
 };

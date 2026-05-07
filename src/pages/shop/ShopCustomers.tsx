@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Mail, Phone, Calendar, Search, Filter, TrendingUp, X, ChevronRight, Clock, ChevronLeft, CreditCard, Heart, Package, Shield, Star, Gift, Rocket, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 
 
@@ -291,9 +292,13 @@ export default function ShopCustomers() {
                   >
                     Xem chi tiết
                   </button>
-                  <button className="px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm">
-                    Liên hệ
-                  </button>
+                  <Link 
+                    to="/shop/messages"
+                    state={{ customerEmail: customer.email, customerName: customer.name }}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm"
+                  >
+                    Nhắn tin
+                  </Link>
                 </div>
               </div>
             </div>
