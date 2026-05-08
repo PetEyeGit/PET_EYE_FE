@@ -51,6 +51,7 @@ import AdminShops from './pages/admin/AdminShops';
 import AdminMembers from './pages/admin/AdminMembers';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminMessages from './pages/admin/AdminMessages';
+import Chatbot from './components/Chatbot';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
@@ -162,6 +163,9 @@ function AppLayout() {
       </main>
 
       {shouldShowCustomerNav && <Footer />}
+
+      {/* Chatbot — hiển thị cho tất cả customer pages (kể cả /home) */}
+      {!isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && <Chatbot />}
     </div>
   );
 }

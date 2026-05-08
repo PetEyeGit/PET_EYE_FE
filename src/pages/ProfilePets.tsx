@@ -46,10 +46,13 @@ export default function ProfilePets() {
     const [deleteReason, setDeleteReason] = useState('');
 
     useEffect(() => {
-        if (user?.id && !isNaN(Number(user.id))) {
+        const userId = Number(user?.id);
+        if (user && !isNaN(userId) && userId > 0) {
             fetchPets();
+        } else if (user) {
+            console.error('[ProfilePets] user.id không hợp lệ:', user.id, '— hãy đăng xuất và đăng nhập lại để làm mới token.');
         }
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         if (step === 3 && formData.medicalRecords.length === 0) {

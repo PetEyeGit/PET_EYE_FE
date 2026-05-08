@@ -446,14 +446,6 @@ export default function HomePage() {
             </section>
 
             <Footer />
-
-            {/* Floating Chat Button */}
-            <Link
-                to="/messages"
-                className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform z-50 hover:bg-blue-800"
-            >
-                <span className="material-symbols-outlined text-2xl">chat</span>
-            </Link>
         </div>
     );
 }
