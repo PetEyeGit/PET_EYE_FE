@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle } from 'lucide-react';
+import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import { useNotifications } from '../hooks/useNotifications';
@@ -40,6 +40,7 @@ export default function ShopNavbar() {
     { label: 'Camera', path: '/shop/camera', icon: <Video className="w-4 h-4" /> },
     { label: 'Nhân viên', path: '/shop/staff', icon: <UsersIcon className="w-4 h-4" /> },
     { label: 'Khách hàng', path: '/shop/customers', icon: <UsersIcon className="w-4 h-4" /> },
+    { label: 'AI Assistant', path: '/shop/ai-assistant', icon: <Sparkles className="w-4 h-4" />, highlight: true },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -70,9 +71,13 @@ export default function ShopNavbar() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-2 h-8 px-3 rounded-lg font-medium transition-colors ${
-                  isActive(item.path)
-                    ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
+                  (item as any).highlight
+                    ? isActive(item.path)
+                      ? 'text-white bg-gradient-to-r from-[#1a2b4c] to-indigo-600 shadow-sm'
+                      : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800'
+                    : isActive(item.path)
+                      ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
                 }`}
               >
                 {item.icon}
