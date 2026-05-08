@@ -46,6 +46,7 @@ export default function ConversationThread({
         if (e) e.preventDefault();
         if (!input.trim() || !connected || disableInput) return;
         onSendMessage(input);
+        setInput('');
     };
 
     return (

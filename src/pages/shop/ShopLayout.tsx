@@ -26,7 +26,7 @@ export default function ShopLayout() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <ShopNavbar />
-      <div className="relative z-0">
+      <div className="relative">
         <Outlet />
       </div>
 

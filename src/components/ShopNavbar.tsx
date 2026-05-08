@@ -103,11 +103,14 @@ export default function ShopNavbar() {
               </button>
 
               {notifOpen && (
-                <div className="absolute top-[calc(100%+8px)] right-0 w-[340px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-slate-900/80 border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
+                <div className="fixed inset-x-4 top-16 sm:absolute sm:inset-auto sm:top-[calc(100%+8px)] sm:right-0 sm:w-[340px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-slate-900/80 border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-700">
                     <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Thông báo</p>
-                    <button className="text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                      Đọc tất cả
+                    <button 
+                      onClick={() => markAllRead()}
+                      className="text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    >
+                      Đọc tất cả ({unreadCount})
                     </button>
                   </div>
                   <div className="py-1 max-h-[400px] overflow-y-auto">

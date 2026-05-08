@@ -57,5 +57,21 @@ export function useNotifications(enabled = true) {
     },
   });
 
-  return { notifications, unreadCount, isLoading, refetch, markRead: markReadMutation.mutate };
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.patch('/users/notifications/mark-all-read');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-notifications'] });
+    },
+  });
+
+  return { 
+    notifications, 
+    unreadCount, 
+    isLoading, 
+    refetch, 
+    markRead: markReadMutation.mutate,
+    markAllRead: markAllReadMutation.mutate
+  };
 }
