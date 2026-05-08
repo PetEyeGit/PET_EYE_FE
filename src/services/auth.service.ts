@@ -96,14 +96,19 @@ export const authService = {
     const payload = JSON.parse(atob(token.split('.')[1]));
     console.log('[auth] decoded token payload:', payload);
 
-    // sub should now be the numeric ID (as string)
-    // We also added an explicit 'userId' claim in the backend
-    const rawId = payload.userId || payload.sub;
-    
+    // BE now includes explicit 'userId' claim (numeric)
+    // Fallback to 'sub' only if userId missing (old tokens)
+    const rawId = payload.userId ?? payload.sub;
+
+    // userId from BE is always a number; sub is email string
+    const id = (rawId !== undefined && rawId !== null && !isNaN(Number(rawId)))
+      ? Number(rawId)
+      : rawId;
+
     return {
-      id: !isNaN(Number(rawId)) ? Number(rawId) : rawId,
+      id,
       email: payload.email,
-      name: payload.email ? payload.email.split('@')[0] : 'User', 
+      name: payload.email ? payload.email.split('@')[0] : 'User',
       role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
       token,
       requiresEmailUpdate,
