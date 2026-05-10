@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Users, Bell, MessageCircle,
-  LogOut, Menu, X, ChevronRight, Shield
+  LogOut, Menu, X, ChevronRight, Shield, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { label: 'Quản lý Member', path: '/admin/members', icon: Users },
   { label: 'Thông báo', path: '/admin/notifications', icon: Bell },
   { label: 'Tin nhắn', path: '/admin/messages', icon: MessageCircle },
+  { label: 'AI Assistant', path: '/admin/ai-assistant', icon: Sparkles },
 ];
 
 export default function AdminLayout() {

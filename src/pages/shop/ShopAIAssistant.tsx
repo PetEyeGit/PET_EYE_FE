@@ -1,11 +1,12 @@
 ﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Sparkles, TrendingUp, Calendar, Users, Scissors, AlertTriangle, BarChart2, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles, TrendingUp, Calendar, Users, Scissors, AlertTriangle, BarChart2, RefreshCw, Trash2 } from 'lucide-react';
 import { shopService } from '../../services/shop.service';
 import { bookingService } from '../../services/booking.service';
 import { staffService } from '../../services/staff.service';
 import { serviceService } from '../../services/service.service';
+import { shopAIChatService } from '../../services/aiChat.service';
 
 // ─── Gemini ───────────────────────────────────────────────────────────────────
 const GEMINI_KEYS: string[] = [
@@ -129,10 +130,28 @@ export default function ShopAIAssistant() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Data fetching ────────────────────────────────────────────────────────────
+  // ── Load lịch sử từ BE khi mount ─────────────────────────────────────────────
+  useEffect(() => {
+    if (historyLoaded) return;
+    shopAIChatService.getHistory()
+      .then(records => {
+        if (records.length > 0) {
+          const loaded: Message[] = records.map(r => ({
+            id: String(r.id),
+            role: r.role as 'user' | 'assistant',
+            content: r.content,
+            timestamp: new Date(r.createdAt),
+          }));
+          setMessages(prev => [prev[0], ...loaded]); // giữ welcome message
+        }
+        setHistoryLoaded(true);
+      })
+      .catch(() => setHistoryLoaded(true)); // silent fail nếu chưa có bảng
+  }, [historyLoaded]);
   const { data: dashboard, refetch: refetchDash } = useQuery({ queryKey:['shopDashboard'], queryFn:()=>shopService.getDashboard() });
   const { data: bookings=[], refetch: refetchBook } = useQuery({ queryKey:['shopBookings-ai'], queryFn:()=>bookingService.getShopBookings() });
   const { data: staff=[] } = useQuery({ queryKey:['shopStaff-ai'], queryFn:()=>staffService.getMyShopStaff() });
@@ -225,9 +244,15 @@ QUAN TRỌNG: Khi hỏi về khách đặt nhiều nhất, hãy liệt kê TÊN 
     const loadMsg:Message={id:uid(),role:'assistant',content:'',timestamp:new Date(),isLoading:true};
     setMessages(prev=>[...prev,userMsg,loadMsg]);
     setIsLoading(true);
+
+    // Lưu user message lên BE (silent)
+    shopAIChatService.saveMessage('user', content).catch(() => {});
+
     try {
       const resp = await callGeminiText(`${buildContext()}\n\nCÂU HỎI: ${content}`);
       setMessages(prev=>prev.map(m=>m.isLoading?{...m,content:resp,isLoading:false}:m));
+      // Lưu assistant message lên BE (silent)
+      shopAIChatService.saveMessage('assistant', resp).catch(() => {});
     } catch {
       setMessages(prev=>prev.map(m=>m.isLoading?{...m,content:'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',isLoading:false}:m));
     } finally { setIsLoading(false); }
@@ -268,6 +293,16 @@ QUAN TRỌNG: Khi hỏi về khách đặt nhiều nhất, hãy liệt kê TÊN 
             <button onClick={()=>{refetchDash();refetchBook();}}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
               <RefreshCw className="w-3.5 h-3.5"/>Làm mới
+            </button>
+            <button
+              onClick={async () => {
+                if (!window.confirm('Xoá toàn bộ lịch sử chat AI?')) return;
+                await shopAIChatService.clearHistory().catch(() => {});
+                setMessages(prev => [prev[0]]); // giữ welcome
+                setHistoryLoaded(false);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+              <Trash2 className="w-3.5 h-3.5"/>Xoá lịch sử
             </button>
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${dataReady?'bg-green-50 text-green-700 border-green-200':'bg-amber-50 text-amber-700 border-amber-200'}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${dataReady?'bg-green-500 animate-pulse':'bg-amber-500 animate-pulse'}`}/>

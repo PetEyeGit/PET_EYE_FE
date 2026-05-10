@@ -52,6 +52,7 @@ import AdminShops from './pages/admin/AdminShops';
 import AdminMembers from './pages/admin/AdminMembers';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminMessages from './pages/admin/AdminMessages';
+import AdminAIAssistant from './pages/admin/AdminAIAssistant';
 import Chatbot from './components/Chatbot';
 
 // Routes where the global Navbar + Footer should be hidden
@@ -121,6 +122,7 @@ function AppLayout() {
             <Route path="members" element={<AdminMembers />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="ai-assistant" element={<AdminAIAssistant />} />
           </Route>
 
           {/* Shop Routes with Layout */}
