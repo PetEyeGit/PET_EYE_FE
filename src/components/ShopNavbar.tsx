@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle, Sparkles } from 'lucide-react';
+import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle, Sparkles, Wallet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import { useNotifications } from '../hooks/useNotifications';
@@ -37,6 +37,7 @@ export default function ShopNavbar() {
     { label: 'Dashboard', path: '/shop/dashboard', icon: <BarChart3 className="w-4 h-4" /> },
     { label: 'Lịch đặt hẹn', path: '/shop/bookings', icon: <Calendar className="w-4 h-4" /> },
     { label: 'Dịch vụ', path: '/shop/services', icon: <Package className="w-4 h-4" /> },
+    { label: 'Ví của tôi', path: '/shop/wallet', icon: <Wallet className="w-4 h-4" /> },
     { label: 'Camera', path: '/shop/camera', icon: <Video className="w-4 h-4" /> },
     { label: 'Nhân viên', path: '/shop/staff', icon: <UsersIcon className="w-4 h-4" /> },
     { label: 'Khách hàng', path: '/shop/customers', icon: <UsersIcon className="w-4 h-4" /> },
