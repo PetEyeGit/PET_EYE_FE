@@ -63,6 +63,19 @@ export const bookingService = {
     return response.data.result ?? [];
   },
 
+  /** Get staff with availability for a specific time slot */
+  getShopStaffAvailability: async (
+    shopId: number,
+    appointmentDatetime: string,
+    durationMinutes: number = 60
+  ): Promise<StaffResponse[]> => {
+    const response = await apiClient.get<ApiResponse<StaffResponse[]>>(
+      `/bookings/staff/${shopId}/availability`,
+      { params: { appointmentDatetime, durationMinutes } }
+    );
+    return response.data.result ?? [];
+  },
+
   /** Get all bookings for the authenticated shop owner within a range */
   getShopBookings: async (start?: string, end?: string): Promise<BookingResponse[]> => {
     const params: any = {};

@@ -4,7 +4,7 @@ import {
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
     LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Plus,
     Timer, MessageCircle, MoreVertical, CheckCircle2, Video,
-    MapPin, Phone, Mail, Scissors, Info, X
+    MapPin, Phone, Mail, Scissors, Info, X, Play
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
