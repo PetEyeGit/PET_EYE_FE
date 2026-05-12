@@ -60,7 +60,7 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
     return () => sub.unsubscribe();
   }, [connected, shopId]);
 
-  const sendMessage = useCallback((targetShopId: number, content: string) => {
+  const sendMessage = useCallback((targetShopId: number, content: string, attachment?: { url: string; type: string; name: string }) => {
     const client = clientRef.current;
     if (!client || !connected) return;
     client.publish({
@@ -68,7 +68,10 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
       body: JSON.stringify({ 
         shopId: targetShopId, 
         channelType,
-        content 
+        content,
+        attachmentUrl: attachment?.url,
+        attachmentType: attachment?.type,
+        attachmentName: attachment?.name,
       }),
     });
   }, [connected]);

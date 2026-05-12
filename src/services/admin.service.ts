@@ -75,6 +75,9 @@ export interface ChatMessage {
   senderEmail: string;
   senderRole: string;
   content: string;
+  attachmentUrl?: string;
+  attachmentType?: string;  // IMAGE | FILE | VIDEO
+  attachmentName?: string;
   createdAt: string;
   isRead: boolean;
 }

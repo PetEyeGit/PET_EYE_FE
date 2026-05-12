@@ -364,28 +364,40 @@ export default function ShopBookings() {
                                         const hasBookings = dayBookings.length > 0;
                                         const isSelected = selectedDay && isSameDay(day, selectedDay);
 
+                                        // Get priority status for coloring
+                                        const getDayStatus = () => {
+                                            if (dayBookings.some(b => b.status === 'IN_PROGRESS')) return 'IN_PROGRESS';
+                                            if (dayBookings.some(b => b.status === 'CONFIRMED')) return 'CONFIRMED';
+                                            if (dayBookings.some(b => b.status === 'PENDING_PAYMENT')) return 'PENDING_PAYMENT';
+                                            if (dayBookings.some(b => b.status === 'COMPLETED')) return 'COMPLETED';
+                                            return dayBookings[0]?.status || 'CANCELLED';
+                                        };
+
+                                        const dayStatus = hasBookings ? getDayStatus() : null;
+                                        const statusCfg = dayStatus ? STATUS_CONFIG[dayStatus] : null;
+
                                         return (
                                             <div 
                                                 key={idx}
                                                 onClick={() => setSelectedDay(day)}
                                                 className={`min-h-[85px] p-2.5 border-b border-r border-slate-50 dark:border-slate-700 cursor-pointer transition-all relative
                                                     ${!isCurrentMonth ? 'opacity-30 bg-slate-50/50' : 'bg-white dark:bg-slate-800'}
-                                                    ${isSelected ? 'bg-teal-50/50 ring-2 ring-inset ring-teal-500/30' : ''}
-                                                    ${hasBookings && isCurrentMonth ? 'bg-teal-50/40 dark:bg-teal-900/10' : ''}
+                                                    ${isSelected ? 'ring-2 ring-inset ring-[#1a2b4c]/20' : ''}
+                                                    ${hasBookings && isCurrentMonth && dayStatus ? `${statusCfg?.className.replace('text-', 'bg-').replace('100', '20') || 'bg-blue-50/40'}` : ''}
                                                     hover:bg-slate-50 dark:hover:bg-slate-900/50
                                                 `}
                                             >
-                                                {/* Appointment indicator line - Modern Teal */}
-                                                {hasBookings && isCurrentMonth && (
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 shadow-[1px_0_6px_rgba(20,184,166,0.3)]" />
+                                                {/* Appointment indicator line - Color based on Status */}
+                                                {hasBookings && isCurrentMonth && statusCfg && (
+                                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${statusCfg.color} shadow-[1px_0_6px_rgba(0,0,0,0.1)]`} />
                                                 )}
 
                                                 <div className="flex justify-between items-start mb-1.5 relative z-10">
                                                     <span className={`text-xs font-bold ${isToday(day) ? 'text-white bg-[#1a2b4c] size-5 flex items-center justify-center rounded-full shadow-lg shadow-[#1a2b4c]/20' : 'text-slate-700 dark:text-slate-300'}`}>
                                                         {format(day, 'd')}
                                                     </span>
-                                                    {hasBookings && (
-                                                        <span className="flex items-center gap-1 text-[9px] font-black text-white bg-teal-600 px-1.5 py-0.5 rounded-md shadow-md shadow-teal-500/20">
+                                                    {hasBookings && statusCfg && (
+                                                        <span className={`flex items-center gap-1 text-[9px] font-black text-white ${statusCfg.color} px-1.5 py-0.5 rounded-md shadow-md`}>
                                                             <div className="size-1 rounded-full bg-white animate-pulse" />
                                                             {dayBookings.length}
                                                         </span>

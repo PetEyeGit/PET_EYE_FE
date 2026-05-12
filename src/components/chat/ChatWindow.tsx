@@ -196,7 +196,7 @@ export default function ChatWindow({ shopId, title = 'Hỗ trợ & Quản trị'
                                     connected={connected}
                                     input={input}
                                     setInput={setInput}
-                                    onSendMessage={(msg) => sendMessage(msg)}
+                                    onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
                                     hideHeader={true}
                                     disableInput={channelType === 'DIRECT' && !shopData?.email}
                                 />

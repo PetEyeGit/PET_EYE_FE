@@ -190,7 +190,7 @@ export default function ShopMessages() {
         connected={connected}
         input={input}
         setInput={setInput}
-        onSendMessage={(msg) => sendMessage(msg)}
+        onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
         headerInfo={{
             title: activeChannel.title,
             icon: activeChannel.type === 'ADMIN_SUPPORT' ? <Shield size={24} className="text-blue-600" /> :

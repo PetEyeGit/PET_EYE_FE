@@ -92,7 +92,7 @@ export function useShopChat(
     return () => sub.unsubscribe();
   }, [connected, shopId, channelType, recipientEmail, currentEmail, userRole]);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback((content: string, attachment?: { url: string; type: string; name: string }) => {
     const client = clientRef.current;
     if (!client || !connected || !shopId) return;
 
@@ -102,7 +102,10 @@ export function useShopChat(
         shopId, 
         channelType,
         recipientEmail,
-        content 
+        content,
+        attachmentUrl: attachment?.url,
+        attachmentType: attachment?.type,
+        attachmentName: attachment?.name,
       }),
     });
   }, [connected, shopId, channelType, recipientEmail]);
