@@ -361,6 +361,7 @@ export default function ShopBookings() {
                                     {calendarDays.map((day, idx) => {
                                         const dayBookings = getBookingsForDay(day);
                                         const isCurrentMonth = isSameMonth(day, monthStart);
+                                        const hasBookings = dayBookings.length > 0;
                                         const isSelected = selectedDay && isSameDay(day, selectedDay);
 
                                         return (
@@ -369,15 +370,26 @@ export default function ShopBookings() {
                                                 onClick={() => setSelectedDay(day)}
                                                 className={`min-h-[85px] p-2.5 border-b border-r border-slate-50 dark:border-slate-700 cursor-pointer transition-all relative
                                                     ${!isCurrentMonth ? 'opacity-30 bg-slate-50/50' : 'bg-white dark:bg-slate-800'}
-                                                    ${isSelected ? 'bg-indigo-50/30' : ''}
+                                                    ${isSelected ? 'bg-teal-50/50 ring-2 ring-inset ring-teal-500/30' : ''}
+                                                    ${hasBookings && isCurrentMonth ? 'bg-teal-50/40 dark:bg-teal-900/10' : ''}
                                                     hover:bg-slate-50 dark:hover:bg-slate-900/50
                                                 `}
                                             >
-                                                <div className="flex justify-between items-start mb-1.5">
-                                                    <span className={`text-xs font-bold ${isToday(day) ? 'text-white bg-[#1a2b4c] size-5 flex items-center justify-center rounded-full' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                {/* Appointment indicator line - Modern Teal */}
+                                                {hasBookings && isCurrentMonth && (
+                                                    <div className="absolute top-0 left-0 w-1 h-full bg-teal-500 shadow-[1px_0_6px_rgba(20,184,166,0.3)]" />
+                                                )}
+
+                                                <div className="flex justify-between items-start mb-1.5 relative z-10">
+                                                    <span className={`text-xs font-bold ${isToday(day) ? 'text-white bg-[#1a2b4c] size-5 flex items-center justify-center rounded-full shadow-lg shadow-[#1a2b4c]/20' : 'text-slate-700 dark:text-slate-300'}`}>
                                                         {format(day, 'd')}
                                                     </span>
-                                                    {dayBookings.length > 0 && <span className="text-[8px] font-black text-slate-400">{dayBookings.length}</span>}
+                                                    {hasBookings && (
+                                                        <span className="flex items-center gap-1 text-[9px] font-black text-white bg-teal-600 px-1.5 py-0.5 rounded-md shadow-md shadow-teal-500/20">
+                                                            <div className="size-1 rounded-full bg-white animate-pulse" />
+                                                            {dayBookings.length}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="space-y-1">
                                                     {dayBookings.slice(0, 2).map((b, i) => (
