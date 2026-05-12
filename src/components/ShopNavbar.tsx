@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle, Sparkles, Star } from 'lucide-react';
+import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, Package, Calendar, Users as UsersIcon, Video, MessageCircle, Sparkles, Wallet, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import { useNotifications } from '../hooks/useNotifications';
@@ -37,6 +37,7 @@ export default function ShopNavbar() {
     { label: 'Dashboard', path: '/shop/dashboard', icon: <BarChart3 className="w-4 h-4" /> },
     { label: 'Lịch đặt hẹn', path: '/shop/bookings', icon: <Calendar className="w-4 h-4" /> },
     { label: 'Dịch vụ', path: '/shop/services', icon: <Package className="w-4 h-4" /> },
+    { label: 'Ví của tôi', path: '/shop/wallet', icon: <Wallet className="w-4 h-4" /> },
     { label: 'Camera', path: '/shop/camera', icon: <Video className="w-4 h-4" /> },
     { label: 'Nhân viên', path: '/shop/staff', icon: <UsersIcon className="w-4 h-4" /> },
     { label: 'Khách hàng', path: '/shop/customers', icon: <UsersIcon className="w-4 h-4" /> },
@@ -46,7 +47,7 @@ export default function ShopNavbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const { notifications, unreadCount, markRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
@@ -185,8 +186,6 @@ export default function ShopNavbar() {
                     </Link>
                   ))}
 
-
-
                   <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
                     <button onClick={() => { handleLogout(); setUserMenuOpen(false); }}
                       className="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-colors">
@@ -250,4 +249,3 @@ export default function ShopNavbar() {
     </header>
   );
 }
-

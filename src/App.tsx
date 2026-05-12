@@ -38,6 +38,7 @@ import VetSearch from './pages/VetSearch';
 import Payment from './pages/Payment';
 import ProfilePets from './pages/ProfilePets';
 import ProfileSecurity from './pages/ProfileSecurity';
+import ProfileNotifications from './pages/ProfileNotifications';
 import CameraView from './pages/CameraView';
 import ZaloCallback from './pages/ZaloCallback';
 import FacebookCallback from './pages/FacebookCallback';
@@ -54,6 +55,8 @@ import AdminMembers from './pages/admin/AdminMembers';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminMessages from './pages/admin/AdminMessages';
 import AdminAIAssistant from './pages/admin/AdminAIAssistant';
+import AdminWithdrawals from './pages/admin/AdminWithdrawals';
+import ShopWallet from './pages/shop/ShopWallet';
 import Chatbot from './components/Chatbot';
 
 // Routes where the global Navbar + Footer should be hidden
@@ -121,6 +124,7 @@ function AppLayout() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="shops" element={<AdminShops />} />
             <Route path="members" element={<AdminMembers />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="ai-assistant" element={<AdminAIAssistant />} />
@@ -137,6 +141,7 @@ function AppLayout() {
             <Route path="staff" element={<ShopStaff />} />
             <Route path="reviews" element={<ShopReviews />} />
             <Route path="profile" element={<ShopProfile />} />
+            <Route path="wallet" element={<ShopWallet />} />
             <Route path="ai-assistant" element={<ShopAIAssistant />} />
           </Route>
 
@@ -155,6 +160,7 @@ function AppLayout() {
             <Route path="bookings" element={<BookingHistory />} />
             <Route path="orders" element={<OrderHistory />} />
             <Route path="security" element={<ProfileSecurity />} />
+            <Route path="notifications" element={<ProfileNotifications />} />
           </Route>
           <Route path="/clinic/:id" element={<ClinicDetail />} />
           <Route path="/pet/:id" element={<PetProfile />} />
