@@ -8,64 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ServiceResponse } from '../types/api';
 import type { Pet } from '../types';
 
-const SERVICES = [
-  {
-    icon: 'vaccines',
-    title: 'Tiêm phòng trọn gói',
-    desc: 'Bao gồm 7 bệnh phổ biến, sổ giun và khám tổng quát.',
-    details: [
-      'Tiêm phòng phòng 7 bệnh truyền nhiễm: parvo, distemper, ho cũi, leptospirosis, parainfluenza, coronavirus, và viêm gan.',
-      'Kèm theo sổ giun định kỳ và hướng dẫn chăm sóc sau tiêm.',
-      'Tư vấn lịch tiêm tiếp theo và theo dõi phản ứng sau tiêm trong 30 phút.',
-    ],
-    price: '500.000đ',
-    unit: '/lần',
-    image: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=400&q=80',
-  },
-  {
-    icon: 'content_cut',
-    title: 'Spa & Cắt tỉa lông',
-    desc: 'Tắm, sấy, cắt tỉa theo yêu cầu, vệ sinh tai móng.',
-    details: [
-      'Gói cơ bản gồm: tắm, sấy, cắt móng, vệ sinh tai, và xịt dưỡng lông.',
-      'Tùy chọn gói cao cấp: massage thư giãn, cắt tỉa tạo kiểu và thải lông.',
-      'Sử dụng sản phẩm an toàn cho da và lông thú cưng, phù hợp với thú cưng nhạy cảm.',
-    ],
-    price: '350.000đ',
-    unit: '/từ',
-    image: 'https://images.unsplash.com/photo-1560807707-8cc77767d783?w=400&q=80',
-  },
-  {
-    icon: 'medical_services',
-    title: 'Khám tổng quát',
-    desc: 'Khám sức khỏe định kỳ, tư vấn dinh dưỡng.',
-    details: [
-      'Kiểm tra tổng quát: tai, mắt, răng, da, tim mạch và hô hấp.',
-      'Tư vấn chế độ dinh dưỡng phù hợp theo độ tuổi và giống loài.',
-      'Đề xuất các xét nghiệm cần thiết nếu phát hiện dấu hiệu bất thường.',
-    ],
-    price: '150.000đ',
-    unit: '/lần',
-    image: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?w=400&q=80',
-  },
-  {
-    icon: 'biotech',
-    title: 'Xét nghiệm máu',
-    desc: 'Phân tích công thức máu, sinh hóa toàn diện.',
-    details: [
-      'Xét nghiệm công thức máu (CBC) và sinh hóa máu cơ bản.',
-      'Phát hiện sớm các bệnh về gan, thận và rối loạn chuyển hóa.',
-      'Tư vấn kết quả cùng bác sĩ chuyên khoa ngay trong ngày.',
-    ],
-    price: '300.000đ',
-    unit: '/lần',
-    image: 'https://images.unsplash.com/photo-1581595220892-b0739db3ba8c?w=400&q=80',
-  },
-];
-
-
-
-const TIME_SLOTS = ['09:00', '10:30', '14:00', '15:30', '16:00'];
+const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
 
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
@@ -684,14 +627,14 @@ export default function ClinicDetail() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   Đánh giá từ cộng đồng
-                  <span className="text-slate-400 font-normal text-base">(120)</span>
+                  <span className="text-slate-400 font-normal text-base">({apiReviews.length})</span>
                 </h2>
                 <div className="flex items-center gap-3">
                   <div className="text-center">
-                    <span className="text-3xl font-black text-slate-900 dark:text-slate-100">4.8</span>
+                    <span className="text-3xl font-black text-slate-900 dark:text-slate-100">{shop?.ratingAvg ? shop.ratingAvg.toFixed(1) : '0.0'}</span>
                     <div className="flex text-amber-400 justify-center mt-1">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <span key={s} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: s <= 4 ? "'FILL' 1" : "'FILL' 0" }}>
+                        <span key={s} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: s <= (shop?.ratingAvg || 0) ? "'FILL' 1" : "'FILL' 0" }}>
                           star
                         </span>
                       ))}
@@ -707,7 +650,7 @@ export default function ClinicDetail() {
 
               {/* Filter tags */}
               <div className="flex flex-wrap gap-2 mb-6">
-                {['Tất cả', '5 sao (98)', 'Có hình ảnh (45)', 'Bác sĩ tận tâm', 'Giá hợp lý'].map((f) => (
+                {['Tất cả', 'Có hình ảnh', 'Mới nhất'].map((f) => (
                   <button
                     key={f}
                     onClick={() => setReviewFilter(f)}

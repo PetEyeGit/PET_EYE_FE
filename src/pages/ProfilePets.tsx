@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, X, Dog, Cat, Calendar, Weight, ClipboardList, Info, AlertCircle, CheckCircle2, Camera, Loader2, ChevronRight, Utensils, Heart, Trash2, Activity, ShieldCheck } from 'lucide-react';
+import { Plus, X, Dog, Cat, Calendar, Weight, ClipboardList, Info, AlertCircle, CheckCircle2, Camera, Loader2, ChevronRight, Utensils, Heart, Trash2, Activity, ShieldCheck, Sparkles, User, ArrowRight, HeartPulse } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { petService } from '../services/pet.service';
 import { useAuth } from '../contexts/AuthContext';
 import { Pet } from '../types';
+import toast from 'react-hot-toast';
 
 export default function ProfilePets() {
     const { user } = useAuth();
@@ -49,32 +50,19 @@ export default function ProfilePets() {
         const userId = Number(user?.id);
         if (user && !isNaN(userId) && userId > 0) {
             fetchPets();
-        } else if (user) {
-            console.error('[ProfilePets] user.id không hợp lệ:', user.id, '— hãy đăng xuất và đăng nhập lại để làm mới token.');
         }
     }, [user?.id]);
 
-    useEffect(() => {
-        if (step === 3 && formData.medicalRecords.length === 0) {
-            setFormData(prev => ({
-                ...prev,
-                medicalRecords: [{ diagnosis: '', treatment: '', prescription: '', veterinarianNote: '', visitDate: new Date().toISOString() }]
-            }));
-        }
-    }, [step, formData.medicalRecords.length]);
-
     const fetchPets = async () => {
         const userId = Number(user?.id);
-        if (isNaN(userId)) {
-            console.warn('[ProfilePets] fetchPets skipped: userId is NaN');
-            return;
-        }
+        if (isNaN(userId)) return;
         try {
             setLoading(true);
             const data = await petService.getByOwner(userId);
             setPets(data);
         } catch (error) {
             console.error('Failed to fetch pets:', error);
+            toast.error('Không thể tải danh sách thú cưng');
         } finally {
             setLoading(false);
         }
@@ -84,89 +72,84 @@ export default function ProfilePets() {
         if (!dob) return 'Chưa rõ';
         const birthDate = new Date(dob);
         const today = new Date();
-        
         let years = today.getFullYear() - birthDate.getFullYear();
         let months = today.getMonth() - birthDate.getMonth();
-        
         if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
             years--;
             months += 12;
         }
-        
-        if (years > 0) {
-            return `${years} năm tuổi`;
-        } else {
-            const displayMonths = months <= 0 ? 1 : months;
-            return `${displayMonths} tháng tuổi`;
-        }
+        if (years > 0) return `${years} tuổi`;
+        return `${months <= 0 ? 1 : months} tháng`;
     };
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         try {
             setIsUploading(true);
             const url = await petService.uploadAvatar(file);
             setFormData(prev => ({ ...prev, avatar: url }));
+            toast.success('Đã cập nhật ảnh đại diện');
         } catch (error) {
-            console.error('Failed to upload avatar:', error);
-            alert('Lỗi khi tải ảnh lên. Vui lòng thử lại.');
+            toast.error('Lỗi khi tải ảnh lên');
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleAddPet = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        
-        // Final guard: only submit if on Step 3
-        if (step !== 3) {
-            console.warn("Attempted to submit pet on step", step);
-            return;
-        }
-
+    const handleAddPet = async () => {
         try {
             setSubmitting(true);
-            await petService.create({
+            
+            // Normalize data for Backend
+            const payload = {
                 ...formData,
                 weight: Number(formData.weight) || 0,
                 ownerId: Number(user?.id),
-                avatar: formData.avatar || (formData.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')
-            });
+                dob: formData.dob, // Already YYYY-MM-DD from input type="date"
+                avatar: formData.avatar || (formData.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop'),
+                // Format dates to LocalDateTime (YYYY-MM-DDTHH:mm:ss)
+                medicalRecords: formData.medicalRecords.map(r => ({
+                    ...r,
+                    visitDate: r.visitDate ? new Date(r.visitDate).toISOString().split('.')[0] : new Date().toISOString().split('.')[0]
+                })),
+                vaccinations: formData.vaccinations.map(v => ({
+                    ...v,
+                    date: v.date ? new Date(v.date).toISOString().split('.')[0] : new Date().toISOString().split('.')[0]
+                })),
+                reminders: formData.reminders.map(r => ({
+                    ...r,
+                    date: r.date ? new Date(r.date).toISOString().split('.')[0] : new Date().toISOString().split('.')[0]
+                })),
+                initialDocuments: [],
+                album: []
+            };
+
+            await petService.create(payload);
+            toast.success(`Đã thêm bé ${formData.name} thành công!`);
             setShowAddModal(false);
-            setStep(1);
-            setFormData({
-                name: '',
-                species: 'Chó',
-                breed: '',
-                gender: 'Đực',
-                color: '',
-                sterilized: false,
-                weight: '',
-                dob: '',
-                healthNote: '',
-                favoriteFood: '',
-                allergies: '',
-                hobbies: '',
-                walkTime: '',
-                avatar: '',
-                nutritionPlan: [
-                    { mealName: 'Sáng', foodType: '', amount: '' },
-                    { mealName: 'Trưa', foodType: '', amount: '' },
-                    { mealName: 'Tối', foodType: '', amount: '' }
-                ],
-                medicalRecords: [],
-                vaccinations: [],
-                reminders: []
-            });
+            resetForm();
             fetchPets();
         } catch (error: any) {
-            console.error('Failed to add pet:', error);
-            alert(error.message || 'Có lỗi xảy ra khi thêm thú cưng. Vui lòng thử lại.');
+            toast.error(error.message || 'Lỗi khi thêm thú cưng');
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const resetForm = () => {
+        setStep(1);
+        setFormData({
+            name: '', species: 'Chó', breed: '', gender: 'Đực', color: '', sterilized: false,
+            weight: '', dob: '', healthNote: '', favoriteFood: '', allergies: '',
+            hobbies: '', walkTime: '', avatar: '',
+            nutritionPlan: [
+                { mealName: 'Sáng', foodType: '', amount: '' },
+                { mealName: 'Trưa', foodType: '', amount: '' },
+                { mealName: 'Tối', foodType: '', amount: '' }
+            ],
+            medicalRecords: [], vaccinations: [], reminders: []
+        });
     };
 
     const handleDeletePet = async () => {
@@ -174,134 +157,164 @@ export default function ProfilePets() {
         try {
             setSubmitting(true);
             await petService.delete(selectedPetForDelete.id, deleteReason);
+            toast.success('Đã xóa hồ sơ thú cưng');
             setShowDeleteModal(false);
             setDeleteReason('');
             setSelectedPetForDelete(null);
             fetchPets();
         } catch (error) {
-            console.error('Failed to delete pet:', error);
-            alert('Có lỗi xảy ra khi xóa thú cưng.');
+            toast.error('Lỗi khi xóa hồ sơ');
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <main className="flex-1 flex flex-col gap-6 p-4 md:p-0">
+        <main className="flex-1 flex flex-col gap-8 p-4 md:p-0">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#1a2b4c] dark:text-white tracking-tight">Thú cưng của tôi</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Quản lý hồ sơ và sức khỏe cho những người bạn nhỏ của bạn.</p>
+                    <h1 className="text-4xl font-black text-[#1a2b4c] dark:text-white tracking-tight flex items-center gap-3">
+                        Thú cưng của tôi
+                        <Sparkles className="text-amber-400 size-6" />
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium max-w-md">
+                        Nơi lưu giữ những khoảnh khắc và chăm sóc sức khỏe toàn diện cho các bé yêu.
+                    </p>
                 </div>
-                <button
-                    onClick={() => setShowAddModal(true)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1a2b4c] text-white font-bold rounded-2xl hover:bg-[#243d6b] transition-all shadow-lg hover:shadow-xl active:scale-95 group"
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { resetForm(); setShowAddModal(true); }}
+                    className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-[#1a2b4c] to-[#2d4a82] text-white font-bold rounded-[2rem] transition-all shadow-xl shadow-blue-900/10 hover:shadow-2xl hover:shadow-blue-900/20 group"
                 >
-                    <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                    Thêm thú cưng mới
-                </button>
+                    <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
+                    Thêm thành viên mới
+                </motion.button>
             </div>
 
             {/* Pet Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {loading ? (
                     Array(4).fill(0).map((_, i) => (
-                        <div key={i} className="h-48 bg-white dark:bg-slate-900 rounded-3xl animate-pulse border border-slate-100 dark:border-slate-800" />
+                        <div key={i} className="h-64 bg-white dark:bg-slate-900 rounded-[2.5rem] animate-pulse border border-slate-100 dark:border-slate-800" />
                     ))
                 ) : pets.length === 0 ? (
-                    <div className="col-span-full py-24 text-center bg-white dark:bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
-                        <div className="size-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-                            <Dog size={40} />
+                    <div className="col-span-full py-32 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="size-24 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 text-slate-300 shadow-inner">
+                            <Dog size={48} />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Chưa có thú cưng nào</h3>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-8">
-                            Hãy thêm bé cưng của bạn để bắt đầu theo dõi sức khỏe và đặt lịch khám.
+                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3">Chưa có "người bạn" nào?</h3>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-10 font-medium">
+                            Hãy để chúng tôi đồng hành cùng bạn trong hành trình chăm sóc các bé.
                         </p>
                         <button 
                             onClick={() => setShowAddModal(true)}
-                            className="text-[#1a2b4c] font-bold hover:underline"
+                            className="px-8 py-3 bg-white dark:bg-slate-800 text-[#1a2b4c] dark:text-white font-bold rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-all shadow-sm"
                         >
-                            Thêm thú cưng ngay →
+                            Thêm thú cưng ngay
                         </button>
                     </div>
                 ) : (
-                    pets.map(pet => (
+                    pets.map((pet, idx) => (
                         <motion.div 
-                            layout
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
                             key={pet.id} 
-                            className="group bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden hover:shadow-xl hover:border-[#1a2b4c]/20 transition-all duration-300"
+                            className="group relative bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden hover:shadow-2xl hover:shadow-blue-900/5 hover:-translate-y-1 transition-all duration-500"
                         >
-                            <div className="p-6">
-                                <div className="flex gap-5">
+                            {/* Decorative background element */}
+                            <div className="absolute top-0 right-0 size-48 bg-gradient-to-bl from-blue-50/50 to-transparent dark:from-blue-900/5 pointer-events-none" />
+                            
+                            <div className="p-8">
+                                <div className="flex gap-6">
                                     <div className="relative shrink-0">
-                                        <img
-                                            src={pet.avatar || (pet.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')}
-                                            alt={pet.name}
-                                            className="size-24 rounded-2xl object-cover ring-4 ring-slate-50 dark:ring-slate-800 group-hover:ring-[#1a2b4c]/10 transition-all"
-                                        />
-                                        <div className="absolute -bottom-2 -right-2 size-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700">
+                                        <div className="size-32 rounded-[2rem] overflow-hidden ring-8 ring-slate-50 dark:ring-slate-800/50 group-hover:ring-[#1a2b4c]/5 transition-all duration-500">
+                                            <img
+                                                src={pet.avatar || (pet.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')}
+                                                alt={pet.name}
+                                                className="size-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
+                                        </div>
+                                        <div className="absolute -bottom-2 -right-2 size-10 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex items-center justify-center border border-slate-50 dark:border-slate-700 text-xl">
                                             {pet.species === 'Mèo' ? '🐱' : '🐶'}
                                         </div>
                                     </div>
                                     
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0 pt-2">
+                                        <div className="flex items-start justify-between gap-4">
                                             <div>
-                                                <h3 className="font-black text-slate-900 dark:text-white text-xl group-hover:text-[#1a2b4c] transition-colors">{pet.name}</h3>
-                                                <p className="text-slate-500 text-sm font-medium">{pet.breed || 'Chưa rõ giống'} • {pet.species}</p>
+                                                <h3 className="font-black text-slate-900 dark:text-white text-2xl group-hover:text-[#1a2b4c] dark:group-hover:text-blue-400 transition-colors tracking-tight">
+                                                    {pet.name}
+                                                </h3>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">{pet.breed || 'Linh vật'}</span>
+                                                    <span className="size-1 bg-slate-200 rounded-full" />
+                                                    <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">{pet.gender}</span>
+                                                </div>
                                             </div>
-                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${pet.active ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                                                {pet.active ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                                                {pet.active ? 'Khỏe mạnh' : 'Ngưng hoạt động'}
+                                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300 ${
+                                                pet.active 
+                                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 
+                                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                            }`}>
+                                                {pet.active ? '● Khỏe mạnh' : '○ Tạm ngưng'}
                                             </div>
                                         </div>
                                         
-                                        <div className="flex flex-wrap gap-3 mt-4">
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
-                                                <Weight size={14} className="text-slate-400" />
-                                                {pet.weight} kg
+                                        <div className="grid grid-cols-2 gap-3 mt-6">
+                                            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50">
+                                                <div className="size-8 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
+                                                    <Weight size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Cân nặng</p>
+                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{pet.weight} kg</p>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl">
-                                                <Calendar size={14} className="text-slate-400" />
-                                                {calculateAge(pet.dob)}
+                                            <div className="flex items-center gap-2.5 p-2.5 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700/50">
+                                                <div className="size-8 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-amber-500 shadow-sm">
+                                                    <Calendar size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Tuổi đời</p>
+                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{calculateAge(pet.dob)}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {pet.healthNote && (
-                                    <div className="mt-4 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl text-xs text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/20 flex gap-2">
-                                        <Info size={14} className="shrink-0" />
-                                        <span className="line-clamp-2">{pet.healthNote}</span>
+                                    <div className="mt-6 p-4 bg-blue-50/30 dark:bg-blue-500/5 rounded-3xl text-xs text-blue-600 dark:text-blue-400 border border-blue-100/30 dark:border-blue-500/10 flex gap-3 italic font-medium">
+                                        <HeartPulse size={16} className="shrink-0 text-blue-400" />
+                                        <span className="line-clamp-2 leading-relaxed">"{pet.healthNote}"</span>
                                     </div>
                                 )}
                             </div>
                             
-                            <div className="p-4 bg-slate-50/50 dark:bg-slate-800/30 flex gap-3 border-t border-slate-100 dark:border-slate-800">
+                            <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-4 border-t border-slate-100/50 dark:border-slate-800/50">
                                 <Link
                                     to={`/clinic/1`}
-                                    className="flex-1 py-3 text-center bg-[#1a2b4c] text-white font-bold rounded-2xl text-xs hover:shadow-lg transition-all active:scale-95"
+                                    className="flex-1 py-3.5 text-center bg-[#1a2b4c] hover:bg-[#2d4a82] text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    Đặt lịch khám
+                                    <Calendar size={14} />
+                                    Đặt lịch ngay
                                 </Link>
                                 <Link
                                     to={`/pet/${pet.id}`}
-                                    className="flex-1 py-3 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+                                    className="flex-1 py-3.5 text-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                                 >
-                                    Hồ sơ sức khỏe
+                                    <ClipboardList size={14} />
+                                    Hồ sơ y tế
                                 </Link>
                                 <button
-                                    onClick={() => {
-                                        setSelectedPetForDelete(pet);
-                                        setShowDeleteModal(true);
-                                    }}
-                                    className="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all"
+                                    onClick={() => { setSelectedPetForDelete(pet); setShowDeleteModal(true); }}
+                                    className="size-12 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all"
                                     title="Xóa thú cưng"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={20} />
                                 </button>
                             </div>
                         </motion.div>
@@ -318,608 +331,357 @@ export default function ProfilePets() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowAddModal(false)}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                            className="absolute inset-0 bg-[#1a2b4c]/40 backdrop-blur-md"
                         />
                         
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.9, y: 30 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden"
+                            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                            className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[90vh] md:h-[700px]"
                         >
-                            <div className="absolute top-6 right-6 z-10">
-                                <button 
-                                    onClick={() => setShowAddModal(false)}
-                                    className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
+                            <button 
+                                onClick={() => setShowAddModal(false)}
+                                className="absolute top-6 right-6 z-20 p-2.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl text-slate-500 hover:text-red-500 rounded-full transition-all shadow-sm border border-slate-100 dark:border-slate-700"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            {/* Modal Sidebar */}
+                            <div className="md:w-[280px] bg-slate-50 dark:bg-slate-800/40 p-10 flex flex-col border-r border-slate-100 dark:border-slate-800">
+                                <div className="size-16 bg-gradient-to-br from-[#1a2b4c] to-blue-600 rounded-[1.5rem] flex items-center justify-center mb-8 shadow-xl shadow-blue-900/20">
+                                    <Dog size={32} className="text-white" />
+                                </div>
+                                <h2 className="text-2xl font-black text-[#1a2b4c] dark:text-white mb-8 leading-tight tracking-tight">Thêm thành viên mới</h2>
+                                
+                                <div className="space-y-8 relative flex-1">
+                                    <div className="absolute top-5 left-5 w-0.5 h-[calc(100%-40px)] bg-slate-200 dark:bg-slate-700 z-0" />
+                                    <motion.div 
+                                        className="absolute top-5 left-5 w-0.5 bg-blue-600 z-0" 
+                                        animate={{ height: `${(step - 1) * 33.33}%` }}
+                                        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                                    />
+
+                                    {[
+                                        { s: 1, label: 'Cơ bản', desc: 'Tên, loài, giống...', icon: <Dog size={16} /> },
+                                        { s: 2, label: 'Dinh dưỡng', desc: 'Chế độ ăn uống', icon: <Utensils size={16} /> },
+                                        { s: 3, label: 'Sức khỏe', desc: 'Y tế & tiêm chủng', icon: <HeartPulse size={16} /> },
+                                        { s: 4, label: 'Xác nhận', desc: 'Kiểm tra hồ sơ', icon: <CheckCircle2 size={16} /> }
+                                    ].map((item) => (
+                                        <div key={item.s} className="relative z-10 flex items-start gap-5">
+                                            <div className={`size-10 rounded-2xl flex items-center justify-center transition-all duration-500 shrink-0 ${
+                                                step >= item.s 
+                                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 scale-110' 
+                                                    : 'bg-white dark:bg-slate-900 text-slate-400 border-2 border-slate-100 dark:border-slate-800'
+                                            }`}>
+                                                {step > item.s ? <CheckCircle2 size={18} /> : item.icon}
+                                            </div>
+                                            <div className="pt-1">
+                                                <h3 className={`text-[11px] font-black uppercase tracking-widest transition-all duration-500 ${
+                                                    step >= item.s ? 'text-[#1a2b4c] dark:text-white' : 'text-slate-400'
+                                                }`}>
+                                                    {item.label}
+                                                </h3>
+                                                <p className={`text-[10px] font-bold transition-all duration-500 ${
+                                                    step >= item.s ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300'
+                                                }`}>
+                                                    {item.desc}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row h-full">
-                                {/* Modal Sidebar/Illustration */}
-                                <div className="hidden md:flex md:w-1/3 bg-slate-50 dark:bg-slate-800/50 p-8 flex-col justify-center border-r border-slate-100 dark:border-slate-800">
-                                    <div className="size-16 bg-[#1a2b4c] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg">
-                                        <Dog size={32} className="text-white" />
-                                    </div>
-                                    <h2 className="text-2xl font-black text-[#1a2b4c] dark:text-white mb-6 leading-tight">Thêm thành viên mới</h2>
-                                    
-                                    {/* Vertical Stepper UI */}
-                                    <div className="space-y-6 relative">
-                                        {/* Vertical Progress Line Background */}
-                                        <div className="absolute top-4 left-4 w-0.5 h-[calc(100%-32px)] bg-slate-200 dark:bg-slate-700 z-0" />
-                                        
-                                        {/* Vertical Progress Line Active */}
-                                        <div 
-                                            className="absolute top-4 left-4 w-0.5 bg-[#1a2b4c] transition-all duration-500 z-0" 
-                                            style={{ height: `${step === 1 ? '0' : step === 2 ? '50%' : '100%'}` }}
-                                        />
-
-                                        {[
-                                            { s: 1, label: 'Thông tin Pet', desc: 'Tên, loài, giống...', icon: <Dog size={16} /> },
-                                            { s: 2, label: 'Dinh dưỡng', desc: 'Chế độ ăn uống', icon: <Activity size={16} /> },
-                                            { s: 3, label: 'Hồ sơ y tế', desc: 'Bệnh án & tiêm chủng', icon: <ShieldCheck size={16} /> }
-                                        ].map((item) => (
-                                            <div key={item.s} className="relative z-10 flex items-start gap-4">
-                                                <div className={`size-8 rounded-full flex items-center justify-center transition-all duration-500 shrink-0 ${
-                                                    step >= item.s 
-                                                        ? 'bg-[#1a2b4c] text-white shadow-lg' 
-                                                        : 'bg-white dark:bg-slate-900 text-slate-400 border-2 border-slate-100 dark:border-slate-800'
-                                                }`}>
-                                                    {step > item.s ? <CheckCircle2 size={16} /> : item.icon}
-                                                </div>
-                                                <div className="pt-0.5">
-                                                    <h3 className={`text-xs font-black uppercase tracking-widest transition-all duration-500 ${
-                                                        step >= item.s ? 'text-[#1a2b4c] dark:text-white' : 'text-slate-400'
-                                                    }`}>
-                                                        {item.label}
-                                                    </h3>
-                                                    <p className={`text-[10px] font-medium transition-all duration-500 ${
-                                                        step >= item.s ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300'
-                                                    }`}>
-                                                        {item.desc}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 flex flex-col max-h-[90vh]">
-
-                                    <div className="flex-1 p-8 md:p-10 overflow-y-auto">
-                                        <div 
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && step < 3) {
-                                                    e.preventDefault();
-                                                }
-                                            }}
-                                            className="space-y-6"
+                            {/* Modal Content */}
+                            <div className="flex-1 flex flex-col">
+                                <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={step}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="space-y-8"
                                         >
-                                        {step === 1 ? (
-                                            <>
-                                                {/* Avatar Selection */}
-                                                <div className="flex flex-col items-center gap-4 py-2">
-                                                    <div 
-                                                        className="relative group cursor-pointer"
-                                                        onClick={() => fileInputRef.current?.click()}
-                                                    >
-                                                        <img 
-                                                            src={formData.avatar || (formData.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')} 
-                                                            className={`size-32 rounded-3xl object-cover ring-4 ring-slate-100 dark:ring-slate-800 transition-all shadow-xl group-hover:ring-primary/20 ${isUploading ? 'opacity-50' : ''}`}
-                                                            alt="Avatar Preview"
-                                                        />
-                                                        {isUploading ? (
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <Loader2 className="animate-spin text-primary" size={32} />
+                                            {step === 1 && (
+                                                <>
+                                                    <div className="flex flex-col items-center gap-4 py-2">
+                                                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                                            <div className="size-36 rounded-[2.5rem] overflow-hidden ring-8 ring-slate-50 dark:ring-slate-800 transition-all shadow-2xl group-hover:ring-blue-100 dark:group-hover:ring-blue-900/20">
+                                                                <img 
+                                                                    src={formData.avatar || (formData.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')} 
+                                                                    className={`size-full object-cover ${isUploading ? 'opacity-50' : ''}`}
+                                                                    alt="Avatar Preview"
+                                                                />
                                                             </div>
-                                                        ) : (
-                                                            <div className="absolute inset-0 bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                                <Camera className="text-white" size={24} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <input
-                                                        type="file"
-                                                        ref={fileInputRef}
-                                                        className="hidden"
-                                                        accept="image/*"
-                                                        onChange={handleAvatarChange}
-                                                    />
-                                                    <div className="w-full text-center">
-                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                                            {isUploading ? 'Đang tải ảnh...' : 'Nhấp vào ảnh để chọn avatar'}
+                                                            {isUploading ? (
+                                                                <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" size={32} /></div>
+                                                            ) : (
+                                                                <div className="absolute inset-0 bg-[#1a2b4c]/40 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                    <Camera className="text-white" size={28} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                                            {isUploading ? 'Đang tải ảnh...' : 'Nhấp để chọn ảnh đại diện'}
                                                         </p>
                                                     </div>
-                                                </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="col-span-2">
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Tên bé cưng *</label>
-                                                        <div className="relative">
-                                                            <Dog className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div className="col-span-2">
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Tên bé cưng *</label>
                                                             <input
                                                                 required
-                                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 focus:bg-white dark:focus:bg-slate-900 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold shadow-sm"
                                                                 placeholder="Vd: Bông, Milu..."
                                                                 value={formData.name}
                                                                 onChange={e => setFormData({...formData, name: e.target.value})}
                                                             />
                                                         </div>
-                                                    </div>
 
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Loài</label>
-                                                        <select
-                                                            className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold appearance-none"
-                                                            value={formData.species}
-                                                            onChange={e => setFormData({...formData, species: e.target.value})}
-                                                        >
-                                                            <option value="Chó">Chó</option>
-                                                            <option value="Mèo">Mèo</option>
-                                                            <option value="Thỏ">Thỏ</option>
-                                                            <option value="Chim">Chim</option>
-                                                            <option value="Khác">Khác</option>
-                                                        </select>
-                                                    </div>
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Loài</label>
+                                                            <select
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold appearance-none cursor-pointer"
+                                                                value={formData.species}
+                                                                onChange={e => setFormData({...formData, species: e.target.value})}
+                                                            >
+                                                                <option value="Chó">🐶 Chó</option>
+                                                                <option value="Mèo">🐱 Mèo</option>
+                                                                <option value="Thỏ">🐰 Thỏ</option>
+                                                                <option value="Khác">✨ Khác</option>
+                                                            </select>
+                                                        </div>
 
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Giống *</label>
-                                                        <input
-                                                            className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
-                                                            placeholder="Vd: Poodle, Golden..."
-                                                            value={formData.breed}
-                                                            onChange={e => setFormData({...formData, breed: e.target.value})}
-                                                        />
-                                                    </div>
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Giống *</label>
+                                                            <input
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
+                                                                placeholder="Vd: Poodle, Golden..."
+                                                                value={formData.breed}
+                                                                onChange={e => setFormData({...formData, breed: e.target.value})}
+                                                            />
+                                                        </div>
 
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Ngày sinh *</label>
-                                                        <div className="relative">
-                                                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Ngày sinh *</label>
                                                             <input
                                                                 type="date"
-                                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
+                                                                max={new Date().toISOString().split('T')[0]}
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
                                                                 value={formData.dob}
                                                                 onChange={e => setFormData({...formData, dob: e.target.value})}
                                                             />
                                                         </div>
-                                                    </div>
 
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Cân nặng (kg) *</label>
-                                                        <div className="relative">
-                                                            <Weight className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Cân nặng (kg) *</label>
                                                             <input
-                                                                type="number"
-                                                                step="0.1"
-                                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
+                                                                type="number" step="0.1"
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
                                                                 placeholder="0.0"
                                                                 value={formData.weight}
                                                                 onChange={e => setFormData({...formData, weight: e.target.value})}
                                                             />
                                                         </div>
                                                     </div>
+                                                </>
+                                            )}
 
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Giới tính</label>
-                                                        <select
-                                                            className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold appearance-none"
-                                                            value={formData.gender}
-                                                            onChange={e => setFormData({...formData, gender: e.target.value})}
-                                                        >
-                                                            <option value="Đực">Đực</option>
-                                                            <option value="Cái">Cái</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Màu sắc *</label>
-                                                        <input
-                                                            className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
-                                                            placeholder="Vd: Vàng, Trắng..."
-                                                            value={formData.color}
-                                                            onChange={e => setFormData({...formData, color: e.target.value})}
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 py-3.5">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setFormData({...formData, sterilized: !formData.sterilized})}
-                                                            className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-colors ${formData.sterilized ? 'bg-[#1a2b4c] border-[#1a2b4c]' : 'border-slate-300'}`}
-                                                        >
-                                                            {formData.sterilized && <X size={14} className="text-white rotate-45" />}
-                                                        </button>
-                                                        <span className="text-sm font-bold text-slate-700 dark:text-white text-nowrap">Đã triệt sản</span>
-                                                    </div>
-
-                                                    <div className="col-span-2">
-                                                        <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Ghi chú sức khỏe</label>
-                                                        <div className="relative">
-                                                            <ClipboardList className="absolute left-4 top-4 text-slate-400" size={18} />
-                                                            <textarea
-                                                                rows={2}
-                                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-medium resize-none text-sm"
-                                                                placeholder="Bé có tình trạng sức khỏe đặc biệt gì không?"
-                                                                value={formData.healthNote}
-                                                                onChange={e => setFormData({...formData, healthNote: e.target.value})}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-4 pt-4">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (!formData.name || !formData.breed || !formData.dob || !formData.weight || !formData.color) {
-                                                                alert('Vui lòng điền đầy đủ các trường thông tin cơ bản trước khi tiếp tục!');
-                                                                 return;
-                                                            }
-                                                            setStep(2);
-                                                        }}
-                                                        className="flex-1 py-4 bg-[#1a2b4c] text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-                                                    >
-                                                        Tiếp theo <ChevronRight size={18} />
-                                                    </button>
-                                                </div>
-                                            </>
-                                        ) : step === 2 ? (
-                                            <>
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                        <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Dinh dưỡng & Sở thích</h3>
+                                            {step === 2 && (
+                                                <>
+                                                    <div className="flex items-center justify-between">
+                                                        <h3 className="text-lg font-black text-[#1a2b4c] dark:text-white">Dinh dưỡng hàng ngày</h3>
                                                         <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const meals = [...formData.nutritionPlan];
-                                                                meals.push({ mealName: 'Bữa phụ', foodType: '', amount: '' });
-                                                                setFormData({...formData, nutritionPlan: meals});
-                                                            }}
-                                                            className="text-xs font-bold text-secondary flex items-center gap-1 hover:underline"
+                                                            onClick={() => setFormData({...formData, nutritionPlan: [...formData.nutritionPlan, { mealName: 'Bữa mới', foodType: '', amount: '' }]})}
+                                                            className="text-xs font-black text-blue-600 flex items-center gap-1.5 hover:underline"
                                                         >
-                                                            <Plus size={14} /> Thêm bữa ăn
+                                                            <Plus size={16} /> THÊM BỮA ĂN
                                                         </button>
                                                     </div>
 
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-4">
                                                         {formData.nutritionPlan.map((meal, idx) => (
-                                                            <div key={idx} className="grid grid-cols-12 gap-3 items-center bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                                            <motion.div 
+                                                                layout
+                                                                key={idx} 
+                                                                className="grid grid-cols-12 gap-4 items-center bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-100 dark:border-slate-800"
+                                                            >
                                                                 <div className="col-span-3">
-                                                                    <input 
-                                                                        className="w-full bg-transparent text-xs font-black text-secondary uppercase outline-none"
-                                                                        value={meal.mealName}
-                                                                        onChange={e => {
-                                                                            const meals = [...formData.nutritionPlan];
-                                                                            meals[idx].mealName = e.target.value;
-                                                                            setFormData({...formData, nutritionPlan: meals});
-                                                                        }}
-                                                                    />
+                                                                    <input className="w-full bg-transparent text-xs font-black text-blue-600 uppercase outline-none" value={meal.mealName} onChange={e => {
+                                                                        const copy = [...formData.nutritionPlan]; copy[idx].mealName = e.target.value; setFormData({...formData, nutritionPlan: copy});
+                                                                    }} />
                                                                 </div>
                                                                 <div className="col-span-5">
-                                                                    <input 
-                                                                        className="w-full bg-transparent text-xs text-slate-700 dark:text-white font-bold outline-none"
-                                                                        placeholder="Thức ăn..."
-                                                                        value={meal.foodType}
-                                                                        onChange={e => {
-                                                                            const meals = [...formData.nutritionPlan];
-                                                                            meals[idx].foodType = e.target.value;
-                                                                            setFormData({...formData, nutritionPlan: meals});
-                                                                        }}
-                                                                    />
+                                                                    <input className="w-full bg-transparent text-sm font-bold text-slate-700 dark:text-slate-200 outline-none" placeholder="Loại thức ăn..." value={meal.foodType} onChange={e => {
+                                                                        const copy = [...formData.nutritionPlan]; copy[idx].foodType = e.target.value; setFormData({...formData, nutritionPlan: copy});
+                                                                    }} />
                                                                 </div>
                                                                 <div className="col-span-3">
-                                                                    <input 
-                                                                        className="w-full bg-transparent text-xs text-slate-400 outline-none"
-                                                                        placeholder="Lượng..."
-                                                                        value={meal.amount}
-                                                                        onChange={e => {
-                                                                            const meals = [...formData.nutritionPlan];
-                                                                            meals[idx].amount = e.target.value;
-                                                                            setFormData({...formData, nutritionPlan: meals});
-                                                                        }}
-                                                                    />
+                                                                    <input className="w-full bg-transparent text-sm font-bold text-slate-400 outline-none" placeholder="Định lượng..." value={meal.amount} onChange={e => {
+                                                                        const copy = [...formData.nutritionPlan]; copy[idx].amount = e.target.value; setFormData({...formData, nutritionPlan: copy});
+                                                                    }} />
                                                                 </div>
                                                                 <div className="col-span-1 text-right">
-                                                                    <button 
-                                                                        type="button"
-                                                                        onClick={() => {
-                                                                            const meals = formData.nutritionPlan.filter((_, i) => i !== idx);
-                                                                            setFormData({...formData, nutritionPlan: meals});
-                                                                        }}
-                                                                        className="text-slate-300 hover:text-red-500 transition-colors"
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
+                                                                    <button onClick={() => setFormData({...formData, nutritionPlan: formData.nutritionPlan.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500"><X size={16} /></button>
+                                                                </div>
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Thức ăn ưa thích</label>
+                                                            <input className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none font-bold" placeholder="Pate, cá hồi..." value={formData.favoriteFood} onChange={e => setFormData({...formData, favoriteFood: e.target.value})} />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Dị ứng</label>
+                                                            <input className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-red-600/30 rounded-2xl text-slate-900 dark:text-white outline-none font-bold" placeholder="Sữa, gà..." value={formData.allergies} onChange={e => setFormData({...formData, allergies: e.target.value})} />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {step === 3 && (
+                                                <>
+                                                    <div className="space-y-8">
+                                                        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-[2rem] border border-blue-100 dark:border-blue-800/50">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h3 className="text-sm font-black text-blue-900 dark:text-blue-300 uppercase tracking-widest flex items-center gap-2">
+                                                                    <HeartPulse size={16} /> Hồ sơ y tế
+                                                                </h3>
+                                                                <button onClick={() => setFormData({...formData, medicalRecords: [...formData.medicalRecords, { diagnosis: '', treatment: '', visitDate: new Date().toISOString() }]})} className="text-[10px] font-black text-blue-600 hover:underline">THÊM MỚI</button>
+                                                            </div>
+                                                            <div className="space-y-4">
+                                                                {formData.medicalRecords.map((m, i) => (
+                                                                    <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm space-y-3">
+                                                                        <input className="w-full bg-transparent text-sm font-bold outline-none border-b border-slate-100 dark:border-slate-700 pb-2" placeholder="Chẩn đoán bệnh..." value={m.diagnosis} onChange={e => {
+                                                                            const copy = [...formData.medicalRecords]; copy[i].diagnosis = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                        }} />
+                                                                        <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Phương pháp điều trị..." value={m.treatment} onChange={e => {
+                                                                            const copy = [...formData.medicalRecords]; copy[i].treatment = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                        }} />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-amber-50/50 dark:bg-amber-900/10 p-6 rounded-[2rem] border border-amber-100 dark:border-amber-800/50">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h3 className="text-sm font-black text-amber-900 dark:text-amber-300 uppercase tracking-widest flex items-center gap-2">
+                                                                    <ShieldCheck size={16} /> Tiêm chủng
+                                                                </h3>
+                                                                <button onClick={() => setFormData({...formData, vaccinations: [...formData.vaccinations, { name: '', date: new Date().toISOString(), status: 'done' }]})} className="text-[10px] font-black text-amber-600 hover:underline">THÊM MŨI TIÊM</button>
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                {formData.vaccinations.map((v, i) => (
+                                                                    <div key={i} className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm">
+                                                                        <input className="flex-1 bg-transparent text-sm font-bold outline-none" placeholder="Tên vaccine..." value={v.name} onChange={e => {
+                                                                            const copy = [...formData.vaccinations]; copy[i].name = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                        }} />
+                                                                        <input type="date" className="text-xs font-bold text-slate-400 bg-transparent outline-none" value={v.date?.split('T')[0]} onChange={e => {
+                                                                            const copy = [...formData.vaccinations]; copy[i].date = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                        }} />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {step === 4 && (
+                                                <div className="space-y-8 py-4">
+                                                    <div className="text-center">
+                                                        <div className="size-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-500/20 shadow-lg shadow-emerald-500/5">
+                                                            <CheckCircle2 size={40} />
+                                                        </div>
+                                                        <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Kiểm tra thông tin</h3>
+                                                        <p className="text-slate-500 dark:text-slate-400 font-medium">Một bước cuối cùng để đảm bảo mọi thứ hoàn hảo.</p>
+                                                    </div>
+
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 flex gap-8 items-center">
+                                                        <div className="size-32 rounded-[2rem] overflow-hidden ring-8 ring-white dark:ring-slate-900 shadow-xl shrink-0">
+                                                            <img 
+                                                                src={formData.avatar || (formData.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')} 
+                                                                className="size-full object-cover"
+                                                                alt="Preview"
+                                                            />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-3xl font-black text-[#1a2b4c] dark:text-white leading-tight">{formData.name}</h4>
+                                                            <p className="text-blue-600 dark:text-blue-400 font-bold uppercase text-xs tracking-widest mt-1">
+                                                                {formData.species} • {formData.breed || 'Linh vật'}
+                                                            </p>
+                                                            <div className="flex gap-4 mt-6">
+                                                                <div className="text-center px-4 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                                                    <p className="text-[9px] font-black text-slate-400 uppercase">Cân nặng</p>
+                                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{formData.weight} kg</p>
+                                                                </div>
+                                                                <div className="text-center px-4 py-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                                                    <p className="text-[9px] font-black text-slate-400 uppercase">Ngày sinh</p>
+                                                                    <p className="text-sm font-black text-slate-700 dark:text-slate-200">{formData.dob ? new Date(formData.dob).toLocaleDateString('vi-VN') : '---'}</p>
                                                                 </div>
                                                             </div>
-                                                        ))}
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <div className="col-span-1">
-                                                            <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Thức ăn ưa thích</label>
-                                                            <div className="relative">
-                                                                <Utensils className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                                <input
-                                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-xl text-slate-900 dark:text-white outline-none transition-all font-bold text-sm"
-                                                                    placeholder="Pate, hạt..."
-                                                                    value={formData.favoriteFood}
-                                                                    onChange={e => setFormData({...formData, favoriteFood: e.target.value})}
-                                                                />
-                                                            </div>
+                                                        <div className="p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-800/50">
+                                                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Chế độ ăn</p>
+                                                            <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                                                {formData.nutritionPlan.filter(m => m.foodType).length} bữa ăn đã được thiết lập.
+                                                            </p>
                                                         </div>
-
-                                                        <div className="col-span-1">
-                                                            <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Dị ứng / Tránh</label>
-                                                            <div className="relative">
-                                                                <AlertCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                                <input
-                                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-xl text-slate-900 dark:text-white outline-none transition-all font-bold text-sm"
-                                                                    placeholder="Sữa, socola..."
-                                                                    value={formData.allergies}
-                                                                    onChange={e => setFormData({...formData, allergies: e.target.value})}
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="col-span-1">
-                                                            <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Sở thích</label>
-                                                            <div className="relative">
-                                                                <Heart className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                                <input
-                                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-xl text-slate-900 dark:text-white outline-none transition-all font-bold text-sm"
-                                                                    placeholder="Đồ chơi, gãi bụng..."
-                                                                    value={formData.hobbies}
-                                                                    onChange={e => setFormData({...formData, hobbies: e.target.value})}
-                                                                />
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="col-span-1">
-                                                            <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Đi dạo (phút)</label>
-                                                            <div className="relative">
-                                                                <Camera className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                                                <input
-                                                                    type="number"
-                                                                    className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-[#1a2b4c] rounded-xl text-slate-900 dark:text-white outline-none transition-all font-bold text-sm"
-                                                                    placeholder="30"
-                                                                    value={formData.walkTime}
-                                                                    onChange={e => setFormData({...formData, walkTime: e.target.value})}
-                                                                />
-                                                            </div>
+                                                        <div className="p-5 bg-amber-50/50 dark:bg-amber-900/10 rounded-3xl border border-amber-100 dark:border-amber-800/50">
+                                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Y tế</p>
+                                                            <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                                                {formData.vaccinations.length} mũi tiêm và {formData.medicalRecords.length} bệnh án.
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
+                                            )}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
 
-                                                <div className="flex gap-4 pt-6">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setStep(1)}
-                                                        className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all active:scale-95"
-                                                    >
-                                                        Quay lại
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setStep(3)}
-                                                        className="flex-[2] py-4 bg-[#1a2b4c] text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-                                                    >
-                                                        Tiếp theo <ChevronRight size={18} />
-                                                    </button>
-                                                </div>
-                                            </>
+                                {/* Modal Footer */}
+                                <div className="p-8 md:p-10 border-t border-slate-100 dark:border-slate-800 flex gap-4">
+                                    {step > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep(step - 1)}
+                                            className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 transition-all active:scale-95 flex items-center gap-2"
+                                        >
+                                            Quay lại
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        disabled={submitting}
+                                        onClick={() => {
+                                            if (step === 1 && (!formData.name || !formData.breed || !formData.dob || !formData.weight)) {
+                                                toast.error('Vui lòng nhập đủ các trường bắt buộc!');
+                                                return;
+                                            }
+                                            if (step < 4) setStep(step + 1);
+                                            else handleAddPet();
+                                        }}
+                                        className="flex-1 py-4 bg-[#1a2b4c] text-white font-bold rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-[#2d4a82] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {submitting ? (
+                                            <Loader2 className="animate-spin" size={20} />
                                         ) : (
                                             <>
-                                                <div className="space-y-6">
-                                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                        <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Hồ sơ y tế</h3>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => {
-                                                                const records = [...formData.medicalRecords];
-                                                                records.push({ diagnosis: '', treatment: '', prescription: '', veterinarianNote: '', visitDate: new Date().toISOString() });
-                                                                setFormData({...formData, medicalRecords: records});
-                                                            }}
-                                                            className="text-xs font-bold text-secondary flex items-center gap-1 hover:underline"
-                                                        >
-                                                            <Plus size={14} /> Thêm bệnh án
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        {formData.medicalRecords.map((record, idx) => (
-                                                            <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3 relative">
-                                                                <button 
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const records = formData.medicalRecords.filter((_, i) => i !== idx);
-                                                                        setFormData({...formData, medicalRecords: records});
-                                                                    }}
-                                                                    className="absolute top-2 right-2 text-slate-400 hover:text-red-500"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                                
-                                                                <div>
-                                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Chẩn đoán</label>
-                                                                    <input 
-                                                                        className="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-white outline-none border-b border-slate-200 dark:border-slate-700 focus:border-secondary pb-1"
-                                                                        placeholder="Vd: Viêm da, Tiêu chảy..."
-                                                                        value={record.diagnosis}
-                                                                        onChange={e => {
-                                                                            const records = [...formData.medicalRecords];
-                                                                            records[idx].diagnosis = e.target.value;
-                                                                            setFormData({...formData, medicalRecords: records});
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                                <div className="grid grid-cols-2 gap-3">
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Điều trị</label>
-                                                                        <input 
-                                                                            className="w-full bg-transparent text-xs font-bold text-slate-700 dark:text-slate-300 outline-none border-b border-slate-200 dark:border-slate-700 focus:border-secondary pb-1"
-                                                                            placeholder="Cách điều trị..."
-                                                                            value={record.treatment}
-                                                                            onChange={e => {
-                                                                                const records = [...formData.medicalRecords];
-                                                                                records[idx].treatment = e.target.value;
-                                                                                setFormData({...formData, medicalRecords: records});
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Đơn thuốc</label>
-                                                                        <input 
-                                                                            className="w-full bg-transparent text-xs font-bold text-slate-700 dark:text-slate-300 outline-none border-b border-slate-200 dark:border-slate-700 focus:border-secondary pb-1"
-                                                                            placeholder="Thuốc sử dụng..."
-                                                                            value={record.prescription}
-                                                                            onChange={e => {
-                                                                                const records = [...formData.medicalRecords];
-                                                                                records[idx].prescription = e.target.value;
-                                                                                setFormData({...formData, medicalRecords: records});
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        {formData.medicalRecords.length === 0 && (
-                                                            <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Không có bệnh án</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Vaccinations */}
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Tiêm chủng</h3>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const list = [...formData.vaccinations];
-                                                                    list.push({ name: '', drug: '', clinic: '', date: new Date().toISOString(), status: 'done' });
-                                                                    setFormData({...formData, vaccinations: list});
-                                                                }}
-                                                                className="text-xs font-bold text-secondary flex items-center gap-1 hover:underline"
-                                                            >
-                                                                <Plus size={14} /> Thêm mũi tiêm
-                                                            </button>
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            {formData.vaccinations.map((v, idx) => (
-                                                                <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative">
-                                                                    <button type="button" onClick={() => setFormData({...formData, vaccinations: formData.vaccinations.filter((_, i) => i !== idx)})} className="absolute top-2 right-2 text-slate-400 hover:text-red-500">
-                                                                        <Trash2 size={16} />
-                                                                    </button>
-                                                                    <input className="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-white outline-none border-b border-slate-200 dark:border-slate-700 focus:border-secondary mb-2 pb-1" placeholder="Tên vaccine (Vd: Dại...)" value={v.name} onChange={e => {
-                                                                        const list = [...formData.vaccinations];
-                                                                        list[idx].name = e.target.value;
-                                                                        setFormData({...formData, vaccinations: list});
-                                                                    }} />
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <input className="bg-transparent text-xs text-slate-500 outline-none border-b border-slate-200 dark:border-slate-700" placeholder="Ngày tiêm..." type="date" value={v.date?.split('T')[0]} onChange={e => {
-                                                                            const list = [...formData.vaccinations];
-                                                                            list[idx].date = e.target.value;
-                                                                            setFormData({...formData, vaccinations: list});
-                                                                        }} />
-                                                                        <select className="bg-transparent text-xs font-bold text-secondary outline-none border-b border-slate-200 dark:border-slate-700" value={v.status} onChange={e => {
-                                                                            const list = [...formData.vaccinations];
-                                                                            list[idx].status = e.target.value;
-                                                                            setFormData({...formData, vaccinations: list});
-                                                                        }}>
-                                                                            <option value="done">Đã tiêm</option>
-                                                                            <option value="upcoming">Sắp tới</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                            {formData.vaccinations.length === 0 && (
-                                                                <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Không có lịch sử tiêm</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Reminders */}
-                                                    <div className="space-y-4">
-                                                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Lịch nhắc</h3>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const list = [...formData.reminders];
-                                                                    list.push({ title: '', description: '', type: 'medicine', date: new Date().toISOString(), status: 'active' });
-                                                                    setFormData({...formData, reminders: list});
-                                                                }}
-                                                                className="text-xs font-bold text-secondary flex items-center gap-1 hover:underline"
-                                                            >
-                                                                <Plus size={14} /> Thêm nhắc nhở
-                                                            </button>
-                                                        </div>
-                                                        <div className="space-y-3">
-                                                            {formData.reminders.map((r, idx) => (
-                                                                <div key={idx} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative">
-                                                                    <button type="button" onClick={() => setFormData({...formData, reminders: formData.reminders.filter((_, i) => i !== idx)})} className="absolute top-2 right-2 text-slate-400 hover:text-red-500">
-                                                                        <Trash2 size={16} />
-                                                                    </button>
-                                                                    <input className="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-white outline-none border-b border-slate-200 dark:border-slate-700 focus:border-secondary mb-2 pb-1" placeholder="Tiêu đề (Vd: Uống thuốc...)" value={r.title} onChange={e => {
-                                                                        const list = [...formData.reminders];
-                                                                        list[idx].title = e.target.value;
-                                                                        setFormData({...formData, reminders: list});
-                                                                    }} />
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <input className="bg-transparent text-xs text-slate-500 outline-none border-b border-slate-200 dark:border-slate-700" type="date" value={r.date?.split('T')[0]} onChange={e => {
-                                                                            const list = [...formData.reminders];
-                                                                            list[idx].date = e.target.value;
-                                                                            setFormData({...formData, reminders: list});
-                                                                        }} />
-                                                                        <select className="bg-transparent text-xs font-bold text-orange-500 outline-none border-b border-slate-200 dark:border-slate-700" value={r.type} onChange={e => {
-                                                                            const list = [...formData.reminders];
-                                                                            list[idx].type = e.target.value;
-                                                                            setFormData({...formData, reminders: list});
-                                                                        }}>
-                                                                            <option value="medicine">Thuốc</option>
-                                                                            <option value="spa">Spa</option>
-                                                                            <option value="checkup">Khám</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                            {formData.reminders.length === 0 && (
-                                                                <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Không có lịch nhắc</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex gap-4 pt-6">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setStep(2)}
-                                                        className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all active:scale-95"
-                                                    >
-                                                        Quay lại
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        disabled={submitting}
-                                                        onClick={() => handleAddPet()}
-                                                        className="flex-[2] py-4 bg-[#1a2b4c] text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                                                    >
-                                                        {submitting ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                                                        Hoàn thành
-                                                    </button>
-                                                </div>
+                                                {step === 4 ? 'Xác nhận & Hoàn thành' : 'Tiếp theo'}
+                                                {step < 4 && <ArrowRight size={18} />}
                                             </>
                                         )}
-                                        </div>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -943,46 +705,45 @@ export default function ProfilePets() {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden p-8"
+                            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl overflow-hidden p-10"
                         >
-                            <div className="text-center mb-6">
-                                <div className="size-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <Trash2 size={32} />
+                            <div className="text-center mb-8">
+                                <div className="size-20 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/10">
+                                    <Trash2 size={36} />
                                 </div>
-                                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Xóa thú cưng?</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                    Bạn đang thực hiện xóa hồ sơ của <span className="font-bold text-slate-900 dark:text-white">{selectedPetForDelete?.name}</span>. Hành động này sẽ thay đổi trạng thái của bé thành ngừng hoạt động.
+                                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Xác nhận xóa hồ sơ?</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                                    Hồ sơ của bé <span className="font-bold text-slate-900 dark:text-white">{selectedPetForDelete?.name}</span> sẽ được chuyển sang trạng thái tạm ngưng.
                                 </p>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div>
-                                    <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Lý do xóa hồ sơ *</label>
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Lý do thay đổi *</label>
                                     <textarea
-                                        required
-                                        rows={3}
-                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-red-500 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-medium resize-none text-sm"
-                                        placeholder="Vd: Bé đã qua đời, đã cho người khác..."
+                                        required rows={3}
+                                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-red-500 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-medium resize-none text-sm"
+                                        placeholder="Ví dụ: Bé đã tìm được chủ mới hoặc đã qua đời..."
                                         value={deleteReason}
                                         onChange={e => setDeleteReason(e.target.value)}
                                     />
                                 </div>
 
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex gap-4">
                                     <button
                                         type="button"
                                         onClick={() => setShowDeleteModal(false)}
-                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all active:scale-95"
+                                        className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all"
                                     >
-                                        Hủy
+                                        Hủy bỏ
                                     </button>
                                     <button
                                         type="button"
                                         disabled={!deleteReason || submitting}
                                         onClick={handleDeletePet}
-                                        className="flex-[2] py-3 bg-red-500 text-white font-bold rounded-2xl shadow-lg hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-[2] py-4 bg-red-500 text-white font-bold rounded-2xl shadow-xl shadow-red-500/20 hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {submitting ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                                        {submitting ? <Loader2 className="animate-spin" size={20} /> : <Trash2 size={18} />}
                                         Xác nhận xóa
                                     </button>
                                 </div>
@@ -991,6 +752,13 @@ export default function ProfilePets() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+                .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+            `}} />
         </main>
     );
 }
