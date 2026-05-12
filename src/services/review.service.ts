@@ -1,0 +1,40 @@
+import apiClient from './apiClient';
+
+export interface ReviewResponse {
+  id: number;
+  userName: string;
+  userAvatar?: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  reply?: string;
+  repliedAt?: string;
+}
+
+export interface ReviewRequest {
+  shopId: number;
+  bookingId: number;
+  rating: number;
+  comment: string;
+}
+
+export interface ReviewReplyRequest {
+  reply: string;
+}
+
+export const reviewService = {
+  getReviewsByShop: async (shopId: number): Promise<ReviewResponse[]> => {
+    const response = await apiClient.get(`/reviews/shop/${shopId}`);
+    return response.data.result;
+  },
+
+  createReview: async (request: ReviewRequest): Promise<ReviewResponse> => {
+    const response = await apiClient.post('/reviews', request);
+    return response.data.result;
+  },
+
+  replyToReview: async (reviewId: number, reply: string): Promise<ReviewResponse> => {
+    const response = await apiClient.put(`/reviews/${reviewId}/reply`, { reply });
+    return response.data.result;
+  }
+};

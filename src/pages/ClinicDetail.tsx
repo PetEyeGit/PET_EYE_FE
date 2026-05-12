@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopService } from '../services/shop.service';
 import { petService } from '../services/pet.service';
+import { reviewService } from '../services/review.service';
 import { useAuth } from '../contexts/AuthContext';
 import type { ServiceResponse } from '../types/api';
 import type { Pet } from '../types';
@@ -62,73 +63,10 @@ const SERVICES = [
   },
 ];
 
-const DOCTORS = [
-  {
-    name: 'BSTY. Nguyễn Văn A',
-    role: 'Chuyên khoa Ngoại & Chỉnh hình',
-    rating: 4.9,
-    reviews: 85,
-    img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop',
-  },
-  {
-    name: 'BSTY. Lê Thị B',
-    role: 'Chuyên khoa Nội & Da liễu',
-    rating: 4.8,
-    reviews: 62,
-    img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=200&auto=format&fit=crop',
-  },
-  {
-    name: 'BSTY. Trần Minh C',
-    role: 'Chuyên khoa Mắt & Tai',
-    rating: 4.7,
-    reviews: 38,
-    img: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=200&auto=format&fit=crop',
-  },
-  {
-    name: 'BSTY. Phạm Thu D',
-    role: 'Chuyên khoa Dinh dưỡng',
-    rating: 4.9,
-    reviews: 50,
-    img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=200&auto=format&fit=crop',
-  },
-];
 
-const REVIEWS = [
-  {
-    name: 'Trần Thu Hà',
-    date: 'Tháng 10, 2023',
-    rating: 5,
-    text: 'Bác sĩ A rất nhiệt tình, bé Corgi nhà mình bị viêm da chữa nhiều nơi không khỏi mà qua đây 1 liệu trình là đỡ hẳn. Giá cả cũng hợp lý so với chất lượng.',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop',
-    reviewImgs: ['https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=200&auto=format&fit=crop'],
-  },
-  {
-    name: 'Phạm Minh Tuấn',
-    date: 'Tháng 9, 2023',
-    rating: 4,
-    text: 'Cơ sở vật chất mới, sạch sẽ không có mùi hôi. Tuy nhiên giờ cao điểm hơi đông, nên đặt lịch trước qua app để đỡ phải chờ lâu.',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop',
-    reviewImgs: [],
-  },
-  {
-    name: 'Nguyễn Lan Anh',
-    date: 'Tháng 8, 2023',
-    rating: 5,
-    text: 'Dịch vụ lưu trú tuyệt vời! Có camera xem bé mọi lúc, nhân viên chăm sóc tận tình. Sẽ quay lại lần sau.',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&auto=format&fit=crop',
-    reviewImgs: [],
-  },
-];
 
 const TIME_SLOTS = ['09:00', '10:30', '14:00', '15:30', '16:00'];
 
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=1200&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=600&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80',
-];
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
 const CAMERA_TIER_META: Record<string, { label: string; desc: string; icon: string; defaultPrice: number }> = {
@@ -180,6 +118,12 @@ export default function ClinicDetail() {
   const { data: apiServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['shop-services', shopId],
     queryFn: () => shopService.getShopServices(shopId),
+    enabled: !!shopId,
+  });
+
+  const { data: apiReviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ['shop-reviews', shopId],
+    queryFn: () => reviewService.getReviewsByShop(shopId),
     enabled: !!shopId,
   });
 
@@ -331,6 +275,20 @@ export default function ClinicDetail() {
     });
   }
 
+  // Derive gallery images from banner and galleryUrls
+  const galleryImages = React.useMemo(() => {
+    const images = [];
+    if (shop?.bannerUrl) images.push(shop.bannerUrl);
+    if (shop?.galleryUrls) {
+      images.push(...shop.galleryUrls.split(',').filter(Boolean));
+    }
+    // Fill with placeholders if less than 5
+    while (images.length < 5) {
+      images.push(`https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80`);
+    }
+    return images.slice(0, 5);
+  }, [shop?.bannerUrl, shop?.galleryUrls]);
+
   const dayName = today.toLocaleDateString('vi-VN', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
 
@@ -356,7 +314,7 @@ export default function ClinicDetail() {
             Cơ sở thú y
           </Link>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <span className="text-slate-700 dark:text-slate-300 font-medium">PetCare Sài Gòn</span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">{shop?.shopName}</span>
         </div>
       </div>
 
@@ -418,11 +376,11 @@ export default function ClinicDetail() {
         <div className="w-full h-[280px] md:h-[380px] lg:h-[460px] gap-2 overflow-hidden rounded-2xl grid grid-cols-4 grid-rows-2 mb-8">
           <div
             className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-tl-2xl rounded-bl-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${HERO_IMAGES[0]})` }}
+            style={{ backgroundImage: `url(${galleryImages[0]})` }}
           >
             <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
           </div>
-          {HERO_IMAGES.slice(1, 4).map((img, i) => (
+          {galleryImages.slice(1, 4).map((img, i) => (
             <div
               key={i}
               className={`col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative overflow-hidden ${i === 1 ? 'rounded-tr-2xl' : ''
@@ -434,7 +392,7 @@ export default function ClinicDetail() {
           ))}
           <div
             className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-br-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${HERO_IMAGES[4]})` }}
+            style={{ backgroundImage: `url(${galleryImages[4]})` }}
           >
             <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
             <button className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 transition-transform">
@@ -467,37 +425,41 @@ export default function ClinicDetail() {
             {/* Doctors */}
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Đội ngũ Bác sĩ</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Đội ngũ Nhân viên</h2>
                 <button className="text-[#1a2b4c] dark:text-teal-400 font-semibold text-sm hover:underline">
                   Xem tất cả
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {DOCTORS.map((doc) => (
-                  <div
-                    key={doc.name}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                  >
-                    <img
-                      src={doc.img}
-                      alt={doc.name}
-                      className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
-                    />
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                        {doc.name}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{doc.role}</p>
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <span className="material-symbols-outlined text-amber-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                          star
-                        </span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">{doc.rating}</span>
-                        <span className="text-slate-400 text-xs">({doc.reviews} đánh giá)</span>
+                {(shop?.staffs || []).length > 0 ? (
+                  shop?.staffs?.map((staff: any) => (
+                    <div
+                      key={staff.id}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                    >
+                      <img
+                        src={staff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'}
+                        alt={staff.fullName}
+                        className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
+                      />
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
+                          {staff.fullName}
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{staff.role}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 italic">{staff.specialization}</p>
+                        <div className="flex items-center gap-1 mt-1.5">
+                          <span className="material-symbols-outlined text-amber-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            star
+                          </span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">4.9</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm italic">Chưa có thông tin nhân viên.</p>
+                )}
               </div>
             </section>
   
@@ -761,60 +723,82 @@ export default function ClinicDetail() {
 
               {/* Review list */}
               <div className="flex flex-col gap-6">
-                {REVIEWS.map((review) => (
-                  <div
-                    key={review.name}
-                    className="flex gap-4 pb-6 border-b border-slate-100 dark:border-slate-800 last:border-0"
-                  >
-                    <img
-                      src={review.avatar}
-                      alt={review.name}
-                      className="size-10 rounded-full object-cover shrink-0"
-                    />
-                    <div className="flex flex-col gap-2 flex-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{review.name}</h4>
-                          <span className="text-xs text-slate-400">{review.date}</span>
+                {(apiReviews || []).length > 0 ? (
+                  apiReviews?.map((review: any) => (
+                    <div
+                      key={review.id}
+                      className="flex gap-4 pb-6 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                    >
+                      <img
+                        src={review.userAvatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop'}
+                        alt={review.userName}
+                        className="size-10 rounded-full object-cover shrink-0"
+                      />
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{review.userName}</h4>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-slate-400">
+                                {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                              </span>
+                              {review.serviceName && (
+                                <>
+                                  <span className="text-slate-300 dark:text-slate-700">•</span>
+                                  <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                    {review.serviceName}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex text-amber-400">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <span
+                                key={s}
+                                className="material-symbols-outlined text-sm"
+                                style={{ fontVariationSettings: s <= review.rating ? "'FILL' 1" : "'FILL' 0" }}
+                              >
+                                star
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex text-amber-400">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <span
-                              key={s}
-                              className="material-symbols-outlined text-sm"
-                              style={{ fontVariationSettings: s <= review.rating ? "'FILL' 1" : "'FILL' 0" }}
-                            >
-                              star
-                            </span>
-                          ))}
+                        <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{review.comment}</p>
+                        
+                        {review.reply && (
+                          <div className="mt-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border-l-4 border-[#1a2b4c] relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[10px] font-black text-[#1a2b4c] uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-xs">reply</span>
+                                Phản hồi từ chủ shop
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                {new Date(review.repliedAt).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-200 text-sm italic leading-relaxed">
+                              "{review.reply}"
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-4 mt-1">
+                          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
+                            <span className="material-symbols-outlined text-sm">thumb_up</span>
+                            Hữu ích
+                          </button>
+                          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
+                            <span className="material-symbols-outlined text-sm">chat_bubble</span>
+                            Phản hồi
+                          </button>
                         </div>
-                      </div>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">{review.text}</p>
-                      {review.reviewImgs.length > 0 && (
-                        <div className="flex gap-2 mt-1">
-                          {review.reviewImgs.map((img, i) => (
-                            <img
-                              key={i}
-                              src={img}
-                              alt="Review"
-                              className="w-20 h-20 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                            />
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-4 mt-1">
-                        <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
-                          <span className="material-symbols-outlined text-sm">thumb_up</span>
-                          Hữu ích
-                        </button>
-                        <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
-                          <span className="material-symbols-outlined text-sm">chat_bubble</span>
-                          Phản hồi
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm italic">Chưa có đánh giá nào cho phòng khám này.</p>
+                )}
               </div>
 
               <div className="text-center mt-6">

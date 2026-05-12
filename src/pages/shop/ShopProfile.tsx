@@ -13,6 +13,8 @@ export default function ShopProfile() {
 
   const logoInputRef = React.useRef<HTMLInputElement>(null);
   const bannerInputRef = React.useRef<HTMLInputElement>(null);
+  const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const [shopInfo, setShopInfo] = useState({
     name: '',
@@ -27,6 +29,7 @@ export default function ShopProfile() {
     workingDays: [] as string[],
     logoUrl: '',
     bannerUrl: '',
+    galleryUrls: '',
     isVerified: false,
   });
 
@@ -58,6 +61,7 @@ export default function ShopProfile() {
         workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
         logoUrl: data.logoUrl || prev.logoUrl,
         bannerUrl: data.bannerUrl || prev.bannerUrl,
+        galleryUrls: data.galleryUrls || prev.galleryUrls,
         isVerified: data.isVerified,
       }));
     } catch (err) {
@@ -87,6 +91,7 @@ export default function ShopProfile() {
         workingDays: shopInfo.workingDays.join(','),
         logoUrl: shopInfo.logoUrl,
         bannerUrl: shopInfo.bannerUrl,
+        galleryUrls: shopInfo.galleryUrls,
       };
       console.log('Sending update request with data:', updateData);
       const data = await shopService.updateMyShop(updateData);
@@ -106,6 +111,7 @@ export default function ShopProfile() {
         workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
         logoUrl: data.logoUrl || prev.logoUrl,
         bannerUrl: data.bannerUrl || prev.bannerUrl,
+        galleryUrls: data.galleryUrls || prev.galleryUrls,
         isVerified: data.isVerified,
       }));
       
@@ -118,7 +124,7 @@ export default function ShopProfile() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'banner' | 'gallery') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -130,21 +136,38 @@ export default function ShopProfile() {
 
     try {
       if (type === 'logo') setUploadingLogo(true);
-      else setUploadingBanner(true);
+      else if (type === 'banner') setUploadingBanner(true);
+      else setUploadingGallery(true);
 
       const url = await fileService.upload(file);
-      setShopInfo(prev => ({
-        ...prev,
-        [type === 'logo' ? 'logoUrl' : 'bannerUrl']: url
-      }));
-      toast.success(`Đã tải ${type === 'logo' ? 'logo' : 'ảnh bìa'} lên thành công!`);
+      
+      if (type === 'gallery') {
+        setShopInfo(prev => ({
+          ...prev,
+          galleryUrls: prev.galleryUrls ? `${prev.galleryUrls},${url}` : url
+        }));
+      } else {
+        setShopInfo(prev => ({
+          ...prev,
+          [type === 'logo' ? 'logoUrl' : 'bannerUrl']: url
+        }));
+      }
+      
+      toast.success(`Đã tải ${type === 'logo' ? 'logo' : type === 'banner' ? 'ảnh bìa' : 'ảnh thư viện'} lên thành công!`);
     } catch (err) {
       console.error('Upload failed:', err);
       toast.error('Tải ảnh lên thất bại');
     } finally {
       if (type === 'logo') setUploadingLogo(false);
-      else setUploadingBanner(false);
+      else if (type === 'banner') setUploadingBanner(false);
+      else setUploadingGallery(false);
     }
+  };
+
+  const removeGalleryImage = (urlToRemove: string) => {
+    const currentUrls = shopInfo.galleryUrls.split(',').filter(Boolean);
+    const updatedUrls = currentUrls.filter(url => url !== urlToRemove).join(',');
+    setShopInfo({ ...shopInfo, galleryUrls: updatedUrls });
   };
 
   const weekDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
@@ -273,6 +296,58 @@ export default function ShopProfile() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Photo Gallery */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+              <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                <ImageIcon size={20} className="text-primary" />
+                Thư viện ảnh
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {shopInfo.galleryUrls.split(',').filter(Boolean).map((url, index) => (
+                  <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                    <img src={url} alt={`Gallery ${index}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryImage(url)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                  </div>
+                ))}
+                
+                {/* Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={uploadingGallery}
+                  className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition-all group disabled:opacity-50"
+                >
+                  {uploadingGallery ? (
+                    <Loader2 className="animate-spin" size={24} />
+                  ) : (
+                    <>
+                      <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <span className="material-symbols-outlined">add_photo_alternate</span>
+                      </div>
+                      <span className="text-xs font-bold">Thêm ảnh</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <input
+                type="file"
+                ref={galleryInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, 'gallery')}
+              />
+              <p className="mt-4 text-xs text-slate-500 italic">
+                * Thư viện ảnh giúp khách hàng hiểu rõ hơn về cơ sở vật chất và dịch vụ của bạn.
+              </p>
             </div>
 
           {/* Basic Info */}

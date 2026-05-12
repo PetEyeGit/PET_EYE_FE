@@ -13,6 +13,7 @@ export interface ShopPublicResponse {
   licenseImageUrl: string;
   logoUrl?: string;
   bannerUrl?: string;
+  galleryUrls?: string;
   isVerified: boolean;
   ratingAvg: number;
   ownerId: number;
@@ -20,6 +21,7 @@ export interface ShopPublicResponse {
   closeTime?: string;
   workingDays?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
+  staffs?: any[];
 }
 
 export interface ShopRegistrationRequest {
@@ -48,6 +50,7 @@ export interface ShopUpdateRequest {
   workingDays?: string;
   logoUrl?: string;
   bannerUrl?: string;
+  galleryUrls?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
 }
 

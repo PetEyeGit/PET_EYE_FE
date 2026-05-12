@@ -68,14 +68,17 @@ export default function ShopBookings() {
             if (status === 'CANCELLED') {
                 await bookingService.cancel(bookingId);
                 toast.success('Đã hủy đơn hàng');
+            } else if (status === 'IN_PROGRESS' || status === 'COMPLETED') {
+                await taskService.updateStatus(bookingId, status as any);
+                toast.success(status === 'IN_PROGRESS' ? 'Đã bắt đầu công việc' : 'Đã hoàn thành công việc');
             }
             refetchList();
             refetchCalendar();
             if (selectedBooking?.bookingId === bookingId || selectedBooking?.id === bookingId) {
                 setSelectedBooking(null);
             }
-        } catch {
-            toast.error('Thao tác thất bại');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Thao tác thất bại');
         } finally {
             setUpdatingId(null);
         }
@@ -283,20 +286,34 @@ export default function ShopBookings() {
                                                     </button>
 
                                                     {booking.status === 'CONFIRMED' && (
-                                                        <button
-                                                            disabled={updatingId === booking.bookingId}
-                                                            onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
-                                                            className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-                                                        >
-                                                            {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
-                                                            Hủy đơn
-                                                        </button>
+                                                        <div className="flex flex-col gap-2">
+                                                            <button
+                                                                disabled={updatingId === booking.bookingId}
+                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'IN_PROGRESS')}
+                                                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+                                                                Bắt đầu
+                                                            </button>
+                                                            <button
+                                                                disabled={updatingId === booking.bookingId}
+                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
+                                                                className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                <XCircle size={12} />
+                                                                Hủy đơn
+                                                            </button>
+                                                        </div>
                                                     )}
                                                     {booking.status === 'IN_PROGRESS' && (
-                                                        <div className="p-4 bg-indigo-900 rounded-2xl text-white">
-                                                            <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Đang thực hiện</p>
-                                                            <p className="text-[10px] font-bold">NV đang xử lý.</p>
-                                                        </div>
+                                                        <button
+                                                            disabled={updatingId === booking.bookingId}
+                                                            onClick={() => handleUpdateStatus(booking.bookingId, 'COMPLETED')}
+                                                            className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                                            Hoàn thành
+                                                        </button>
                                                     )}
                                                     {booking.status === 'COMPLETED' && (
                                                         <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
