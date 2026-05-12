@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopService } from '../services/shop.service';
 import { petService } from '../services/pet.service';
 import { reviewService } from '../services/review.service';
+import { bookingService } from '../services/booking.service';
 import { useAuth } from '../contexts/AuthContext';
-import type { ServiceResponse } from '../types/api';
+import type { ServiceResponse, StaffResponse } from '../types/api';
 import type { Pet } from '../types';
 
 const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
@@ -103,6 +104,21 @@ export default function ClinicDetail() {
     ? Math.max(1, Math.round((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / 86400000))
     : 0;
 
+  // ── Staff selection ─────────────────────────────────────────────────────────
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [staffAvailabilityLoading, setStaffAvailabilityLoading] = useState(false);
+  const [staffWithAvailability, setStaffWithAvailability] = useState<StaffResponse[]>([]);
+  const [staffAvailabilityError, setStaffAvailabilityError] = useState(false);
+
+  // Primary service duration for availability check
+  const primaryServiceDuration = useMemo(() => {
+    if (selectedServiceIds.length > 0) {
+      const svc = apiServices.find((s: ServiceResponse) => s.id === selectedServiceIds[0]);
+      return svc?.durationMinutes ?? 60;
+    }
+    return 60;
+  }, [selectedServiceIds, apiServices]);
+
   // ── Pet selection modal ─────────────────────────────────────────────────────
   const [showPetModal, setShowPetModal] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
@@ -134,6 +150,53 @@ export default function ClinicDetail() {
   const hasNormalServices = selectedServiceIds.length > 0;
   const boardingReady = isHotelSelected ? (!!checkInDate && !!checkOutDate && checkInDate < checkOutDate) : true;
   const normalReady = hasNormalServices ? (!!selectedDate && !!selectedTime) : true;
+
+  // Fetch staff availability whenever date+time changes (for normal services)
+  const appointmentDatetimeForQuery = hasNormalServices && selectedDate && selectedTime
+    ? `${selectedDate}T${selectedTime}:00`
+    : null;
+
+  useEffect(() => {
+    if (!appointmentDatetimeForQuery || !shopId) {
+      setStaffWithAvailability([]);
+      setStaffAvailabilityError(false);
+      return;
+    }
+    let cancelled = false;
+    setStaffAvailabilityLoading(true);
+    setStaffAvailabilityError(false);
+    bookingService
+      .getShopStaffAvailability(shopId, appointmentDatetimeForQuery, primaryServiceDuration)
+      .then((data) => {
+        if (!cancelled) setStaffWithAvailability(data);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStaffAvailabilityError(true);
+          // Fallback: load staff without availability info
+          bookingService.getShopStaff(shopId).then((data) => {
+            if (!cancelled) setStaffWithAvailability(
+              data.map(s => ({ ...s, available: true }))
+            );
+          }).catch(() => {
+            if (!cancelled) setStaffWithAvailability([]);
+          });
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setStaffAvailabilityLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [appointmentDatetimeForQuery, shopId, primaryServiceDuration]);
+
+  // When selected staff is busy, find available alternatives
+  const selectedStaffBusy = selectedStaffId !== null
+    && staffWithAvailability.length > 0
+    && staffWithAvailability.find(s => s.id === selectedStaffId)?.available === false;
+
+  const suggestedStaff = selectedStaffBusy
+    ? staffWithAvailability.filter(s => s.available === true).slice(0, 3)
+    : [];
   const canBook = (isHotelSelected || hasNormalServices) && boardingReady && normalReady;
 
   // ── Open pet modal ──────────────────────────────────────────────────────────
@@ -193,6 +256,10 @@ export default function ClinicDetail() {
         petId: selectedPet.id,
         petName: `${selectedPet.name} (${selectedPet.species})`,
         petNote: petNote || undefined,
+        staffId: selectedStaffId ?? undefined,
+        staffName: selectedStaffId
+          ? staffWithAvailability.find(s => s.id === selectedStaffId)?.fullName
+          : undefined,
         appointmentDatetime,
         date: (() => {
           const parts: string[] = [];
@@ -939,6 +1006,139 @@ export default function ClinicDetail() {
                 {!isHotelSelected && !hasNormalServices && (
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
                     Chọn dịch vụ để đặt lịch
+                  </div>
+                )}
+
+                {/* ── Staff Selection ─────────────────────────────────────── */}
+                {hasNormalServices && selectedDate && selectedTime && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Chọn nhân viên
+                      </label>
+                      {selectedStaffId && (
+                        <button
+                          onClick={() => setSelectedStaffId(null)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors"
+                        >
+                          Bỏ chọn
+                        </button>
+                      )}
+                    </div>
+
+                    {staffAvailabilityLoading ? (
+                      <div className="flex items-center gap-2 py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <span className="w-4 h-4 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin shrink-0" />
+                        <span className="text-xs text-slate-400">Đang kiểm tra lịch nhân viên...</span>
+                      </div>
+                    ) : staffWithAvailability.length === 0 ? (
+                      <div className="py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
+                        Không có nhân viên nào
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {/* "Bất kỳ nhân viên" option */}
+                        <button
+                          onClick={() => setSelectedStaffId(null)}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition-all ${
+                            selectedStaffId === null
+                              ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                          }`}
+                        >
+                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-slate-400 text-lg">groups</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Bất kỳ nhân viên</p>
+                            <p className="text-[10px] text-slate-400">Hệ thống tự phân công</p>
+                          </div>
+                          {selectedStaffId === null && (
+                            <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                          )}
+                        </button>
+
+                        {/* Staff list */}
+                        {staffWithAvailability.map((staff) => {
+                          const isSelected = selectedStaffId === staff.id;
+                          const isBusy = staff.available === false;
+                          return (
+                            <button
+                              key={staff.id}
+                              onClick={() => setSelectedStaffId(staff.id)}
+                              disabled={isBusy}
+                              className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition-all ${
+                                isSelected
+                                  ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
+                                  : isBusy
+                                    ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 opacity-60 cursor-not-allowed'
+                                    : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40 dark:hover:border-teal-700 cursor-pointer'
+                              }`}
+                            >
+                              <div className="relative shrink-0">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-sm">
+                                  {staff.fullName.charAt(0).toUpperCase()}
+                                </div>
+                                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${isBusy ? 'bg-red-400' : 'bg-green-400'}`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{staff.fullName}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{staff.specialization || staff.role || 'Nhân viên'}</p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                {isBusy ? (
+                                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded-full">Bận</span>
+                                ) : (
+                                  isSelected
+                                    ? <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                    : <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full">Rảnh</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Busy staff warning + suggestions */}
+                    {selectedStaffBusy && (
+                      <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="material-symbols-outlined text-amber-500 text-base mt-0.5 shrink-0">warning</span>
+                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                            Nhân viên này đã có lịch vào khung giờ bạn chọn.
+                          </p>
+                        </div>
+                        {suggestedStaff.length > 0 && (
+                          <>
+                            <p className="text-[10px] text-amber-700 dark:text-amber-300 mb-2 font-medium">Gợi ý nhân viên rảnh:</p>
+                            <div className="flex flex-col gap-1.5">
+                              {suggestedStaff.map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={() => setSelectedStaffId(s.id)}
+                                  className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700 hover:border-[#1a2b4c] dark:hover:border-teal-500 transition-colors text-left"
+                                >
+                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                    {s.fullName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{s.fullName}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">{s.specialization || s.role || 'Nhân viên'}</p>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full shrink-0">Chọn</span>
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {suggestedStaff.length === 0 && (
+                          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
+                            Không có nhân viên rảnh vào khung giờ này. Vui lòng chọn giờ khác.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
             {/* CTA */}

@@ -88,6 +88,8 @@ export interface StaffResponse {
   phone: string;
   specialization: string;
   isActive: boolean;
+  /** true = rảnh tại khung giờ được query, false = bận, undefined = chưa query */
+  available?: boolean;
 }
 
 export interface BookingRequest {

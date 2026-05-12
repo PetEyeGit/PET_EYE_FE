@@ -31,6 +31,7 @@ export default function Payment() {
     petName: string;
     petNote?: string;
     staffId?: number;
+    staffName?: string;
     appointmentDatetime: string;
     date: string;
     time: string;
@@ -176,6 +177,11 @@ export default function Payment() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">🐾 {booking.petName}</p>
+                  {booking.staffId && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      👤 Nhân viên: {booking.staffName ?? `#${booking.staffId}`}
+                    </p>
+                  )}
                   {booking.petNote && (
                     <p className="text-xs text-slate-400 mt-0.5 italic">📝 {booking.petNote}</p>
                   )}
