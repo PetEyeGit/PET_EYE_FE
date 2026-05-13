@@ -78,9 +78,9 @@ function AppLayout() {
   
   // Show customer navbar for:
   // - Landing page (/) when not logged in
-  // - Customer pages when logged in
-  // Hide for: shop routes, login/register pages, home page (has its own header), camera page
-  const shouldShowCustomerNav = !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isHomePage && !isCameraPage;
+  // - Customer pages when logged in (including /home)
+  // Hide for: shop routes, login/register pages, camera page
+  const shouldShowCustomerNav = !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage;
 
   const getRedirectPath = () => {
     if (!user) return "/";
