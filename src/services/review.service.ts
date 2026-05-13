@@ -4,6 +4,8 @@ export interface ReviewResponse {
   id: number;
   userName: string;
   userAvatar?: string;
+  serviceName?: string;
+  shopName?: string;
   rating: number;
   comment: string;
   createdAt: string;
@@ -25,6 +27,11 @@ export interface ReviewReplyRequest {
 export const reviewService = {
   getReviewsByShop: async (shopId: number): Promise<ReviewResponse[]> => {
     const response = await apiClient.get(`/reviews/shop/${shopId}`);
+    return response.data.result;
+  },
+
+  getLatestReviews: async (limit: number = 6): Promise<ReviewResponse[]> => {
+    const response = await apiClient.get(`/reviews/latest?limit=${limit}`);
     return response.data.result;
   },
 

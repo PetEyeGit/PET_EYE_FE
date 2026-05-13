@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, ChevronDown, LogOut, Search, Settings, User, Store, MessageCircle, BarChart3 } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Search, Settings, User, Store, MessageCircle, BarChart3, Wallet } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
+import { walletService, ShopWalletResponse } from '../../services/wallet.service';
 
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
   useEffect(() => {
@@ -20,11 +21,20 @@ export default function ShopHeader() {
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [wallet, setWallet] = useState<ShopWalletResponse | null>(null);
   
   const userRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   useOutsideClick(userRef, () => setUserMenuOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
+
+  useEffect(() => {
+    if (user) {
+      walletService.getMyWallet()
+        .then(setWallet)
+        .catch(err => console.error("Failed to fetch wallet:", err));
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -51,6 +61,21 @@ export default function ShopHeader() {
 
       {/* Right Side Actions */}
       <div className="flex items-center gap-4">
+        {/* Wallet Balance */}
+        {wallet && (
+          <Link to="/shop/wallet" className="hidden sm:flex items-center gap-3 px-5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl border border-emerald-100 dark:border-emerald-800 transition-all hover:bg-emerald-100/50 shadow-sm shadow-emerald-500/5 group">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+              <Wallet size={16} />
+            </div>
+            <div className="flex flex-col">
+              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest leading-none">Số dư ví</p>
+              <p className="text-[14px] font-black text-emerald-700 dark:text-emerald-300 mt-0.5">
+                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(wallet.availableBalance)}
+              </p>
+            </div>
+          </Link>
+        )}
+
         {/* Notifications */}
         <div ref={notifRef} className="relative">
           <button 

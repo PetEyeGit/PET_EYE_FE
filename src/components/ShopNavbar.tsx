@@ -4,6 +4,7 @@ import { Store, Bell, LogOut, Menu, X, User, ChevronDown, Settings, BarChart3, P
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import { useNotifications } from '../hooks/useNotifications';
+import { walletService, ShopWalletResponse } from '../services/wallet.service';
 
 function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => void) {
   useEffect(() => {
@@ -22,11 +23,20 @@ export default function ShopNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [wallet, setWallet] = useState<ShopWalletResponse | null>(null);
   
   const userRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   useOutsideClick(userRef, () => setUserMenuOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
+
+  useEffect(() => {
+    if (user) {
+      walletService.getMyWallet()
+        .then(setWallet)
+        .catch(err => console.error("Failed to fetch wallet:", err));
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -90,6 +100,21 @@ export default function ShopNavbar() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1">
+            {/* Wallet Balance */}
+            {wallet && (
+              <Link to="/shop/wallet" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 transition-all hover:bg-emerald-100 dark:hover:bg-emerald-800/40 mr-2">
+                <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
+                  <Wallet size={13} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 leading-none">Số dư khả dụng</span>
+                  <span className="text-[13px] font-bold text-emerald-700 dark:text-emerald-300 leading-tight">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(wallet.availableBalance)}
+                  </span>
+                </div>
+              </Link>
+            )}
+
             {/* Divider */}
             <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block" />
 

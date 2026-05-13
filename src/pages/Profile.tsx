@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 export function ProfileLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, setUserSession } = useAuth();
   const [showPerksModal, setShowPerksModal] = useState(false);
 
   const handleLogout = () => {
@@ -192,7 +192,7 @@ export function ProfileLayout() {
 // Personal Info (main profile page)
 // ─────────────────────────────────────────────
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, setUserSession } = useAuth();
   const [fullName, setFullName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -228,12 +228,20 @@ export default function Profile() {
     
     setLoading(true);
     try {
-      await userService.update(Number(user.id), {
+      const updatedUserResponse = await userService.update(Number(user.id), {
         fullName,
         phone,
         address,
         avatar
       });
+
+      // Update global session while preserving the token
+      setUserSession({
+        ...user,
+        name: updatedUserResponse.fullName,
+        avatar: updatedUserResponse.avatar
+      });
+
       setMessage('Thông tin đã được lưu thành công!');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -255,7 +263,13 @@ export default function Profile() {
       setAvatar(url);
       // Automatically save the new avatar
       if (user?.id) {
-        await userService.update(Number(user.id), { avatar: url });
+        const updatedUserResponse = await userService.update(Number(user.id), { avatar: url });
+        
+        // Update global session
+        setUserSession({
+          ...user,
+          avatar: updatedUserResponse.avatar
+        });
       }
       setMessage('Ảnh đại diện đã được cập nhật!');
       setSaved(true);
@@ -272,7 +286,15 @@ export default function Profile() {
     try {
       setLoading(true);
       await userService.deleteAvatar(Number(user.id));
-      setAvatar('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop'); // Back to default
+      const defaultAvatar = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop';
+      setAvatar(defaultAvatar); // Back to default
+      
+      // Update global session
+      setUserSession({
+        ...user,
+        avatar: undefined
+      });
+
       setMessage('Ảnh đại diện đã được xóa!');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);

@@ -248,8 +248,12 @@ function AuthNavbar() {
             <button onClick={() => { setUserOpen(v => !v); setNotifOpen(false); }}
               className={`flex items-center gap-2 h-8 pl-1 pr-2.5 rounded-lg transition-colors
                 ${userOpen ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white text-[11px] font-bold shrink-0">
-                {user!.name.charAt(0).toUpperCase()}
+              <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+                {user!.avatar ? (
+                  <img src={user!.avatar} alt={user!.name} className="w-full h-full object-cover" />
+                ) : (
+                  user!.name.charAt(0).toUpperCase()
+                )}
               </div>
               <span className="hidden sm:block text-[13px] font-medium text-slate-700 dark:text-slate-200 max-w-[80px] truncate">
                 {user!.name}

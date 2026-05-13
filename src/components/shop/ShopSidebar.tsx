@@ -10,7 +10,8 @@ import {
   Star, 
   MessageCircle, 
   Store,
-  ChevronRight
+  ChevronRight,
+  Wallet
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -18,6 +19,7 @@ const navItems = [
   { label: 'Dashboard', path: '/shop/dashboard', icon: BarChart3 },
   { label: 'Lịch đặt hẹn', path: '/shop/bookings', icon: Calendar },
   { label: 'Dịch vụ', path: '/shop/services', icon: Package },
+  { label: 'Ví của tôi', path: '/shop/wallet', icon: Wallet },
   { label: 'Camera', path: '/shop/camera', icon: Video },
   { label: 'Nhân viên', path: '/shop/staff', icon: UsersIcon },
   { label: 'Khách hàng', path: '/shop/customers', icon: UsersIcon },
