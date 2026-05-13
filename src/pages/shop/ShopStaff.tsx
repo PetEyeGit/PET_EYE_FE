@@ -3,7 +3,7 @@ import {
     Users, UserPlus, Search, Shield, CheckCircle, XCircle,
     Settings, Save, Info, Briefcase, Loader2, X, Eye, EyeOff,
     Award, FileText, Trash2, ExternalLink, Mail, Phone, UserCircle,
-    Zap, Star, ShieldCheck, GraduationCap, LayoutDashboard
+    Zap, Star, ShieldCheck, GraduationCap, LayoutDashboard, ChevronDown
 } from 'lucide-react';
 import { staffService, type StaffResponse, type StaffCreationRequest } from '../../services/staff.service';
 import { shopService } from '../../services/shop.service';
@@ -12,7 +12,12 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
 const SPECIALTIES = ['Grooming', 'Vet / Clinic', 'Boarding', 'General'];
-const ROLES = ['Nhân viên grooming', 'Bác sĩ thú y', 'Nhân viên chăm sóc', 'Quản lý ca'];
+const ROLES = [
+    { label: 'Kỹ thuật viên Grooming', value: 'Groomer', spec: 'Grooming' },
+    { label: 'Bác sĩ thú y', value: 'Vet', spec: 'Vet / Clinic' },
+    { label: 'Chuyên viên chăm sóc', value: 'Care', spec: 'Boarding' },
+    { label: 'Quản lý vận hành', value: 'Manager', spec: 'General' }
+];
 
 export default function ShopStaff() {
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
@@ -73,6 +78,29 @@ export default function ShopStaff() {
             certificates: []
         });
         setShowForm(true);
+    };
+
+    const toggleRole = (roleValue: string, specSuggest: string) => {
+        setForm(p => {
+            const currentRoles = p.role ? p.role.split(',').map(r => r.trim()).filter(r => r) : [];
+            let newRoles: string[];
+            
+            if (currentRoles.includes(roleValue)) {
+                newRoles = currentRoles.filter(r => r !== roleValue);
+            } else {
+                newRoles = [...currentRoles, roleValue];
+            }
+
+            const newRoleStr = newRoles.join(', ');
+            
+            // Auto-suggest specialization if current is empty or generic
+            let newSpec = p.specialization;
+            if (!p.specialization || p.specialization === 'General') {
+                newSpec = specSuggest;
+            }
+
+            return { ...p, role: newRoleStr, specialization: newSpec };
+        });
     };
 
     const handleAddCertField = () => {
@@ -228,18 +256,18 @@ export default function ShopStaff() {
 
                         <AnimatePresence>
                             {showForm && (
-                                <div className="fixed inset-0 z-[100] flex justify-center overflow-y-auto bg-slate-950/40 backdrop-blur-md">
-                                    <div className="min-h-screen w-full flex justify-center p-4 pt-10 md:pt-20">
+                                <div className="fixed -inset-10 z-[9999] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-10 overflow-y-auto custom-scrollbar">
+                                    <div className="w-full max-w-2xl flex items-center justify-center py-20 min-h-full">
                                         <motion.div 
                                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                             onClick={() => setShowForm(false)}
                                             className="fixed inset-0 bg-transparent" 
                                         />
                                         <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95, y: 40 }}
+                                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: 40 }}
-                                            className="relative w-full max-w-3xl h-fit bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl flex flex-col overflow-hidden border border-white/20 z-10"
+                                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                            className="relative w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden border border-white/10 z-10"
                                         >
                                         {/* Compact Premium Modal Header */}
                                         <div className="bg-primary p-6 relative overflow-hidden shrink-0">
@@ -316,22 +344,39 @@ export default function ShopStaff() {
                                                         <ShieldCheck className="text-primary" size={18} />
                                                         <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Năng lực chuyên môn</h3>
                                                     </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-primary/5 rounded-3xl border border-primary/10">
-                                                        <div className="space-y-1.5">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Vai trò trong hệ thống</label>
-                                                            <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
-                                                                className="w-full px-5 py-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary outline-none font-bold text-sm text-slate-700 dark:text-white transition-all appearance-none cursor-pointer">
-                                                                <option value="">Chọn vai trò...</option>
-                                                                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                                                            </select>
+                                                    <div className="p-5 bg-primary/5 rounded-3xl border border-primary/10 space-y-5">
+                                                        <div className="space-y-2">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Vai trò trong hệ thống (Chọn một hoặc nhiều)</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {ROLES.map(r => {
+                                                                    const isSelected = form.role?.split(', ').includes(r.value);
+                                                                    return (
+                                                                        <button
+                                                                            key={r.value}
+                                                                            type="button"
+                                                                            onClick={() => toggleRole(r.value, r.spec)}
+                                                                            className={`px-4 py-2 rounded-xl text-[11px] font-bold transition-all border ${
+                                                                                isSelected 
+                                                                                    ? 'bg-primary text-white border-primary shadow-md shadow-primary/20' 
+                                                                                    : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:border-primary/40'
+                                                                            }`}
+                                                                        >
+                                                                            {r.label}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
                                                         <div className="space-y-1.5">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Lĩnh vực chuyên môn</label>
-                                                            <select value={form.specialization} onChange={e => setForm(p => ({ ...p, specialization: e.target.value }))}
-                                                                className="w-full px-5 py-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary outline-none font-bold text-sm text-slate-700 dark:text-white transition-all appearance-none cursor-pointer">
-                                                                <option value="">Chọn lĩnh vực...</option>
-                                                                {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
-                                                            </select>
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Lĩnh vực chuyên môn chính</label>
+                                                            <div className="relative">
+                                                                <select value={form.specialization} onChange={e => setForm(p => ({ ...p, specialization: e.target.value }))}
+                                                                    className="w-full px-5 py-3 bg-white dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary outline-none font-bold text-sm text-slate-700 dark:text-white transition-all appearance-none cursor-pointer">
+                                                                    <option value="">Chọn lĩnh vực...</option>
+                                                                    {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                                </select>
+                                                                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={14} />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -564,7 +609,9 @@ export default function ShopStaff() {
                                                             <div className="space-y-1.5">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-200">{s.role || 'Chưa thiết lập'}</span>
+                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-200">
+                                                                        {s.role ? s.role.split(', ').map(rv => ROLES.find(r => r.value === rv)?.label || rv).join(', ') : 'Chưa thiết lập'}
+                                                                    </span>
                                                                 </div>
                                                                 <span className="px-3 py-1 bg-primary/5 text-primary text-[9px] font-black uppercase tracking-wider rounded-lg border border-primary/5">
                                                                     {s.specialization || 'Đa năng'}

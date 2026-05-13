@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 export default function CompleteProfile() {
   const { user, setUserSession } = useAuth();
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -19,16 +20,19 @@ export default function CompleteProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !phone) {
+        toast.error('Vui lòng nhập đầy đủ email và số điện thoại');
+        return;
+    }
 
     setLoading(true);
     try {
-      const updatedUser = await authService.updateEmail(email);
+      const updatedUser = await authService.updateEmail(email, phone);
       setUserSession(updatedUser);
-      toast.success('Cập nhật email thành công!');
+      toast.success('Cập nhật thông tin thành công!');
       navigate('/home');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Cập nhật email thất bại');
+      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
     } finally {
       setLoading(false);
     }
@@ -42,14 +46,18 @@ export default function CompleteProfile() {
             <Mail className="w-8 h-8" />
           </div>
           <h2 className="text-2xl font-bold text-slate-800">Hoàn tất hồ sơ</h2>
-          <p className="text-slate-500 mt-2">
-            Zalo không cung cấp địa chỉ email của bạn. Vui lòng cung cấp email để chúng tôi có thể liên hệ và gửi thông báo quan trọng.
-          </p>
+          <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-left">
+            <p className="text-amber-800 text-xs leading-relaxed font-medium">
+              <span className="font-black">📌 Lưu ý quan trọng:</span> Vì chính sách bảo mật của Zalo, chúng tôi không thể tự động lấy Email và Số điện thoại của bạn. 
+              <br/><br/>
+              Rất mong bạn thông cảm cung cấp thông tin này để Peteye có thể xác thực tài khoản và gửi các thông báo quan trọng về lịch hẹn của bạn.
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-700 ml-1">Địa chỉ Email mới</label>
+            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Địa chỉ Email mới</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
@@ -58,7 +66,24 @@ export default function CompleteProfile() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@gmail.com"
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 placeholder:text-slate-400"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-slate-800 font-bold placeholder:text-slate-400 placeholder:font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-700 uppercase tracking-widest ml-1">Số điện thoại liên hệ</label>
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 flex items-center justify-center font-bold">
+                📱
+              </div>
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="09xx xxx xxx"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all text-slate-800 font-bold placeholder:text-slate-400 placeholder:font-medium"
               />
             </div>
           </div>
@@ -66,21 +91,21 @@ export default function CompleteProfile() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl font-bold text-lg shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
           >
             {loading ? (
               <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                Xác nhận
+                Hoàn tất & Tiếp tục
               </>
             )}
           </button>
         </form>
 
-        <p className="text-center text-slate-400 text-sm mt-8">
-          Bằng cách nhấn xác nhận, bạn đồng ý với Điều khoản sử dụng của chúng tôi.
+        <p className="text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-8">
+          Môi trường bảo mật & an toàn 100%
         </p>
       </div>
     </div>

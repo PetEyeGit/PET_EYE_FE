@@ -83,9 +83,10 @@ export const authService = {
     await apiClient.post('/auth/reset-password', { email, otp, newPassword });
   },
 
-  updateEmail: async (email: string): Promise<User> => {
+  updateEmail: async (email: string, phoneNumber?: string): Promise<User> => {
     const response = await apiClient.post<ApiResponse<AuthenticationResponse>>('/auth/update-email', {
       email,
+      phoneNumber,
     });
     const { token, authenticated } = response.data.result!;
     if (!authenticated) throw new Error('Failed to update email');
@@ -93,7 +94,13 @@ export const authService = {
   },
 
   _decodeAndCreateUser: (token: string, requiresEmailUpdate?: boolean): User => {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    
+    const payload = JSON.parse(jsonPayload);
     console.log('[auth] decoded token payload:', payload);
 
     // BE now includes explicit 'userId' claim (numeric)
@@ -108,7 +115,8 @@ export const authService = {
     return {
       id,
       email: payload.email,
-      name: payload.email ? payload.email.split('@')[0] : 'User',
+      name: payload.fullName || (payload.email ? payload.email.split('@')[0] : 'User'),
+      avatar: payload.avatar,
       role: (payload.roles && payload.roles.length > 0) ? payload.roles[0] as UserRole : 'USER',
       token,
       requiresEmailUpdate,
