@@ -46,6 +46,7 @@ export default function StaffNavbar() {
     { label: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
     { label: 'Lịch làm việc', path: '/staff/tasks', icon: Calendar },
     { label: 'Hồ sơ chuyên môn', path: '/staff/profile', icon: Award },
+    { label: 'Tin nhắn', path: '/staff/messages', icon: MessageCircle },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -97,13 +98,13 @@ export default function StaffNavbar() {
 
           {/* Right: User Actions */}
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat'))}
+            <Link 
+              to="/staff/messages"
               className="flex p-3 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all relative"
             >
               <MessageCircle size={20} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900" />
-            </button>
+            </Link>
 
             <div ref={notiRef} className="relative">
               <button 
