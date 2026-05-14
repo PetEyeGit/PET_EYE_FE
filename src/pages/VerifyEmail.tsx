@@ -16,12 +16,12 @@ export default function VerifyEmail() {
   const password: string = location.state?.password ?? '';
   const isShop: boolean = location.state?.isShop ?? false;
 
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [error, setError] = useState('');
-  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Redirect if no email in state
   useEffect(() => {
@@ -35,39 +35,21 @@ export default function VerifyEmail() {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
-    const next = [...otp];
-    next[index] = value.slice(-1);
-    setOtp(next);
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setOtp(val);
     setError('');
-    if (value && index < 5) inputs.current[index + 1]?.focus();
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''));
-      inputs.current[5]?.focus();
-    }
   };
 
   const handleVerify = async () => {
-    const code = otp.join('');
-    if (code.length < 6) {
+    if (otp.length < 6) {
       setError('Vui lòng nhập đủ 6 chữ số OTP');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      await authService.verifyEmail(email, code);
+      await authService.verifyEmail(email, otp);
       toast.success('Xác thực email thành công!');
       if (isShop) {
         // Shop cần admin duyệt — không auto login, redirect sang success page
@@ -103,9 +85,9 @@ export default function VerifyEmail() {
       await authService.resendVerification(email);
       toast.success('Đã gửi lại OTP về email của bạn');
       setCountdown(60);
-      setOtp(['', '', '', '', '', '']);
+      setOtp('');
       setError('');
-      inputs.current[0]?.focus();
+      inputRef.current?.focus();
     } catch {
       toast.error('Gửi lại OTP thất bại. Vui lòng thử lại.');
     } finally {
@@ -132,24 +114,34 @@ export default function VerifyEmail() {
           </p>
         </div>
 
-        {/* OTP inputs */}
-        <div className="flex gap-3 justify-center mb-6" onPaste={handlePaste}>
-          {otp.map((digit, i) => (
+        {/* OTP input */}
+        <div className="mb-6" onClick={() => inputRef.current?.focus()}>
+          {/* Hiển thị 6 ô giả, thực ra chỉ có 1 input ẩn */}
+          <div className="flex gap-3 justify-center relative cursor-text">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i}
+                className={`w-12 h-14 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all
+                  ${error ? 'border-red-400 bg-red-50 text-red-600'
+                    : otp.length === i ? 'border-primary ring-2 ring-primary/20 bg-white'
+                    : otp[i] ? 'border-slate-300 bg-white text-slate-900 dark:text-white dark:bg-slate-800'
+                    : 'border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-600'}`}>
+                {otp[i] ?? ''}
+                {otp.length === i && (
+                  <span className="animate-pulse text-primary text-2xl leading-none">|</span>
+                )}
+              </div>
+            ))}
             <input
-              key={i}
-              ref={el => { inputs.current[i] = el; }}
+              ref={inputRef}
               type="text"
               inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={e => handleChange(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
-              className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all
-                ${error ? 'border-red-400 bg-red-50' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900'}
-                focus:border-primary focus:ring-2 focus:ring-primary/20
-                text-slate-900 dark:text-white`}
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={handleOtpChange}
+              className="absolute inset-0 opacity-0 cursor-text"
+              autoFocus
             />
-          ))}
+          </div>
         </div>
 
         {error && (
