@@ -31,8 +31,8 @@ export function useNotifications(enabled = true) {
     queryKey: ['my-notifications'],
     queryFn: fetchAllMyNotifications,
     enabled,
-    refetchInterval: 30_000,
-    staleTime: 10_000,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -40,7 +40,6 @@ export function useNotifications(enabled = true) {
   const markReadMutation = useMutation({
     mutationFn: callMarkRead,
     onMutate: async (id) => {
-      // Optimistic update ngay lập tức
       await qc.cancelQueries({ queryKey: ['my-notifications'] });
       const prev = qc.getQueryData<AppNotification[]>(['my-notifications']);
       qc.setQueryData<AppNotification[]>(['my-notifications'],
@@ -49,19 +48,27 @@ export function useNotifications(enabled = true) {
       return { prev };
     },
     onError: (_err, _id, ctx) => {
-      // Rollback nếu lỗi
       if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['my-notifications'] });
-    },
+    // Không invalidate ngay — giữ optimistic update, để refetchInterval tự sync sau
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: async () => {
       await apiClient.patch('/users/notifications/mark-all-read');
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['my-notifications'] });
+      const prev = qc.getQueryData<AppNotification[]>(['my-notifications']);
+      qc.setQueryData<AppNotification[]>(['my-notifications'],
+        old => (old ?? []).map(n => ({ ...n, isRead: true }))
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['my-notifications'] });
     },
   });

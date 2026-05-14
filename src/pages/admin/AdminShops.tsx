@@ -21,25 +21,38 @@ export default function AdminShops() {
   const { data: shops = [], isLoading } = useQuery({
     queryKey: ['admin-shops'],
     queryFn: adminService.getAllShops,
+    staleTime: 0,
   });
 
   const approveMutation = useMutation({
     mutationFn: adminService.approveShop,
-    onSuccess: () => { toast.success('Đã phê duyệt shop'); qc.invalidateQueries({ queryKey: ['admin-shops'] }); qc.invalidateQueries({ queryKey: ['admin-dashboard'] }); },
+    onSuccess: (_, shopId) => {
+      toast.success('Đã phê duyệt shop');
+      qc.setQueryData<AdminShopResponse[]>(['admin-shops'], old =>
+        old?.map(s => s.id === shopId ? { ...s, isVerified: true } : s) ?? []
+      );
+      qc.invalidateQueries({ queryKey: ['admin-dashboard'] });
+    },
     onError: () => toast.error('Phê duyệt thất bại'),
   });
 
   const rejectMutation = useMutation({
     mutationFn: adminService.rejectShop,
-    onSuccess: () => { toast.success('Đã từ chối shop'); qc.invalidateQueries({ queryKey: ['admin-shops'] }); },
+    onSuccess: (_, shopId) => {
+      toast.success('Đã từ chối shop');
+      qc.setQueryData<AdminShopResponse[]>(['admin-shops'], old =>
+        old?.map(s => s.id === shopId ? { ...s, isVerified: false } : s) ?? []
+      );
+    },
     onError: () => toast.error('Từ chối thất bại'),
   });
 
   const filtered = shops.filter(s => {
     const matchSearch = s.shopName.toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase());
+    const verified = Boolean(s.isVerified);
     const matchStatus = statusFilter === 'Tất cả' ? true
-      : statusFilter === 'Đã duyệt' ? s.isVerified : !s.isVerified;
+      : statusFilter === 'Đã duyệt' ? verified : !verified;
     return matchSearch && matchStatus;
   });
 
@@ -123,7 +136,7 @@ export default function AdminShops() {
                   </div>
                   <div className="hidden md:block text-xs text-slate-500 min-w-[140px] truncate">{shop.email}</div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {!shop.isVerified && (
+                    {!Boolean(shop.isVerified) && (
                       <>
                         <button onClick={() => approveMutation.mutate(shop.id)} disabled={approveMutation.isPending}
                           className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1">
@@ -215,7 +228,7 @@ export default function AdminShops() {
               {detailShop.licenseImageUrl && (
                 <img src={detailShop.licenseImageUrl} alt="Giấy phép" className="w-full rounded-xl object-cover max-h-48" />
               )}
-              {!detailShop.isVerified && (
+              {!Boolean(detailShop.isVerified) && (
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => { approveMutation.mutate(detailShop.id); setDetailShop(null); }}
                     className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm">

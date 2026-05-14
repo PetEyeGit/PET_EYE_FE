@@ -17,6 +17,7 @@ const ROLE_COLOR: Record<string, string> = {
 export default function AdminMembers() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('Tất cả');
   const [detail, setDetail] = useState<AdminUserResponse | null>(null);
 
   const { data: members = [], isLoading } = useQuery({
@@ -42,10 +43,13 @@ export default function AdminMembers() {
     onError: () => toast.error('Xóa thất bại'),
   });
 
-  const filtered = members.filter(m =>
-    m.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-    m.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = members.filter(m => {
+    const matchSearch = m.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+      m.email.toLowerCase().includes(search.toLowerCase());
+    const role = m.roles?.[0]?.name ?? 'USER';
+    const matchRole = roleFilter === 'Tất cả' ? true : role === roleFilter;
+    return matchSearch && matchRole;
+  });
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -54,14 +58,23 @@ export default function AdminMembers() {
         <p className="text-slate-500 text-sm mt-1">Danh sách tất cả người dùng</p>
       </div>
 
-      {/* Search */}
-      <div className="flex gap-3">
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm theo tên, email..."
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm">
+        <div className="flex gap-2 flex-wrap">
+          {['Tất cả', 'USER', 'SHOP_OWNER', 'STAFF', 'ADMIN'].map(r => (
+            <button key={r} onClick={() => setRoleFilter(r)}
+              className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all
+                ${roleFilter === r ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+              {r === 'Tất cả' ? 'Tất cả' : ROLE_LABEL[r]}
+            </button>
+          ))}
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm shrink-0">
           {filtered.length} thành viên
         </div>
       </div>
