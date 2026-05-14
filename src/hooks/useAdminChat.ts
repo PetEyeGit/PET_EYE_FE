@@ -5,20 +5,42 @@ import { adminService, ChatMessage } from '../services/admin.service';
 
 const WS_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api').replace('/api', '/api/ws');
 
-export function useAdminChat(shopId: number | null, token: string | undefined) {
+export function useAdminChat(
+  shopId: number | null, 
+  token: string | undefined, 
+  channelType: string = 'ADMIN_SUPPORT',
+  recipientEmail?: string
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(false);
   const clientRef = useRef<Client | null>(null);
-
-  const channelType = 'ADMIN_SUPPORT';
 
   // Load history when shopId changes
   useEffect(() => {
-    if (!shopId) return;
+    if (!shopId && shopId !== 0) return;
+    
+    let active = true;
     setMessages([]);
-    adminService.getChatHistory(shopId, channelType).then(setMessages).catch(() => {});
-    adminService.markChatRead(shopId, channelType).catch(() => {});
-  }, [shopId]);
+    setLoading(true);
+
+    adminService.getChatHistory(shopId, channelType, recipientEmail)
+      .then(data => {
+        if (active) {
+            setMessages(data);
+            setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+
+    adminService.markChatRead(shopId, channelType, recipientEmail).catch(() => {});
+
+    return () => {
+        active = false;
+    };
+  }, [shopId, channelType, recipientEmail]);
 
   // WebSocket connection
   useEffect(() => {
@@ -43,9 +65,13 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
   // Subscribe to shopId room with channelType
   useEffect(() => {
     const client = clientRef.current;
-    if (!client || !connected || !shopId) return;
+    if (!client || !connected || (!shopId && shopId !== 0)) return;
 
-    const topic = `/topic/chat/${shopId}/${channelType}`;
+    let topic = `/topic/chat/${shopId}/${channelType}`;
+    if (channelType === 'CUSTOMER_CHAT' && recipientEmail) {
+        topic = `/topic/chat/${shopId}/customer/${recipientEmail}`;
+    }
+    
     console.log('Admin subscribing to:', topic);
 
     const sub = client.subscribe(topic, (frame) => {
@@ -58,7 +84,7 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
     });
 
     return () => sub.unsubscribe();
-  }, [connected, shopId]);
+  }, [connected, shopId, channelType, recipientEmail]);
 
   const sendMessage = useCallback((targetShopId: number, content: string, attachment?: { url: string; type: string; name: string }) => {
     const client = clientRef.current;
@@ -68,13 +94,14 @@ export function useAdminChat(shopId: number | null, token: string | undefined) {
       body: JSON.stringify({ 
         shopId: targetShopId, 
         channelType,
+        recipientEmail,
         content,
         attachmentUrl: attachment?.url,
         attachmentType: attachment?.type,
         attachmentName: attachment?.name,
       }),
     });
-  }, [connected]);
+  }, [connected, channelType, recipientEmail]);
 
-  return { messages, connected, sendMessage };
+  return { messages, connected, loading, sendMessage };
 }

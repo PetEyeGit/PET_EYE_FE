@@ -1,17 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Send, Image, Paperclip, Smile, MoreVertical, Phone, Video, MessageCircle, ChevronLeft, Users } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { Search, Send, Image, Paperclip, Smile, MoreVertical, Phone, Video, MessageCircle, ChevronLeft, Users, ShieldCheck } from 'lucide-react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useShopChat } from '../hooks/useShopChat';
 import { bookingService } from '../services/booking.service';
 import { useQuery } from '@tanstack/react-query';
+import apiClient from '../services/apiClient';
+import type { ApiResponse } from '../types/api';
 import ConversationThread from '../components/chat/shared/ConversationThread';
 
 export default function Messaging() {
   const { user } = useAuth();
-  const [selectedShop, setSelectedShop] = useState<{ id: number; name: string; avatar?: string } | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedShop, setSelectedShop] = useState<{ id: number; name: string; avatar?: string; type?: string } | null>(null);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const shopIdParam = searchParams.get('shopId');
+  const shopNameParam = searchParams.get('shopName');
 
   // Fetch unique shops from booking history
   const { data: bookings = [] } = useQuery({
@@ -20,16 +26,50 @@ export default function Messaging() {
     enabled: !!user
   });
 
-  // Extract unique shops
-  const chatShops = Array.from(new Map(
-    bookings.map(b => [b.shopId, { id: b.shopId, name: b.shopName }])
-  ).values());
+  const { data: pastShops = [] } = useQuery({
+    queryKey: ['my-conversations', user?.id],
+    queryFn: async () => {
+        const res = await apiClient.get<ApiResponse<{id: number, shopName: string}[]>>('/chat/my-conversations');
+        return res.data.result ?? [];
+    },
+    enabled: !!user
+  });
 
-  const { messages, connected, sendMessage } = useShopChat(
+  // Extract unique shops from bookings and past conversations
+  const mergedShops = Array.from(new Map([
+    ...bookings.map(b => [b.shopId, { id: b.shopId, name: b.shopName }]),
+    ...pastShops.map(s => [s.id, { id: s.id, name: s.shopName }])
+  ]).values());
+
+  // Merge with Admin Support and potential URL selection
+  const adminSupport = { id: 0, name: 'Trung tâm hỗ trợ khách hàng', type: 'ADMIN_SUPPORT' };
+  
+  const allConversations = [
+    adminSupport,
+    ...mergedShops
+  ];
+
+  // If a shop is passed via URL, ensure it's in the list or added as temp
+  useEffect(() => {
+    if (shopIdParam && shopNameParam) {
+      const sId = Number(shopIdParam);
+      const exists = allConversations.find(c => c.id === sId);
+      if (exists) {
+        setSelectedShop(exists);
+      } else {
+        setSelectedShop({ id: sId, name: shopNameParam });
+      }
+    } else if (!selectedShop && allConversations.length > 0) {
+        // Optional: select support by default or nothing
+        // setSelectedShop(adminSupport);
+    }
+  }, [shopIdParam, shopNameParam, bookings.length]);
+
+  const { messages, connected, loading, sendMessage } = useShopChat(
     selectedShop?.id ?? null,
     user?.token,
     'CUSTOMER_CHAT',
-    user?.email // recipientEmail for customer chat is the customer's own email
+    user?.email // In CUSTOMER_CHAT, recipient is the customer (for broadcast grouping)
   );
 
   if (!user) {
@@ -52,9 +92,7 @@ export default function Messaging() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-10">
-          {chatShops.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm italic">Bạn chưa có cuộc trò chuyện nào</div>
-          ) : chatShops.map((shop) => (
+          {allConversations.map((shop) => (
             <button 
               key={shop.id}
               type="button"
@@ -66,15 +104,18 @@ export default function Messaging() {
               }`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${
-                selectedShop?.id === shop.id ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
+                selectedShop?.id === shop.id ? 'bg-primary text-white' : 
+                shop.id === 0 ? 'bg-blue-500 text-white' : 'bg-primary/10 text-primary'
               }`}>
-                <MessageCircle size={24} />
+                {shop.id === 0 ? <ShieldCheck size={24} /> : <MessageCircle size={24} />}
               </div>
               <div className="flex-1 text-left min-w-0">
                 <h4 className={`font-bold text-sm truncate ${selectedShop?.id === shop.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
                   {shop.name}
                 </h4>
-                <p className="text-xs text-slate-500 truncate">Nhấn để nhắn tin với shop</p>
+                <p className="text-xs text-slate-500 truncate">
+                  {shop.id === 0 ? 'Hỗ trợ trực tuyến 24/7' : 'Nhấn để nhắn tin với shop'}
+                </p>
               </div>
               {selectedShop?.id === shop.id && (
                 <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -88,7 +129,9 @@ export default function Messaging() {
       <main className={`flex-1 flex flex-col bg-slate-50 dark:bg-slate-950 transition-all ${!selectedShop ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         {selectedShop ? (
             <ConversationThread
+                key={selectedShop.id}
                 messages={messages}
+                loading={loading}
                 currentUserEmail={user?.email}
                 connected={connected}
                 input={input}

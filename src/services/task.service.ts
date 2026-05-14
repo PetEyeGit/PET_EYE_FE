@@ -11,6 +11,8 @@ export interface TaskResponse {
   petName: string;
   customerId: number;
   customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
   serviceId: number;
   serviceName: string;
   staffId: number | null;

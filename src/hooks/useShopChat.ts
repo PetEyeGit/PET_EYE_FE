@@ -20,6 +20,7 @@ export function useShopChat(
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [loading, setLoading] = useState(false);
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -28,16 +29,32 @@ export function useShopChat(
 
   // Load history
   useEffect(() => {
-    if (!shopId) return;
+    if (shopId === null) return;
+    
+    let active = true;
     setMessages([]);
+    setLoading(true);
+
     apiClient.get<ApiResponse<ChatMessage[]>>(`/chat/${shopId}/history`, {
       params: { channelType, recipientEmail }
     })
-      .then(r => setMessages(r.data.result ?? []))
-      .catch(() => {});
+      .then(r => {
+        if (active) {
+            setMessages(r.data.result ?? []);
+            setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+
     apiClient.patch(`/chat/${shopId}/read`, null, {
       params: { channelType, recipientEmail }
     }).catch(() => {});
+
+    return () => {
+        active = false;
+    };
   }, [shopId, channelType, recipientEmail]);
 
   // WebSocket
@@ -66,7 +83,7 @@ export function useShopChat(
   // Subscribe
   useEffect(() => {
     const client = clientRef.current;
-    if (!client || !connected || !shopId) return;
+    if (!client || !connected || shopId === null) return;
 
     let topic = `/topic/chat/${shopId}/${channelType}`;
     
@@ -78,23 +95,25 @@ export function useShopChat(
       topic = `/topic/chat/${shopId}/direct/${staffEmail}`;
     }
       
-    console.log('Subscribing to:', topic);
-    
     const sub = client.subscribe(topic, (frame) => {
       try {
         const msg: ChatMessage = JSON.parse(frame.body);
+        // Ensure message belongs to current selected conversation to avoid leakage
         setMessages(prev => [...prev, msg]);
       } catch (err) {
         console.error('Error parsing msg:', err);
       }
     });
 
-    return () => sub.unsubscribe();
+    return () => {
+        console.log('Unsubscribing from:', topic);
+        sub.unsubscribe();
+    };
   }, [connected, shopId, channelType, recipientEmail, currentEmail, userRole]);
 
   const sendMessage = useCallback((content: string, attachment?: { url: string; type: string; name: string }) => {
     const client = clientRef.current;
-    if (!client || !connected || !shopId) return;
+    if (!client || !connected || shopId === null) return;
 
     client.publish({
       destination: '/app/chat',
@@ -110,5 +129,5 @@ export function useShopChat(
     });
   }, [connected, shopId, channelType, recipientEmail]);
 
-  return { messages, connected, sendMessage };
+  return { messages, connected, loading, sendMessage };
 }

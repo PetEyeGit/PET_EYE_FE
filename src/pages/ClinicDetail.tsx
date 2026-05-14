@@ -71,6 +71,12 @@ export default function ClinicDetail() {
     enabled: !!shopId,
   });
 
+  const { data: reviewCount = 0 } = useQuery({
+    queryKey: ['shop-reviews-count', shopId],
+    queryFn: () => reviewService.getReviewCount(shopId),
+    enabled: !!shopId,
+  });
+
   const { data: myPets = [] } = useQuery({
     queryKey: ['my-pets', user?.id],
     queryFn: () => petService.getByOwner(Number(user?.id)),
@@ -105,6 +111,7 @@ export default function ClinicDetail() {
     : 0;
 
   // ── Staff selection ─────────────────────────────────────────────────────────
+  const [selectedStaff, setSelectedStaff] = useState<StaffResponse | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [staffAvailabilityLoading, setStaffAvailabilityLoading] = useState(false);
   const [staffWithAvailability, setStaffWithAvailability] = useState<StaffResponse[]>([]);
@@ -356,7 +363,10 @@ export default function ClinicDetail() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Link to="/messages" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-lg shadow-primary/20">
+            <Link 
+              to={`/messages?shopId=${shopId}&shopName=${encodeURIComponent(shop?.shopName || '')}`} 
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-lg shadow-primary/20"
+            >
               <span className="material-symbols-outlined text-base">chat</span>
               Nhắn tin
             </Link>
@@ -445,26 +455,38 @@ export default function ClinicDetail() {
                   shop?.staffs?.map((staff: any) => (
                     <div
                       key={staff.id}
-                      className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                      onClick={() => setSelectedStaff(staff)}
+                      className="flex flex-col gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
                     >
-                      <img
-                        src={staff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'}
-                        alt={staff.fullName}
-                        className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
-                      />
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                          {staff.fullName}
-                        </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{staff.role}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 italic">{staff.specialization}</p>
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <span className="material-symbols-outlined text-amber-400 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                            star
-                          </span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300 text-xs">4.9</span>
+                      <div className="flex items-start gap-4">
+                        <img
+                          src={staff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'}
+                          alt={staff.fullName}
+                          className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
+                        />
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
+                            {staff.fullName}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{staff.role}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 italic">{staff.specialization}</p>
                         </div>
                       </div>
+                      
+                      {/* Certificates Section */}
+                      {staff.certificates && staff.certificates.filter((c: any) => c.status === 'VERIFIED').length > 0 && (
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Chứng chỉ chuyên môn</p>
+                          <div className="flex flex-wrap gap-2">
+                            {staff.certificates.filter((c: any) => c.status === 'VERIFIED').map((cert: any) => (
+                              <div key={cert.id} className="flex items-center gap-1.5 px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 rounded border border-teal-100 dark:border-teal-800/50">
+                                <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                                <span className="text-[10px] font-bold">{cert.certificateName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
@@ -694,7 +716,7 @@ export default function ClinicDetail() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   Đánh giá từ cộng đồng
-                  <span className="text-slate-400 font-normal text-base">({apiReviews.length})</span>
+                  <span className="text-slate-400 font-normal text-base">({reviewCount})</span>
                 </h2>
                 <div className="flex items-center gap-3">
                   <div className="text-center">
@@ -813,7 +835,7 @@ export default function ClinicDetail() {
 
               <div className="text-center mt-6">
                 <button className="px-6 py-2.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                  Xem thêm 117 đánh giá
+                  Xem thêm {reviewCount} đánh giá
                 </button>
               </div>
             </section>
@@ -1009,137 +1031,161 @@ export default function ClinicDetail() {
                   </div>
                 )}
 
-                {/* ── Staff Selection ─────────────────────────────────────── */}
+                {/* ── Staff Selection / Auto Assignment Info ──────────────── */}
                 {hasNormalServices && selectedDate && selectedTime && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Chọn nhân viên
-                      </label>
-                      {selectedStaffId && (
-                        <button
-                          onClick={() => setSelectedStaffId(null)}
-                          className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors"
-                        >
-                          Bỏ chọn
-                        </button>
-                      )}
-                    </div>
-
-                    {staffAvailabilityLoading ? (
-                      <div className="flex items-center gap-2 py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <span className="w-4 h-4 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin shrink-0" />
-                        <span className="text-xs text-slate-400">Đang kiểm tra lịch nhân viên...</span>
-                      </div>
-                    ) : staffWithAvailability.length === 0 ? (
-                      <div className="py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
-                        Không có nhân viên nào
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        {/* "Bất kỳ nhân viên" option */}
-                        <button
-                          onClick={() => setSelectedStaffId(null)}
-                          className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition-all ${
-                            selectedStaffId === null
-                              ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                          }`}
-                        >
-                          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
-                            <span className="material-symbols-outlined text-slate-400 text-lg">groups</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Bất kỳ nhân viên</p>
-                            <p className="text-[10px] text-slate-400">Hệ thống tự phân công</p>
-                          </div>
-                          {selectedStaffId === null && (
-                            <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                          )}
-                        </button>
-
-                        {/* Staff list */}
-                        {staffWithAvailability.map((staff) => {
-                          const isSelected = selectedStaffId === staff.id;
-                          const isBusy = staff.available === false;
-                          return (
+                  <>
+                    {(!shop?.assignmentMode || shop.assignmentMode === 'MANUAL') ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Chọn nhân viên
+                          </label>
+                          {selectedStaffId && (
                             <button
-                              key={staff.id}
-                              onClick={() => setSelectedStaffId(staff.id)}
-                              disabled={isBusy}
+                              onClick={() => setSelectedStaffId(null)}
+                              className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors"
+                            >
+                              Bỏ chọn
+                            </button>
+                          )}
+                        </div>
+
+                        {staffAvailabilityLoading ? (
+                          <div className="flex items-center gap-2 py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <span className="w-4 h-4 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin shrink-0" />
+                            <span className="text-xs text-slate-400">Đang kiểm tra lịch nhân viên...</span>
+                          </div>
+                        ) : staffWithAvailability.length === 0 ? (
+                          <div className="py-3 px-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
+                            Không có nhân viên nào
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {/* "Bất kỳ nhân viên" option */}
+                            <button
+                              onClick={() => setSelectedStaffId(null)}
                               className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition-all ${
-                                isSelected
+                                selectedStaffId === null
                                   ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
-                                  : isBusy
-                                    ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 opacity-60 cursor-not-allowed'
-                                    : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40 dark:hover:border-teal-700 cursor-pointer'
+                                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                               }`}
                             >
-                              <div className="relative shrink-0">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-sm">
-                                  {staff.fullName.charAt(0).toUpperCase()}
-                                </div>
-                                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${isBusy ? 'bg-red-400' : 'bg-green-400'}`} />
+                              <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-slate-400 text-lg">groups</span>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{staff.fullName}</p>
-                                <p className="text-[10px] text-slate-400 truncate">{staff.specialization || staff.role || 'Nhân viên'}</p>
+                                <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Bất kỳ nhân viên</p>
+                                <p className="text-[10px] text-slate-400">Hệ thống tự phân công</p>
                               </div>
-                              <div className="shrink-0 text-right">
-                                {isBusy ? (
-                                  <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded-full">Bận</span>
-                                ) : (
-                                  isSelected
-                                    ? <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                                    : <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full">Rảnh</span>
-                                )}
-                              </div>
+                              {selectedStaffId === null && (
+                                <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                              )}
                             </button>
-                          );
-                        })}
-                      </div>
-                    )}
 
-                    {/* Busy staff warning + suggestions */}
-                    {selectedStaffBusy && (
-                      <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="material-symbols-outlined text-amber-500 text-base mt-0.5 shrink-0">warning</span>
-                          <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
-                            Nhân viên này đã có lịch vào khung giờ bạn chọn.
-                          </p>
-                        </div>
-                        {suggestedStaff.length > 0 && (
-                          <>
-                            <p className="text-[10px] text-amber-700 dark:text-amber-300 mb-2 font-medium">Gợi ý nhân viên rảnh:</p>
-                            <div className="flex flex-col gap-1.5">
-                              {suggestedStaff.map((s) => (
+                            {/* Staff list */}
+                            {staffWithAvailability.map((staff) => {
+                              const isSelected = selectedStaffId === staff.id;
+                              const isBusy = staff.available === false;
+                              return (
                                 <button
-                                  key={s.id}
-                                  onClick={() => setSelectedStaffId(s.id)}
-                                  className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700 hover:border-[#1a2b4c] dark:hover:border-teal-500 transition-colors text-left"
+                                  key={staff.id}
+                                  onClick={() => setSelectedStaffId(staff.id)}
+                                  disabled={isBusy}
+                                  className={`flex items-center gap-3 p-2.5 rounded-xl border-2 text-left transition-all ${
+                                    isSelected
+                                      ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
+                                      : isBusy
+                                        ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 opacity-60 cursor-not-allowed'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40 dark:hover:border-teal-700 cursor-pointer'
+                                  }`}
                                 >
-                                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-xs shrink-0">
-                                    {s.fullName.charAt(0).toUpperCase()}
+                                  <div className="relative shrink-0">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-sm">
+                                      {staff.fullName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${isBusy ? 'bg-red-400' : 'bg-green-400'}`} />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{s.fullName}</p>
-                                    <p className="text-[10px] text-slate-400 truncate">{s.specialization || s.role || 'Nhân viên'}</p>
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{staff.fullName}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">{staff.specialization || staff.role || 'Nhân viên'}</p>
                                   </div>
-                                  <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full shrink-0">Chọn</span>
+                                  <div className="shrink-0 text-right">
+                                    {isBusy ? (
+                                      <span className="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded-full">Bận</span>
+                                    ) : (
+                                      isSelected
+                                        ? <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                        : <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full">Rảnh</span>
+                                    )}
+                                  </div>
                                 </button>
-                              ))}
-                            </div>
-                          </>
+                              );
+                            })}
+                          </div>
                         )}
-                        {suggestedStaff.length === 0 && (
-                          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
-                            Không có nhân viên rảnh vào khung giờ này. Vui lòng chọn giờ khác.
-                          </p>
+
+                        {/* Busy staff warning + suggestions */}
+                        {selectedStaffBusy && (
+                          <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                            <div className="flex items-start gap-2 mb-2">
+                              <span className="material-symbols-outlined text-amber-500 text-base mt-0.5 shrink-0">warning</span>
+                              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                                Nhân viên này đã có lịch vào khung giờ bạn chọn.
+                              </p>
+                            </div>
+                            {suggestedStaff.length > 0 && (
+                              <>
+                                <p className="text-[10px] text-amber-700 dark:text-amber-300 mb-2 font-medium">Gợi ý nhân viên rảnh:</p>
+                                <div className="flex flex-col gap-1.5">
+                                  {suggestedStaff.map((s) => (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => setSelectedStaffId(s.id)}
+                                      className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-700 hover:border-[#1a2b4c] dark:hover:border-teal-500 transition-colors text-left"
+                                    >
+                                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-[#1a2b4c] flex items-center justify-center text-white font-bold text-xs shrink-0">
+                                        {s.fullName.charAt(0).toUpperCase()}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{s.fullName}</p>
+                                        <p className="text-[10px] text-slate-400 truncate">{s.specialization || s.role || 'Nhân viên'}</p>
+                                      </div>
+                                      <span className="text-[10px] font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded-full shrink-0">Chọn</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                            {suggestedStaff.length === 0 && (
+                              <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
+                                Không có nhân viên rảnh vào khung giờ này. Vui lòng chọn giờ khác.
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
+                    ) : (
+                      <div className="mt-2 p-4 rounded-xl border border-teal-100 dark:border-teal-800/50 bg-teal-50/50 dark:bg-teal-900/20 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-800/50 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0 mt-0.5">
+                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
+                              {shop.assignmentMode === 'AUTO' ? 'psychology' : 'groups'}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-teal-900 dark:text-teal-100 mb-1">
+                              {shop.assignmentMode === 'AUTO' ? 'Phân bổ thông minh (AI)' : 'Đội ngũ chuyên nghiệp'}
+                            </h4>
+                            <p className="text-xs text-teal-700 dark:text-teal-300 leading-relaxed">
+                              {shop.assignmentMode === 'AUTO' 
+                                ? 'Hệ thống AI sẽ phân tích và lựa chọn nhân viên có chuyên môn phù hợp nhất đang rảnh vào khung giờ bạn chọn.'
+                                : 'Đơn sẽ được chuyển đến hệ thống của phòng khám. Nhân viên chuyên môn phù hợp nhất sẽ chủ động tiếp nhận để phục vụ bé.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
             {/* CTA */}
 <button
@@ -1363,6 +1409,140 @@ export default function ClinicDetail() {
               >
                 Tiếp tục thanh toán →
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Staff Detail Modal */}
+      {selectedStaff && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedStaff(null)}>
+          <div 
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header / Cover */}
+            <div className="relative h-32 bg-gradient-to-r from-[#1a2b4c] to-indigo-900">
+              <button 
+                onClick={() => setSelectedStaff(null)}
+                className="absolute top-4 right-4 size-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors backdrop-blur-md"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="px-8 pb-8">
+              {/* Profile Info */}
+              <div className="relative flex flex-col md:flex-row gap-6 -mt-12 mb-8">
+                <div className="relative">
+                  <img 
+                    src={selectedStaff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'} 
+                    alt={selectedStaff.fullName}
+                    className="size-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl"
+                  />
+                  <div className="absolute -bottom-2 -right-2 size-8 rounded-full bg-teal-500 border-4 border-white dark:border-slate-900 flex items-center justify-center text-white shadow-lg">
+                    <span className="material-symbols-outlined text-xs">check_circle</span>
+                  </div>
+                </div>
+                <div className="pt-14 md:pt-14 flex-1">
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                    {selectedStaff.fullName}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold uppercase tracking-wider">
+                      {selectedStaff.role}
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400 italic">
+                      {selectedStaff.specialization}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detail Content */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <section>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">badge</span>
+                      Thông tin liên hệ
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                          <span className="material-symbols-outlined text-base">call</span>
+                        </div>
+                        <span className="text-sm font-medium">{selectedStaff.phone || 'Chưa cập nhật'}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                          <span className="material-symbols-outlined text-base">mail</span>
+                        </div>
+                        <span className="text-sm font-medium truncate">{selectedStaff.email || 'Chưa cập nhật'}</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                <div className="space-y-6">
+                   <section>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">verified_user</span>
+                      Chứng chỉ & Bằng cấp
+                    </h4>
+                    {selectedStaff.certificates && selectedStaff.certificates.length > 0 ? (
+                      <div className="flex flex-col gap-3">
+                        {selectedStaff.certificates.map((cert) => (
+                          <div 
+                            key={cert.id}
+                            className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${
+                              cert.status === 'VERIFIED' 
+                                ? 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-100 dark:border-teal-900/50' 
+                                : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{cert.certificateName}</span>
+                              {cert.status === 'VERIFIED' && (
+                                <span className="material-symbols-outlined text-teal-500 text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                              )}
+                            </div>
+                            {cert.imageUrl && (
+                              <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 group/img">
+                                <img 
+                                  src={cert.imageUrl} 
+                                  alt={cert.certificateName} 
+                                  className="w-full h-full object-cover transition-transform group-hover/img:scale-110"
+                                />
+                                <a 
+                                  href={cert.imageUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition-opacity"
+                                >
+                                  <span className="material-symbols-outlined text-2xl">zoom_in</span>
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400 italic">Chưa có thông tin chứng chỉ.</p>
+                    )}
+                  </section>
+                </div>
+              </div>
+
+              {/* Action */}
+              <div className="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button 
+                  onClick={() => setSelectedStaff(null)}
+                  className="px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl shadow-slate-200 dark:shadow-none"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         </div>

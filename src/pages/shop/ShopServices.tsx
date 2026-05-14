@@ -554,7 +554,7 @@ export default function ShopServices() {
                     type="number"
                     min={0}
                     step={1000}
-                    value={form.price}
+                    value={form.price === 0 ? '' : form.price}
                     onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
                     placeholder="150000"
@@ -572,7 +572,7 @@ export default function ShopServices() {
                         type="number"
                         min={1}
                         step={1}
-                        value={form.durationDays}
+                        value={form.durationDays === 0 ? '' : form.durationDays}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationDays: Number(e.target.value) }))}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
                         placeholder="1"
@@ -584,9 +584,9 @@ export default function ShopServices() {
                       <label className="block text-sm font-bold text-slate-700 mb-2">Thời gian (phút) *</label>
                       <input
                         type="number"
-                        min={1}
+                        min={5}
                         step={5}
-                        value={form.durationMinutes}
+                        value={form.durationMinutes === 0 ? '' : form.durationMinutes}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
                         placeholder="60"

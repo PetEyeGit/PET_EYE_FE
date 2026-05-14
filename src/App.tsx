@@ -173,6 +173,7 @@ function AppLayout() {
           <Route path="/payment/result" element={<PaymentResult />} />
           <Route path="/booking/success" element={<BookingSuccess />} />
           <Route path="/payment/failure" element={<PaymentFailure />} />
+          <Route path="/bookings/my" element={<BookingHistory />} />
         </Routes>
       </main>
 

@@ -1,5 +1,5 @@
-﻿import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Users, Bell, MessageCircle,
   LogOut, Menu, ChevronRight, Shield, Sparkles, Wallet
@@ -21,6 +21,8 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  if (user?.role !== 'ADMIN') return <Navigate to="/home" />;
 
   const handleLogout = () => {
     logout();

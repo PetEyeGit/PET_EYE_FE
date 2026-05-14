@@ -90,6 +90,14 @@ export interface StaffResponse {
   isActive: boolean;
   /** true = rảnh tại khung giờ được query, false = bận, undefined = chưa query */
   available?: boolean;
+  certificates?: {
+    id: number;
+    certificateName: string;
+    imageUrl?: string;
+    issueDate?: string;
+    expiryDate?: string;
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  }[];
 }
 
 export interface BookingRequest {
@@ -112,6 +120,9 @@ export interface BookingResponse {
   servicePrice: number;
   petId: number;
   petName: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
   staffId?: number;
   staffName?: string;
   appointmentDatetime: string;

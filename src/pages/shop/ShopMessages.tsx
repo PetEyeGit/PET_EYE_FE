@@ -35,7 +35,7 @@ export default function ShopMessages() {
     enabled: !!myShop
   });
 
-  const { messages, connected, sendMessage } = useShopChat(
+  const { messages, connected, loading, sendMessage } = useShopChat(
     myShop?.id ?? null,
     user?.token,
     activeChannel.type,
@@ -184,8 +184,10 @@ export default function ShopMessages() {
 
       {/* Main Chat Area */}
       <ConversationThread 
+        key={`${activeChannel.type}-${activeChannel.id}`}
         containerClassName="flex-1 rounded-r-3xl"
         messages={messages}
+        loading={loading}
         currentUserEmail={user?.email}
         connected={connected}
         input={input}

@@ -103,46 +103,14 @@ export default function ShopStaff() {
         });
     };
 
-    const handleAddCertField = () => {
-        setForm(p => ({
-            ...p,
-            certificates: [...(p.certificates || []), { certificateName: '', imageUrl: '', issueDate: '', expiryDate: '' }]
-        }));
-    };
 
-    const handleCertFileChange = async (index: number, file: File) => {
-        try {
-            const url = await userService.uploadAvatar(file);
-            const newCerts = [...(form.certificates || [])];
-            newCerts[index].imageUrl = url;
-            setForm(p => ({ ...p, certificates: newCerts }));
-            toast.success('Đã tải lên chứng chỉ');
-        } catch {
-            toast.error('Tải ảnh thất bại');
-        }
-    };
-
-    const removeCertField = (index: number) => {
-        setForm(p => ({
-            ...p,
-            certificates: p.certificates?.filter((_, i) => i !== index)
-        }));
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         try {
             if (editingStaff) {
-                const updated = await staffService.updateStaff(editingStaff.id, form);
-                if (form.certificates && form.certificates.length > 0) {
-                    for (const cert of form.certificates) {
-                        if (cert.imageUrl && cert.certificateName) {
-                            await staffService.addCertificate(editingStaff.id, cert);
-                        }
-                    }
-                }
-                const final = await staffService.getStaffById(editingStaff.id);
+                const final = await staffService.updateStaff(editingStaff.id, form);
                 setStaffList(prev => prev.map(s => s.id === editingStaff.id ? final : s));
                 toast.success(`Cập nhật thông tin ${final.fullName} thành công!`);
             } else {
@@ -179,20 +147,7 @@ export default function ShopStaff() {
         }
     };
 
-    const handleRemoveCert = async (certId: number) => {
-        if (!window.confirm('Bạn có chắc muốn xóa chứng chỉ này?')) return;
-        try {
-            await staffService.removeCertificate(certId);
-            if (viewingCerts) {
-                const updated = await staffService.getStaffById(viewingCerts.id);
-                setStaffList(prev => prev.map(s => s.id === updated.id ? updated : s));
-                setViewingCerts(updated);
-            }
-            toast.success('Đã xóa chứng chỉ');
-        } catch {
-            toast.error('Xóa thất bại');
-        }
-    };
+
 
     const handleSaveMode = async () => {
         setSavingMode(true);
@@ -381,60 +336,13 @@ export default function ShopStaff() {
                                                     </div>
                                                 </div>
 
-                                                {/* Section 3: Chứng chỉ */}
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <GraduationCap className="text-primary" size={18} />
-                                                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Chứng chỉ & Bằng cấp</h3>
-                                                        </div>
-                                                        <button type="button" onClick={handleAddCertField}
-                                                            className="px-4 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">
-                                                            + Thêm chứng chỉ
-                                                        </button>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-1 gap-3">
-                                                        {form.certificates?.map((cert, idx) => (
-                                                            <motion.div 
-                                                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                                                                key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 relative group"
-                                                            >
-                                                                <button type="button" onClick={() => removeCertField(idx)}
-                                                                    className="absolute top-2 right-2 w-8 h-8 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                                    <div className="md:col-span-2 space-y-1.5">
-                                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên chứng chỉ</label>
-                                                                        <input required value={cert.certificateName}
-                                                                            onChange={e => {
-                                                                                const n = [...(form.certificates || [])];
-                                                                                n[idx].certificateName = e.target.value;
-                                                                                setForm(p => ({ ...p, certificates: n }));
-                                                                            }}
-                                                                            className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg outline-none font-bold text-xs" placeholder="Ví dụ: Bằng bác sĩ thú y..." />
-                                                                    </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Ảnh</label>
-                                                                        <div className="relative h-[34px]">
-                                                                            <input type="file" className="hidden" id={`cert-file-${idx}`} accept="image/*"
-                                                                                onChange={e => e.target.files?.[0] && handleCertFileChange(idx, e.target.files[0])} />
-                                                                            <label htmlFor={`cert-file-${idx}`} className={`flex items-center justify-center gap-2 h-full px-3 text-[9px] font-black uppercase tracking-widest rounded-lg cursor-pointer transition-all ${cert.imageUrl ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-900 border border-dashed border-primary/40 text-primary hover:bg-primary/5'}`}>
-                                                                                {cert.imageUrl ? <CheckCircle size={14} /> : <ImageIcon size={14} />} 
-                                                                                {cert.imageUrl ? 'Xong' : 'Tải ảnh'}
-                                                                            </label>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        ))}
-                                                        {(!form.certificates || form.certificates.length === 0) && (
-                                                            <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Chưa có chứng chỉ</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                {/* Section 3: Chứng chỉ (Removed for Owner - Staff will upload themselves) */}
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                                                    <GraduationCap className="mx-auto mb-2 text-primary/40" size={24} />
+                                                    <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Hồ sơ chuyên môn</h3>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">
+                                                        Nhân viên sẽ tự cập nhật chứng chỉ trong tài khoản cá nhân.
+                                                    </p>
                                                 </div>
                                             </form>
                                         </div>
@@ -538,10 +446,7 @@ export default function ShopStaff() {
                                                                         <XCircle size={16} /> Từ chối
                                                                     </button>
                                                                 )}
-                                                                <button onClick={() => handleRemoveCert(cert.id)}
-                                                                    className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-rose-500 rounded-xl transition-all flex items-center justify-center">
-                                                                    <Trash2 size={20} />
-                                                                </button>
+
                                                             </div>
                                                         </div>
                                                     </div>

@@ -546,10 +546,13 @@ export default function ShopBookings() {
                                         <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-[#1a2b4c] dark:text-indigo-400">
                                             <Mail size={14} />
                                         </div>
-                                        <div>
+                                        <div className="min-w-0">
                                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Liên hệ</p>
-                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
-                                                {selectedBooking.customerEmail || 'Chưa cập nhật'}
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                                                {selectedBooking.customerPhone || 'Chưa có SĐT'}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                {selectedBooking.customerEmail || 'Chưa cập nhật email'}
                                             </p>
                                         </div>
                                     </div>

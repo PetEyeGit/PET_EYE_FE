@@ -29,6 +29,11 @@ export const reviewService = {
     const response = await apiClient.get(`/reviews/shop/${shopId}`);
     return response.data.result;
   },
+  
+  getReviewCount: async (shopId: number): Promise<number> => {
+    const response = await apiClient.get(`/reviews/shop/${shopId}/count`);
+    return response.data.result;
+  },
 
   getLatestReviews: async (limit: number = 6): Promise<ReviewResponse[]> => {
     const response = await apiClient.get(`/reviews/latest?limit=${limit}`);

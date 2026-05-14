@@ -22,6 +22,7 @@ export interface ConversationThreadProps {
     disableInput?: boolean;
     hideHeader?: boolean;
     containerClassName?: string;
+    loading?: boolean;
 }
 
 export default function ConversationThread({
@@ -36,7 +37,8 @@ export default function ConversationThread({
     placeholder = "Nhập nội dung tin nhắn...",
     disableInput = false,
     hideHeader = false,
-    containerClassName = ""
+    containerClassName = "",
+    loading = false
 }: ConversationThreadProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -207,9 +209,14 @@ export default function ConversationThread({
             {/* Messages Area */}
             <div 
                 ref={containerRef}
-                className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-hide"
+                className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-hide relative"
             >
-                {messages.length === 0 ? (
+                {loading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[2px] z-20">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đang tải tin nhắn...</p>
+                    </div>
+                ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-300 dark:text-slate-600">
                         <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mb-4">
                             <MessageCircle size={32} className="opacity-20 text-slate-500" />
