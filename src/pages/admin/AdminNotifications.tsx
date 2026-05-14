@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Bell, Send, X, Plus, Trash2, Users, Store, Globe, User, Search, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, Send, X, Plus, Trash2, Users, Store, Globe, User, Search, CheckCircle, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service';
+import type { NotificationType } from '../../services/admin.service';
 import toast from 'react-hot-toast';
 
 type TargetType = 'SINGLE' | 'ALL_USERS' | 'ALL_SHOPS' | 'ALL';
@@ -10,30 +11,55 @@ interface NotifForm {
   title: string;
   content: string;
   targetType: TargetType;
+  notificationType: NotificationType;
   email: string;
 }
 
-const TARGET_OPTIONS: { value: TargetType; label: string; desc: string; icon: React.ReactNode }[] = [
-  { value: 'ALL',       label: 'Tất cả',     desc: 'Toàn bộ người dùng',             icon: <Globe size={16} /> },
-  { value: 'ALL_USERS', label: 'Khách hàng', desc: 'Tất cả user có role USER',        icon: <Users size={16} /> },
-  { value: 'ALL_SHOPS', label: 'Cửa hàng',   desc: 'Tất cả user có role SHOP_OWNER', icon: <Store size={16} /> },
-  { value: 'SINGLE',    label: 'Cá nhân',    desc: 'Gửi cho 1 người theo email',     icon: <User size={16} /> },
+const TARGET_OPTIONS: { value: TargetType; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'ALL',       label: 'Tất cả',     desc: 'Toàn bộ người dùng',             icon: <Globe size={16} />,  color: 'bg-purple-600' },
+  { value: 'ALL_USERS', label: 'Khách hàng', desc: 'Tất cả user có role USER',        icon: <Users size={16} />,  color: 'bg-blue-600' },
+  { value: 'ALL_SHOPS', label: 'Cửa hàng',   desc: 'Tất cả user có role SHOP_OWNER', icon: <Store size={16} />,  color: 'bg-emerald-600' },
+  { value: 'SINGLE',    label: 'Cá nhân',    desc: 'Gửi cho 1 người theo email',     icon: <User size={16} />,   color: 'bg-orange-500' },
 ];
 
-const EMPTY_FORM: NotifForm = { title: '', content: '', targetType: 'ALL', email: '' };
+const NOTIF_TYPE_OPTIONS: { value: NotificationType; label: string; color: string; bg: string }[] = [
+  { value: 'GENERAL',   label: 'Chung',       color: 'text-slate-600',   bg: 'bg-slate-100' },
+  { value: 'PROMOTION', label: 'Khuyến mãi',  color: 'text-orange-600',  bg: 'bg-orange-100' },
+  { value: 'REMINDER',  label: 'Nhắc nhở',    color: 'text-yellow-700',  bg: 'bg-yellow-100' },
+  { value: 'SYSTEM',    label: 'Hệ thống',    color: 'text-red-600',     bg: 'bg-red-100' },
+  { value: 'BOOKING',   label: 'Booking',     color: 'text-blue-600',    bg: 'bg-blue-100' },
+];
+
+const FILTER_OPTIONS = [{ value: '', label: 'Tất cả' }, ...NOTIF_TYPE_OPTIONS.map(t => ({ value: t.value, label: t.label }))];
+
+const EMPTY_FORM: NotifForm = { title: '', content: '', targetType: 'ALL', notificationType: 'GENERAL', email: '' };
+
+function NotifTypeBadge({ type }: { type?: string }) {
+  const opt = NOTIF_TYPE_OPTIONS.find(t => t.value === type) ?? NOTIF_TYPE_OPTIONS[0];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${opt.bg} ${opt.color}`}>
+      <Tag size={10} />
+      {opt.label}
+    </span>
+  );
+}
 
 export default function AdminNotifications() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NotifForm>(EMPTY_FORM);
   const [page, setPage] = useState(0);
+  const [typeFilter, setTypeFilter] = useState('');
 
   const { data: pagedData, isLoading } = useQuery({
     queryKey: ['admin-notifications', page],
     queryFn: () => adminService.getNotifications(page),
   });
 
-  const broadcasts = pagedData?.content ?? [];
+  const allBroadcasts = pagedData?.content ?? [];
+  const broadcasts = typeFilter
+    ? allBroadcasts.filter(b => b.notificationType === typeFilter)
+    : allBroadcasts;
   const totalPages = pagedData?.totalPages ?? 0;
   const totalElements = pagedData?.totalElements ?? 0;
 
@@ -49,11 +75,12 @@ export default function AdminNotifications() {
         if (!found) throw new Error('EMAIL_NOT_FOUND');
         return adminService.createNotification({
           title: form.title, content: form.content,
-          targetType: 'SINGLE', userId: found.id,
+          targetType: 'SINGLE', notificationType: form.notificationType, userId: found.id,
         });
       }
       return adminService.createNotification({
-        title: form.title, content: form.content, targetType: form.targetType,
+        title: form.title, content: form.content,
+        targetType: form.targetType, notificationType: form.notificationType,
       });
     },
     onSuccess: (msg) => {
@@ -74,7 +101,7 @@ export default function AdminNotifications() {
   const deleteMutation = useMutation({
     mutationFn: (broadcastId: string) => adminService.deleteNotification(broadcastId),
     onSuccess: () => {
-      toast.success('Đã xóa đợt thông báo');
+      toast.success('Đã xóa thông báo');
       qc.invalidateQueries({ queryKey: ['admin-notifications'] });
     },
     onError: () => toast.error('Xóa thất bại'),
@@ -90,11 +117,19 @@ export default function AdminNotifications() {
     ? users.filter(u => u.email.toLowerCase().includes(form.email.toLowerCase())).slice(0, 5)
     : [];
 
+  const formatDate = (s: string) => new Date(s).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const formatTime = (s: string) => new Date(s).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+  const targetLabel: Record<string, string> = {
+    ALL: 'Tất cả', ALL_USERS: 'Khách hàng', ALL_SHOPS: 'Cửa hàng', SINGLE: 'Cá nhân',
+  };
+
   return (
     <div className="p-6 md:p-8 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Quản lý Thông báo</h1>
+          <h1 className="text-2xl font-black text-slate-900">Thông báo</h1>
           <p className="text-slate-500 text-sm mt-1">Gửi thông báo đến người dùng và cửa hàng</p>
         </div>
         <button onClick={() => setShowForm(true)}
@@ -104,60 +139,102 @@ export default function AdminNotifications() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        {[
-          { label: 'Tổng đợt gửi', value: totalElements, color: 'text-slate-900' },
-          { label: 'Trang hiện tại', value: `${page + 1} / ${totalPages || 1}`, color: 'text-blue-600' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
-            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">{s.label}</p>
-          </div>
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+          <Bell size={18} className="text-blue-600" />
+        </div>
+        <div>
+          <p className="text-xl font-black text-slate-900">{totalElements}</p>
+          <p className="text-xs text-slate-400 font-medium">Tổng đợt gửi</p>
+        </div>
+      </div>
+
+      {/* Filter by type */}
+      <div className="flex gap-2 flex-wrap">
+        {FILTER_OPTIONS.map(f => (
+          <button key={f.value} onClick={() => { setTypeFilter(f.value); setPage(0); }}
+            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all
+              ${typeFilter === f.value ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+            {f.label}
+          </button>
         ))}
       </div>
 
-      {/* Broadcast list */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h3 className="font-bold text-slate-900 text-sm">Lịch sử đợt gửi</h3>
-        </div>
+      {/* List */}
+      <div className="space-y-3">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-slate-400 text-sm">Đang tải...</div>
+          <div className="bg-white rounded-2xl border border-slate-100 flex items-center justify-center py-16 text-slate-400 text-sm">Đang tải...</div>
         ) : broadcasts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Bell size={40} className="mb-3 opacity-30" />
+          <div className="bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center py-16 text-slate-400">
+            <Bell size={40} className="mb-3 opacity-20" />
             <p className="text-sm">Chưa có thông báo nào</p>
           </div>
         ) : (
           <>
-            <div className="divide-y divide-slate-50">
-              {broadcasts.map(b => (
-                <div key={b.broadcastId} className="flex items-start gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bell size={16} className="text-blue-600" />
+            {broadcasts.map(b => (
+              <div key={b.broadcastId} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow p-5">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <Bell size={20} className="text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm mb-0.5">{b.title}</p>
-                    <p className="text-xs text-slate-500 line-clamp-2">{b.content}</p>
-                    <p className="text-[11px] text-slate-400 mt-1.5">{new Date(b.createdAt).toLocaleString('vi-VN')}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        {/* Badges */}
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <NotifTypeBadge type={b.notificationType} />
+                        </div>
+                        <p className="font-bold text-slate-900 text-sm leading-snug">{b.title}</p>
+                        <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{b.content}</p>
+                      </div>
+                      <button onClick={() => deleteMutation.mutate(b.broadcastId)} disabled={deleteMutation.isPending}
+                        className="p-2 rounded-xl hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors shrink-0 disabled:opacity-50">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50 flex-wrap">
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                        <span className="font-semibold text-slate-600">{formatTime(b.createdAt)}</span>
+                        <span>•</span>
+                        <span>{formatDate(b.createdAt)}</span>
+                      </div>
+                      <div className="flex items-center gap-3 ml-auto flex-wrap">
+                        <span className="text-[11px] text-slate-400">
+                          Đã gửi: <span className="font-semibold text-slate-600">{b.totalSent}</span>
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          Đã đọc: <span className="font-semibold text-emerald-600">{b.totalRead}</span>
+                        </span>
+                        {b.totalSent > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full"
+                                style={{ width: `${Math.min(100, Math.round((b.totalRead / b.totalSent) * 100))}%` }} />
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              {Math.round((b.totalRead / b.totalSent) * 100)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <button onClick={() => deleteMutation.mutate(b.broadcastId)} disabled={deleteMutation.isPending}
-                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-300 hover:text-red-400 transition-colors shrink-0 disabled:opacity-50">
-                    <Trash2 size={14} />
-                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-slate-400">Trang {page + 1} / {totalPages}</p>
                 <div className="flex gap-2">
                   <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
                     <ChevronLeft size={13} /> Trước
                   </button>
                   <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
+                    className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
                     Sau <ChevronRight size={13} />
                   </button>
                 </div>
@@ -182,12 +259,11 @@ export default function AdminNotifications() {
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Gửi đến</label>
                 <div className="grid grid-cols-2 gap-2">
                   {TARGET_OPTIONS.map(t => (
-                    <button key={t.value}
-                      onClick={() => setForm(f => ({ ...f, targetType: t.value, email: '' }))}
+                    <button key={t.value} onClick={() => setForm(f => ({ ...f, targetType: t.value, email: '' }))}
                       className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all
                         ${form.targetType === t.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                        ${form.targetType === t.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white
+                        ${form.targetType === t.value ? t.color : 'bg-slate-100 !text-slate-500'}`}>
                         {t.icon}
                       </div>
                       <div>
@@ -228,6 +304,22 @@ export default function AdminNotifications() {
                   )}
                 </div>
               )}
+
+              {/* Notification Type */}
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Loại thông báo</label>
+                <div className="flex gap-2 flex-wrap">
+                  {NOTIF_TYPE_OPTIONS.map(t => (
+                    <button key={t.value} onClick={() => setForm(f => ({ ...f, notificationType: t.value }))}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all border-2
+                        ${form.notificationType === t.value
+                          ? `border-blue-500 ${t.bg} ${t.color}`
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Title */}
               <div>

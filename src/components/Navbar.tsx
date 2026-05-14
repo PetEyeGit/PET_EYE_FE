@@ -142,7 +142,7 @@ function AuthNavbar() {
   useOutsideClick(userRef, () => setUserOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
 
-  const { notifications, unreadCount, markRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
   const active = (p: string) => location.pathname === p;
 
   const NAV = [
@@ -216,9 +216,13 @@ function AuthNavbar() {
               <div className="absolute top-[calc(100%+8px)] right-0 w-[340px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-slate-900/80 border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-700">
                   <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Thông báo</p>
-                  <button className="text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                    Đọc tất cả
-                  </button>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => { markAllRead(); }}
+                      className="text-[11px] font-medium text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                      Đọc tất cả ({unreadCount})
+                    </button>
+                  )}
                 </div>
                 <div className="py-1 max-h-[400px] overflow-y-auto">
                   {notifications.length === 0 ? (
@@ -226,16 +230,19 @@ function AuthNavbar() {
                   ) : notifications.map(n => (
                     <div key={n.id}
                       onClick={() => { if (!n.isRead) markRead(n.id); }}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors group">
+                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group
+                        ${n.isRead
+                          ? 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                          : 'bg-blue-50/60 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
                       <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${n.isRead ? 'bg-slate-100' : 'bg-blue-100'}`}>
                         <Bell size={13} className={n.isRead ? 'text-slate-400' : 'text-blue-600'} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 leading-snug">{n.title}</p>
+                        <p className={`text-[12.5px] leading-snug ${n.isRead ? 'font-medium text-slate-600 dark:text-slate-300' : 'font-bold text-slate-800 dark:text-white'}`}>{n.title}</p>
                         <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">{n.content}</p>
                         <p className="text-[11px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString('vi-VN')}</p>
                       </div>
-                      {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                      {!n.isRead && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />}
                     </div>
                   ))}
                 </div>

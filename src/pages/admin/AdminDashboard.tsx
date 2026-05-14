@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Store, Users, DollarSign, Calendar, Clock, MessageCircle, ArrowUpRight, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service';
@@ -8,41 +8,61 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell
 } from 'recharts';
 
-// Static chart data (BE chưa có endpoint breakdown theo thời gian)
-const REVENUE_DATA = [
-  { name: 'T1', value: 42 }, { name: 'T2', value: 58 }, { name: 'T3', value: 51 },
-  { name: 'T4', value: 73 }, { name: 'T5', value: 89 }, { name: 'T6', value: 95 },
-  { name: 'T7', value: 78 }, { name: 'T8', value: 102 }, { name: 'T9', value: 115 },
-  { name: 'T10', value: 98 }, { name: 'T11', value: 130 }, { name: 'T12', value: 145 },
-];
-
-const BOOKING_DATA = [
-  { name: 'T2', value: 28 }, { name: 'T3', value: 35 }, { name: 'T4', value: 22 },
-  { name: 'T5', value: 41 }, { name: 'T6', value: 38 }, { name: 'T7', value: 50 }, { name: 'CN', value: 30 },
-];
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+const MONTH_LABELS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+const DAY_LABELS: Record<string, string> = {
+  '1': 'T2', '2': 'T3', '3': 'T4', '4': 'T5', '5': 'T6', '6': 'T7', '0': 'CN',
+};
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
 
 function fmt(n: number) {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K';
   return String(n);
 }
 
 export default function AdminDashboard() {
+  const currentYear = new Date().getFullYear();
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: adminService.getDashboard,
     refetchInterval: 60_000,
   });
 
+  const { data: revenueRaw = [] } = useQuery({
+    queryKey: ['admin-revenue-monthly', currentYear],
+    queryFn: () => adminService.getRevenueMonthly(currentYear),
+    retry: false,
+  });
+
+  const { data: bookingsRaw = [] } = useQuery({
+    queryKey: ['admin-bookings-weekly'],
+    queryFn: () => adminService.getBookingsWeekly(),
+    retry: false,
+  });
+
+  // Build revenue chart data — fill all 12 months
+  const revenueData = MONTH_LABELS.map((name, i) => {
+    const found = revenueRaw.find(r => r.month === i + 1);
+    return { name, value: found ? Math.round(found.revenue / 1_000_000) : 0 };
+  });
+
+  // Build weekly booking chart data
+  const bookingData = bookingsRaw.length > 0
+    ? bookingsRaw.map(b => ({
+        name: DAY_LABELS[new Date(b.date).getDay().toString()] ?? b.date,
+        value: b.count,
+      }))
+    : [];
+
   const cards = stats ? [
-    { label: 'Tổng doanh thu', value: fmt(stats.totalRevenue) + 'đ', icon: DollarSign, color: 'blue', change: '+11%' },
-    { label: 'Tổng người dùng', value: fmt(stats.totalUsers), icon: Users, color: 'green', change: '+128' },
-    { label: 'Tổng shop', value: String(stats.totalShops), icon: Store, color: 'indigo', change: '+5' },
-    { label: 'Tổng booking', value: fmt(stats.totalBookings), icon: Calendar, color: 'purple', change: '+34' },
-    { label: 'Shop chờ duyệt', value: String(stats.pendingShops), icon: Clock, color: 'orange', change: '' },
-    { label: 'Tin nhắn chưa đọc', value: String(stats.unreadMessages), icon: MessageCircle, color: 'red', change: '' },
+    { label: 'Tổng doanh thu', value: fmt(stats.totalRevenue) + 'đ', icon: DollarSign, color: 'blue' },
+    { label: 'Tổng người dùng', value: fmt(stats.totalUsers), icon: Users, color: 'green' },
+    { label: 'Tổng shop', value: String(stats.totalShops), icon: Store, color: 'indigo' },
+    { label: 'Tổng booking', value: fmt(stats.totalBookings), icon: Calendar, color: 'purple' },
+    { label: 'Shop chờ duyệt', value: String(stats.pendingShops), icon: Clock, color: 'orange' },
+    { label: 'Tin nhắn chưa đọc', value: String(stats.unreadMessages), icon: MessageCircle, color: 'red' },
   ] : [];
 
   const colorMap: Record<string, string> = {
@@ -76,11 +96,6 @@ export default function AdminDashboard() {
                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${colorMap[s.color]}`}>
                   <s.icon size={20} />
                 </div>
-                {s.change && (
-                  <span className="flex items-center gap-1 text-xs font-bold text-green-500">
-                    <ArrowUpRight size={13} />{s.change}
-                  </span>
-                )}
               </div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{s.label}</p>
               <h3 className="text-2xl font-black text-slate-900 mt-1">{s.value}</h3>
@@ -95,26 +110,32 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-base font-bold text-slate-900">Doanh thu theo tháng</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Đơn vị: triệu đồng</p>
+              <p className="text-xs text-slate-400 mt-0.5">Đơn vị: triệu đồng — {currentYear}</p>
             </div>
             <TrendingUp size={18} className="text-blue-500" />
           </div>
           <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
-              <AreaChart data={REVENUE_DATA} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={8} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} formatter={(v: any) => [`${v}M`, 'Doanh thu']} />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#revGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {revenueData.every(d => d.value === 0) ? (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                Chưa có dữ liệu doanh thu
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
+                <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} formatter={(v: any) => [`${v}M`, 'Doanh thu']} />
+                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#revGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -128,17 +149,23 @@ export default function AdminDashboard() {
             <Calendar size={18} className="text-purple-500" />
           </div>
           <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
-              <BarChart data={BOOKING_DATA} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={8} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} />
-                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                  {BOOKING_DATA.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {bookingData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                Chưa có dữ liệu booking tuần này
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
+                <BarChart data={bookingData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {bookingData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -146,10 +173,10 @@ export default function AdminDashboard() {
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Shop chờ duyệt', path: '/admin/shops', count: stats?.pendingShops, color: 'orange' },
-          { label: 'Quản lý member', path: '/admin/members', count: stats?.totalUsers, color: 'green' },
-          { label: 'Thông báo', path: '/admin/notifications', count: null, color: 'blue' },
-          { label: 'Tin nhắn', path: '/admin/messages', count: stats?.unreadMessages, color: 'red' },
+          { label: 'Shop chờ duyệt', path: '/admin/shops', count: stats?.pendingShops },
+          { label: 'Quản lý member', path: '/admin/members', count: stats?.totalUsers },
+          { label: 'Thông báo', path: '/admin/notifications', count: null },
+          { label: 'Tin nhắn', path: '/admin/messages', count: stats?.unreadMessages },
         ].map(q => (
           <Link key={q.path} to={q.path} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all group">
             <p className="text-xs font-semibold text-slate-400 mb-2">{q.label}</p>

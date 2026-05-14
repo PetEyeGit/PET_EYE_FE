@@ -2,7 +2,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Users, Bell, MessageCircle,
-  LogOut, Menu, X, ChevronRight, Shield, Sparkles, Wallet
+  LogOut, Menu, ChevronRight, Shield, Sparkles, Wallet
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -20,7 +20,6 @@ export default function AdminLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
@@ -37,12 +36,10 @@ export default function AdminLayout() {
         <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shrink-0">
           <Shield size={18} className="text-white" />
         </div>
-        {!collapsed && (
-          <div>
-            <p className="text-sm font-bold text-white leading-none">Peteye Admin</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Quản trị hệ thống</p>
-          </div>
-        )}
+        <div>
+          <p className="text-sm font-bold text-white leading-none">Peteye Admin</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Quản trị hệ thống</p>
+        </div>
       </div>
 
       {/* Nav */}
@@ -61,8 +58,8 @@ export default function AdminLayout() {
                 }`}
             >
               <Icon size={18} className="shrink-0" />
-              {!collapsed && <span className="flex-1">{label}</span>}
-              {!collapsed && active && <ChevronRight size={14} className="opacity-70" />}
+              <span className="flex-1">{label}</span>
+              {active && <ChevronRight size={14} className="opacity-70" />}
             </Link>
           );
         })}
@@ -70,23 +67,21 @@ export default function AdminLayout() {
 
       {/* User + Logout */}
       <div className="px-3 py-4 border-t border-slate-800 space-y-1">
-        {!collapsed && (
-          <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {user?.name?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-white truncate">{user?.name || 'Admin'}</p>
-              <p className="text-[11px] text-slate-400 truncate">{user?.email || ''}</p>
-            </div>
+        <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {user?.name?.charAt(0).toUpperCase() || 'A'}
           </div>
-        )}
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-white truncate">{user?.name || 'Admin'}</p>
+            <p className="text-[11px] text-slate-400 truncate">{user?.email || ''}</p>
+          </div>
+        </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
         >
           <LogOut size={18} className="shrink-0" />
-          {!collapsed && <span>Đăng xuất</span>}
+          <span>Đăng xuất</span>
         </button>
       </div>
     </div>
@@ -95,19 +90,8 @@ export default function AdminLayout() {
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside
-        className={`hidden lg:flex flex-col bg-[#0f172a] transition-all duration-300 shrink-0
-          ${collapsed ? 'w-[68px]' : 'w-1/4 min-w-[220px] max-w-[280px]'}`}
-      >
+      <aside className="hidden lg:flex flex-col bg-[#0f172a] shrink-0 w-[220px]">
         <SidebarContent />
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(v => !v)}
-          className="absolute left-0 top-1/2 -translate-y-1/2 translate-x-full w-5 h-10 bg-[#0f172a] rounded-r-lg flex items-center justify-center text-slate-500 hover:text-white transition-colors z-10"
-          style={{ marginLeft: collapsed ? '68px' : 'calc(25% - 0px)' }}
-        >
-          <ChevronRight size={14} className={`transition-transform ${collapsed ? '' : 'rotate-180'}`} />
-        </button>
       </aside>
 
       {/* Mobile Sidebar Overlay */}

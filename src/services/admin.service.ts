@@ -12,6 +12,16 @@ export interface AdminDashboardStats {
   unreadMessages: number;
 }
 
+export interface RevenueMonthly {
+  month: number;   // 1-12
+  revenue: number; // VND
+}
+
+export interface BookingDaily {
+  date: string;    // yyyy-MM-dd
+  count: number;
+}
+
 export interface AdminShopResponse {
   id: number;
   shopName: string;
@@ -60,6 +70,8 @@ export interface PagedResponse<T> {
   last: boolean;
 }
 
+export type NotificationType = 'GENERAL' | 'PROMOTION' | 'REMINDER' | 'SYSTEM' | 'BOOKING';
+
 export interface AdminNotification {
   broadcastId: string;
   title: string;
@@ -67,6 +79,7 @@ export interface AdminNotification {
   totalSent: number;
   totalRead: number;
   createdAt: string;
+  notificationType?: NotificationType;
 }
 
 export interface ChatMessage {
@@ -89,6 +102,18 @@ export const adminService = {
   getDashboard: async (): Promise<AdminDashboardStats> => {
     const res = await apiClient.get<ApiResponse<AdminDashboardStats>>('/admin/dashboard');
     return res.data.result!;
+  },
+
+  getRevenueMonthly: async (year?: number): Promise<RevenueMonthly[]> => {
+    const res = await apiClient.get<ApiResponse<RevenueMonthly[]>>('/admin/dashboard/revenue-monthly', {
+      params: year ? { year } : {}
+    });
+    return res.data.result ?? [];
+  },
+
+  getBookingsWeekly: async (): Promise<BookingDaily[]> => {
+    const res = await apiClient.get<ApiResponse<BookingDaily[]>>('/admin/dashboard/bookings-weekly');
+    return res.data.result ?? [];
   },
 
   // Shops
@@ -148,6 +173,7 @@ export const adminService = {
     title: string;
     content: string;
     targetType: 'SINGLE' | 'ALL_USERS' | 'ALL_SHOPS' | 'ALL';
+    notificationType?: NotificationType;
     userId?: number;
   }): Promise<string> => {
     const res = await apiClient.post<ApiResponse<null> & { message: string }>('/admin/notifications', data);
