@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wallet, TrendingUp, Lock, ArrowDownToLine, CheckCircle2,
@@ -232,11 +232,11 @@ export default function ShopWallet() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { refetchWallet(); refetchW(); }}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+             onClick={() => { refetchWallet(); refetchW(); }}
+             className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+           >
+             <RefreshCw className="w-4 h-4" />
+           </button>
           <button
             onClick={() => setShowWithdraw(true)}
             disabled={!wallet || wallet.availableBalance <= 0}

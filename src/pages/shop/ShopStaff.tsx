@@ -600,8 +600,8 @@ export default function ShopStaff() {
                                                                     {s.fullName.charAt(0)}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-black text-slate-900 dark:text-white text-base">{s.fullName}</p>
-                                                                    <p className="text-xs text-slate-500 font-medium">{s.email}</p>
+                                                                    <p className="font-black text-slate-900 dark:text-white text-base whitespace-nowrap">{s.fullName}</p>
+                                                                    <p className="text-xs text-slate-500 font-medium whitespace-nowrap">{s.email}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -609,11 +609,11 @@ export default function ShopStaff() {
                                                             <div className="space-y-1.5">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-200">
+                                                                    <span className="text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">
                                                                         {s.role ? s.role.split(', ').map(rv => ROLES.find(r => r.value === rv)?.label || rv).join(', ') : 'Chưa thiết lập'}
                                                                     </span>
                                                                 </div>
-                                                                <span className="px-3 py-1 bg-primary/5 text-primary text-[9px] font-black uppercase tracking-wider rounded-lg border border-primary/5">
+                                                                <span className="inline-block px-3 py-1 bg-primary/5 text-primary text-[9px] font-black uppercase tracking-wider rounded-lg border border-primary/5 whitespace-nowrap">
                                                                     {s.specialization || 'Đa năng'}
                                                                 </span>
                                                             </div>

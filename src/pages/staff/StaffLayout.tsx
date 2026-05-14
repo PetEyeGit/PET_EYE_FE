@@ -32,15 +32,6 @@ export default function StaffLayout() {
       </div>
 
 
-      {/* Chat Window */}
-      {shopId && (
-        <ChatWindow 
-          shopId={shopId} 
-          isOpen={isChatOpen} 
-          onClose={() => setIsChatOpen(false)}
-          title="Hỗ trợ Nhân viên"
-        />
-      )}
     </div>
   );
 }
