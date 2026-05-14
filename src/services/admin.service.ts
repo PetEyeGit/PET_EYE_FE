@@ -34,6 +34,7 @@ export interface AdminShopResponse {
   licenseNumber: string;
   licenseImageUrl?: string;
   isVerified: boolean;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   ratingAvg: number;
   ownerId: number;
 }
