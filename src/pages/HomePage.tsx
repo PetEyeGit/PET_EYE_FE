@@ -6,6 +6,7 @@ import { petService } from '../services/pet.service';
 import { bookingService } from '../services/booking.service';
 import { shopService, ShopPublicResponse } from '../services/shop.service';
 import type { Pet } from '../types';
+import type { ServiceResponse, BookingResponse } from '../types/api';
 import { reviewService, ReviewResponse } from '../services/review.service';
 
 // Mock reviews for homepage
@@ -46,6 +47,10 @@ export default function HomePage() {
     const [pets, setPets] = useState<Pet[]>([]);
     const [bookings, setBookings] = useState<BookingResponse[]>([]);
     const [shops, setShops] = useState<ShopPublicResponse[]>([]);
+    const [featuredServices, setFeaturedServices] = useState<ServiceResponse[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [visibleCount, setVisibleCount] = useState(4);
     const [reviews, setReviews] = useState<ReviewResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -63,6 +68,23 @@ export default function HomePage() {
                 setBookings(bookingsData || []);
                 setShops(shopsData || []);
                 setReviews(reviewsData || []);
+
+                // Fetch services for more shops to ensure category diversity
+                if (shopsData && shopsData.length > 0) {
+                    const topShops = shopsData.slice(0, 12);
+                    const servicesPromises = topShops.map(s => shopService.getShopServices(s.id));
+                    const allServicesResults = await Promise.all(servicesPromises);
+                    
+                    // Flatten and ensure each service has the shopName from the shop object if missing
+                    const flattenedServices = allServicesResults.flatMap((services, index) => 
+                        (services || []).map(service => ({
+                            ...service,
+                            shopName: service.shopName || topShops[index].shopName
+                        }))
+                    );
+                    
+                    setFeaturedServices(flattenedServices);
+                }
             } catch (error) {
                 console.error("Error fetching homepage data:", error);
             } finally {
@@ -114,6 +136,10 @@ export default function HomePage() {
             case 'CANCELLED': return { text: 'Đã hủy', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' };
             default: return { text: status, color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-500' };
         }
+    };
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
     if (loading) {
@@ -352,6 +378,238 @@ export default function HomePage() {
                     </div>
                 </div>
             </motion.section>
+
+            {/* Category Discovery & Featured Services Showcase */}
+            <motion.section 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="py-16 px-6 md:px-12 lg:px-20 bg-white dark:bg-slate-800/30"
+            >
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+                        <div className="space-y-4">
+                            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                                Dành riêng cho bé cưng
+                            </div>
+                            <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">Dịch vụ nổi bật</h2>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-xl text-lg">Khám phá những dịch vụ được tin dùng nhất từ các đối tác uy tín của PetEye.</p>
+                        </div>
+                        
+                        {/* Redesigned Filter & Search Section */}
+                        <div className="flex flex-col gap-4 w-full lg:w-auto lg:items-end">
+                            {/* Modern Search Bar */}
+                            <div className="relative w-full lg:w-[450px] group">
+                                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                    <span className="material-symbols-outlined text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+                                </div>
+                                <input 
+                                    type="text"
+                                    placeholder="Tìm nhanh dịch vụ hoặc tên Shop..."
+                                    value={searchTerm || ''}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setVisibleCount(4);
+                                    }}
+                                    className="block w-full pl-14 pr-12 py-4 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-2xl outline-none text-sm font-bold transition-all shadow-sm group-hover:border-slate-200 dark:group-hover:border-slate-600"
+                                />
+                                {searchTerm && (
+                                    <button 
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-primary transition-all active:scale-90"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">cancel</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Category Filter Pills */}
+                            <div className="flex overflow-x-auto gap-2 pb-2 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 scroll-smooth">
+                                {['Tất cả', 'CLINIC', 'GROOMING', 'HOTEL'].map((cat) => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => {
+                                            setSelectedCategory(cat);
+                                            setVisibleCount(4);
+                                        }}
+                                        className={`px-6 py-2.5 rounded-xl text-[13px] font-black transition-all whitespace-nowrap flex items-center gap-2 border-2 flex-shrink-0 ${
+                                            selectedCategory === cat
+                                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25 translate-y-[-2px]'
+                                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-primary/30 hover:text-primary'
+                                        }`}
+                                    >
+                                        {cat === 'CLINIC' && <span className="material-symbols-outlined text-lg">medical_services</span>}
+                                        {cat === 'GROOMING' && <span className="material-symbols-outlined text-lg">content_cut</span>}
+                                        {cat === 'HOTEL' && <span className="material-symbols-outlined text-lg">hotel</span>}
+                                        {cat === 'Tất cả' ? 'Tất cả' : 
+                                         cat === 'CLINIC' ? 'Phòng khám' : 
+                                         cat === 'GROOMING' ? 'Spa & Grooming' : 'Lưu trú'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {featuredServices
+                            .filter(s => {
+                                const sCat = (s.category || '').toUpperCase();
+                                const selCat = selectedCategory.toUpperCase();
+                                const matchesCat = selectedCategory === 'Tất cả' || 
+                                                 (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                                 sCat === selCat;
+                                const matchesSearch = (s.serviceName || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+                                                     (s.shopName || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+                                return matchesCat && matchesSearch;
+                            })
+                            .length > 0 ? (
+                            featuredServices
+                                .filter(s => {
+                                    const sCat = (s.category || '').toUpperCase();
+                                    const selCat = selectedCategory.toUpperCase();
+                                    const matchesCat = selectedCategory === 'Tất cả' || 
+                                                     (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                                     sCat === selCat;
+                                    const matchesSearch = (s.serviceName || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || 
+                                                         (s.shopName || '').toLowerCase().includes((searchTerm || '').toLowerCase());
+                                    return matchesCat && matchesSearch;
+                                })
+                                .slice(0, visibleCount)
+                                .map((service, idx) => (
+                                    <motion.div
+                                        key={service.id}
+                                        initial={{ opacity: 0, y: 30 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.1 }}
+                                        whileHover={{ y: -10 }}
+                                        className="bg-white dark:bg-slate-800 rounded-[40px] overflow-hidden border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-2xl hover:border-primary/20 transition-all group flex flex-col h-full"
+                                    >
+                                        <div className="relative aspect-[4/3] overflow-hidden">
+                                            <img 
+                                                src={service.imageUrl || "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80"} 
+                                                alt={service.serviceName}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                                            />
+                                            <div className="absolute top-6 left-6">
+                                                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg border border-white/20 ${
+                                                    service.category?.toUpperCase() === 'CLINIC' ? 'bg-blue-500/80 text-white' :
+                                                    (service.category?.toUpperCase() === 'SPA' || service.category?.toUpperCase() === 'GROOMING') ? 'bg-pink-500/80 text-white' :
+                                                    'bg-orange-500/80 text-white'
+                                                }`}>
+                                                    {service.category}
+                                                </span>
+                                            </div>
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-8 backdrop-blur-[2px]">
+                                                <button 
+                                                    onClick={() => navigate(`/clinic/${service.shopId}`)}
+                                                    className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs shadow-2xl active:scale-95 transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
+                                                >
+                                                    ĐẶT LỊCH NGAY
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="p-8 flex flex-col flex-1">
+                                            <div className="flex-1 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-black text-slate-900 dark:text-white text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                                                        {service.serviceName}
+                                                    </h3>
+                                                </div>
+                                                <div 
+                                                    className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-primary cursor-pointer transition-colors"
+                                                    onClick={() => navigate(`/clinic/${service.shopId}`)}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">storefront</span>
+                                                    {service.shopName}
+                                                </div>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium">
+                                                    {service.description || "Dịch vụ chăm sóc thú cưng chuyên nghiệp với đội ngũ bác sĩ tận tâm."}
+                                                </p>
+                                            </div>
+                                            <div className="mt-6 pt-6 border-t border-slate-50 dark:border-slate-700 flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Giá dịch vụ</span>
+                                                    <span className="text-xl font-black text-slate-900 dark:text-white">
+                                                        {formatCurrency(service.price)}
+                                                    </span>
+                                                </div>
+                                                <div className="bg-yellow-400/10 text-yellow-500 p-2 rounded-xl flex items-center gap-1.5">
+                                                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                                                    <span className="text-sm font-black">5.0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                        ) : (
+                            <div className="col-span-full py-20 bg-slate-50 dark:bg-slate-800/20 rounded-[40px] border-2 border-dashed border-slate-200 dark:border-slate-700 text-center">
+                                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                                    <span className="material-symbols-outlined text-3xl text-slate-300">search_off</span>
+                                </div>
+                                <p className="text-slate-500 font-bold">Không tìm thấy dịch vụ nào trong danh mục này</p>
+                                <button 
+                                    onClick={() => setSelectedCategory('Tất cả')}
+                                    className="mt-4 text-primary font-black text-sm hover:underline"
+                                >
+                                    Xem tất cả dịch vụ
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* See More Button */}
+                    {featuredServices.filter(s => {
+                        const sCat = (s.category || '').toUpperCase();
+                        const selCat = selectedCategory.toUpperCase();
+                        const matchesCat = selectedCategory === 'Tất cả' || 
+                                         (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                         sCat === selCat;
+                        const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                             (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                        return matchesCat && matchesSearch;
+                    }).length > visibleCount && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mt-12 text-center"
+                        >
+                            <button 
+                                onClick={() => setVisibleCount(prev => prev + 4)}
+                                className="inline-flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-2 border-slate-100 dark:border-slate-700 px-12 py-4 rounded-[20px] font-black hover:border-primary hover:shadow-2xl hover:shadow-primary/10 transition-all group relative overflow-hidden"
+                            >
+                                <span className="relative z-10">Xem thêm dịch vụ</span>
+                                <span className="material-symbols-outlined relative z-10 group-hover:translate-y-1 transition-transform">expand_more</span>
+                                <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                            </button>
+                            <p className="mt-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                Đang hiển thị {Math.min(visibleCount, featuredServices.filter(s => {
+                                    const sCat = (s.category || '').toUpperCase();
+                                    const selCat = selectedCategory.toUpperCase();
+                                    const matchesCat = selectedCategory === 'Tất cả' || 
+                                                     (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                                     sCat === selCat;
+                                    const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                         (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                                    return matchesCat && matchesSearch;
+                                }).length)} / {featuredServices.filter(s => {
+                                    const sCat = (s.category || '').toUpperCase();
+                                    const selCat = selectedCategory.toUpperCase();
+                                    const matchesCat = selectedCategory === 'Tất cả' || 
+                                                     (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                                     sCat === selCat;
+                                    const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                         (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());
+                                    return matchesCat && matchesSearch;
+                                }).length} dịch vụ
+                            </p>
+                        </motion.div>
+                    )}
+                </div>
+            </motion.section>
+
 
             {/* Promotional Banners */}
             <section className="py-12 px-6 md:px-12 lg:px-20">

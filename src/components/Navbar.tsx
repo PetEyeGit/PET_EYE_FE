@@ -7,6 +7,7 @@ import {
   PawPrint, Menu, X, Video, Calendar, MessageCircle
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -24,8 +25,6 @@ function scrollTo(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
-/* ─── mock data ───────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────────────────
    GUEST NAVBAR
@@ -50,83 +49,85 @@ function GuestNavbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300
+      className={`sticky top-0 z-50 transition-all duration-500
         ${scrolled
-          ? 'bg-white/96 backdrop-blur-xl shadow-[0_1px_0_0_#e2e8f0] dark:bg-slate-900/96 dark:shadow-[0_1px_0_0_#1e293b]'
-          : 'bg-white/80 backdrop-blur-sm dark:bg-slate-900/80'}`}
+          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/20 dark:shadow-slate-900/40 py-2'
+          : 'bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm py-4'}`}
     >
-      <div className="max-w-screen-xl mx-auto px-5 md:px-10 h-[60px] flex items-center gap-5">
-
-        {/* ── Logo ──────────────────────────────── */}
-        <Link to="/" className="shrink-0 mr-2">
+      <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-8">
+        <Link to="/" className="shrink-0 hover:scale-105 transition-transform duration-300">
           <Logo />
         </Link>
 
-        {/* ── Nav links (desktop) ───────────────── */}
-        <nav className="hidden lg:flex items-center gap-0.5 text-[13.5px] font-medium">
-          <button onClick={() => goto('co-so')}
-            className="h-9 px-3.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-colors">
-            Cơ sở thú y
-          </button>
-          <button onClick={() => goto('camera')}
-            className="h-9 px-3.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-colors">
-            Camera 24/7
-          </button>
-        </nav>
-
-        {/* ── Spacer ────────────────────────────── */}
-        <div className="flex-1" />
-
-        {/* ── Right actions ─────────────────────── */}
-        <div className="hidden sm:flex items-center gap-2">
-          <Link to="/login"
-            className="h-9 px-4 rounded-lg text-[13.5px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-colors flex items-center">
-            Đăng nhập
-          </Link>
-          <Link to="/register"
-            className="h-9 px-5 bg-primary hover:bg-primary-dark text-white rounded-full text-[13.5px] font-semibold transition-all shadow-md shadow-primary/20 hover:-translate-y-px hover:shadow-primary/30 flex items-center">
-            Đăng ký
-          </Link>
-        </div>
-
-        {/* ── Mobile hamburger ──────────────────── */}
-        <button onClick={() => setMobileOpen(v => !v)}
-          className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* ── Mobile menu ───────────────────────────── */}
-      {mobileOpen && (
-        <div className="lg:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 pt-3 pb-5 space-y-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {[
             { label: 'Cơ sở thú y', id: 'co-so' },
             { label: 'Camera 24/7', id: 'camera' },
           ].map(item => (
-            <button key={item.label} onClick={() => goto(item.id)}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-[14px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <button key={item.id} onClick={() => goto(item.id)}
+              className="h-10 px-5 rounded-xl text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-primary/5 transition-all">
               {item.label}
             </button>
           ))}
-          <div className="flex gap-2 pt-3">
-            <Link to="/login" onClick={() => setMobileOpen(false)}
-              className="flex-1 text-center py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300">
-              Đăng nhập
-            </Link>
-            <Link to="/register" onClick={() => setMobileOpen(false)}
-              className="flex-1 text-center py-2.5 bg-primary text-white rounded-full text-sm font-semibold">
-              Đăng ký
-            </Link>
-          </div>
+        </nav>
+
+        <div className="flex-1" />
+
+        <div className="hidden sm:flex items-center gap-4">
+          <Link to="/login"
+            className="text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+            Đăng nhập
+          </Link>
+          <Link to="/register"
+            className="h-11 px-8 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[14px] font-black transition-all shadow-xl shadow-primary/20 hover:-translate-y-1 hover:shadow-primary/40 active:scale-95">
+            Khám phá ngay
+          </Link>
         </div>
-      )}
+
+        <button onClick={() => setMobileOpen(v => !v)}
+          className="lg:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
+          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800"
+          >
+            <div className="px-6 py-6 space-y-2">
+              {[
+                { label: 'Cơ sở thú y', id: 'co-so' },
+                { label: 'Camera 24/7', id: 'camera' },
+              ].map(item => (
+                <button key={item.label} onClick={() => goto(item.id)}
+                  className="w-full text-left px-4 py-3.5 rounded-xl text-[15px] font-bold text-slate-700 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all">
+                  {item.label}
+                </button>
+              ))}
+              <div className="flex flex-col gap-3 pt-4">
+                <Link to="/login" onClick={() => setMobileOpen(false)}
+                  className="w-full text-center py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                  Đăng nhập
+                </Link>
+                <Link to="/register" onClick={() => setMobileOpen(false)}
+                  className="w-full text-center py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20">
+                  Tham gia ngay
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────
    AUTH NAVBAR
-   Design ref: Linear / Vercel / Figma — minimal, purposeful
 ──────────────────────────────────────────────────────────────*/
 function AuthNavbar() {
   const { user, logout } = useAuth();
@@ -136,6 +137,7 @@ function AuthNavbar() {
   const [userOpen, setUserOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const userRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -145,35 +147,53 @@ function AuthNavbar() {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
   const active = (p: string) => location.pathname === p;
 
+  useEffect(() => {
+    const fn = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+
   const NAV = [
     { to: '/home', label: 'Trang chủ' },
-    { to: '/search', label: 'Tìm cơ sở' },
+    { to: '/search', label: 'Khám phá' },
     { to: '/profile/bookings', label: 'Lịch hẹn' },
   ];
 
   const QUICK = [
-    { to: '/camera', icon: <Video className="w-4 h-4" />, label: 'Camera', pulse: true },
-    { to: '/messages', icon: <MessageCircle className="w-4 h-4" />, label: 'Tin nhắn' },
+    { to: '/camera', icon: <Video className="w-4.5 h-4.5" />, label: 'Camera', pulse: true },
+    { to: '/messages', icon: <MessageCircle className="w-4.5 h-4.5" />, label: 'Tin nhắn' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">
-      <div className="max-w-screen-xl mx-auto px-5 md:px-10 h-[56px] flex items-center gap-4">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-500 border-b
+        ${scrolled
+          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-slate-200/50 dark:border-slate-800/50 shadow-xl shadow-slate-200/20 py-2'
+          : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-transparent py-3'}`}
+    >
+      <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">
 
         {/* ── Logo ──────────────────────────────── */}
-        <Link to="/home" className="shrink-0 mr-1">
-          <Logo />
+        <Link to="/home" className="shrink-0 group">
+          <Logo className="group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
         {/* ── Primary nav ───────────────────────── */}
-        <nav className="hidden md:flex items-center gap-0.5 text-[13.5px]">
+        <nav className="hidden md:flex items-center gap-1 ml-4">
           {NAV.map(item => (
             <Link key={item.to} to={item.to}
-              className={`h-8 px-3 rounded-lg font-medium transition-colors flex items-center
+              className={`relative h-10 px-5 rounded-xl font-black text-[13.5px] transition-all flex items-center group
                 ${active(item.to)
-                  ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
-              {item.label}
+                  ? 'text-primary'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+              <span className="relative z-10">{item.label}</span>
+              {active(item.to) && (
+                <motion.div
+                  layoutId="nav-pill"
+                  className="absolute inset-0 bg-primary/5 rounded-xl"
+                />
+              )}
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0" />
             </Link>
           ))}
         </nav>
@@ -181,149 +201,173 @@ function AuthNavbar() {
         <div className="flex-1" />
 
         {/* ── Right cluster ─────────────────────── */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
 
           {/* Quick icon links */}
-          {QUICK.map(q => (
-            <Link key={q.to} to={q.to}
-              className={`relative flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium transition-colors
-                ${active(q.to)
-                  ? 'text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
-              {q.icon}
-              <span className="hidden lg:inline">{q.label}</span>
-              {q.pulse && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </Link>
-          ))}
+          <div className="hidden sm:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl">
+            {QUICK.map(q => (
+              <Link key={q.to} to={q.to}
+                className={`relative flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-black transition-all
+                  ${active(q.to)
+                    ? 'text-white bg-primary shadow-lg shadow-primary/25'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700'}`}>
+                {q.icon}
+                <span className="hidden lg:inline">{q.label}</span>
+                {q.pulse && !active(q.to) && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
+                )}
+              </Link>
+            ))}
+          </div>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block" />
 
           {/* Notifications */}
           <div ref={notifRef} className="relative">
             <button onClick={() => { setNotifOpen(v => !v); setUserOpen(false); }}
-              className={`relative w-8 h-8 flex items-center justify-center rounded-lg transition-colors
-                ${notifOpen ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
-              <Bell className="w-[17px] h-[17px]" />
+              className={`relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all
+                ${notifOpen ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-500 hover:text-primary hover:bg-primary/5'}`}>
+              <Bell size={19} />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-[7px] h-[7px] bg-red-500 rounded-full border-[1.5px] border-white dark:border-slate-900" />
+                <span className="absolute top-2 right-2 w-3.5 h-3.5 bg-rose-500 text-[9px] font-black text-white flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </button>
 
-            {notifOpen && (
-              <div className="absolute top-[calc(100%+8px)] right-0 w-[340px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-slate-900/80 border border-slate-100 dark:border-slate-700 z-50 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-700">
-                  <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Thông báo</p>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={() => { markAllRead(); }}
-                      className="text-[11px] font-medium text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-                      Đọc tất cả ({unreadCount})
-                    </button>
-                  )}
-                </div>
-                <div className="py-1 max-h-[400px] overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-[12px] text-slate-400">Không có thông báo nào</div>
-                  ) : notifications.map(n => (
-                    <div key={n.id}
-                      onClick={() => { if (!n.isRead) markRead(n.id); }}
-                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors group
-                        ${n.isRead
-                          ? 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                          : 'bg-blue-50/60 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${n.isRead ? 'bg-slate-100' : 'bg-blue-100'}`}>
-                        <Bell size={13} className={n.isRead ? 'text-slate-400' : 'text-blue-600'} />
+            <AnimatePresence>
+              {notifOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute top-[calc(100%+12px)] right-0 w-[380px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 z-50 overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white">Thông báo mới</h4>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-[11px] font-black text-primary hover:underline">Đã đọc tất cả</button>
+                    )}
+                  </div>
+                  <div className="max-h-[420px] overflow-y-auto scrollbar-hide py-2">
+                    {notifications.length === 0 ? (
+                      <div className="px-10 py-12 text-center space-y-3">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                          <Bell size={24} />
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">Bạn chưa có thông báo nào</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[12.5px] leading-snug ${n.isRead ? 'font-medium text-slate-600 dark:text-slate-300' : 'font-bold text-slate-800 dark:text-white'}`}>{n.title}</p>
-                        <p className="text-[11.5px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 line-clamp-2">{n.content}</p>
-                        <p className="text-[11px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString('vi-VN')}</p>
+                    ) : notifications.map(n => (
+                      <div key={n.id} onClick={() => !n.isRead && markRead(n.id)}
+                        className={`flex items-start gap-4 px-6 py-4 cursor-pointer transition-all border-b border-slate-50 dark:border-slate-800/50 last:border-0
+                          ${n.isRead ? 'opacity-60 grayscale-[0.5]' : 'bg-primary/[0.03] hover:bg-primary/[0.06]'}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${n.isRead ? 'bg-slate-100 text-slate-400' : 'bg-primary/10 text-primary'}`}>
+                          <Bell size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[13px] leading-tight mb-1 ${n.isRead ? 'font-medium text-slate-600' : 'font-black text-slate-900 dark:text-white'}`}>{n.title}</p>
+                          <p className="text-[11.5px] text-slate-500 line-clamp-2 leading-relaxed">{n.content}</p>
+                          <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-tighter">Vừa xong</p>
+                        </div>
+                        {!n.isRead && <div className="w-2.5 h-2.5 rounded-full bg-primary mt-2 shadow-lg shadow-primary/40" />}
                       </div>
-                      {!n.isRead && <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* User avatar / menu */}
-          <div ref={userRef} className="relative">
+          <div ref={userRef} className="relative ml-1">
             <button onClick={() => { setUserOpen(v => !v); setNotifOpen(false); }}
-              className={`flex items-center gap-2 h-8 pl-1 pr-2.5 rounded-lg transition-colors
-                ${userOpen ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/70'}`}>
-              <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white text-[11px] font-bold shrink-0">
+              className={`flex items-center gap-3 pl-1.5 pr-4 h-10 rounded-2xl transition-all border-2
+                ${userOpen ? 'bg-white dark:bg-slate-800 border-primary shadow-lg shadow-primary/10' : 'bg-slate-100/50 dark:bg-slate-800/50 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}>
+              <div className="w-7 h-7 rounded-xl overflow-hidden bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-xs font-black shadow-lg">
                 {user!.avatar ? (
                   <img src={user!.avatar} alt={user!.name} className="w-full h-full object-cover" />
                 ) : (
                   user!.name.charAt(0).toUpperCase()
                 )}
               </div>
-              <span className="hidden sm:block text-[13px] font-medium text-slate-700 dark:text-slate-200 max-w-[80px] truncate">
-                {user!.name}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-150 hidden sm:block ${userOpen ? 'rotate-180' : ''}`} />
+              <div className="hidden lg:block text-left mr-1">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-1">Thành viên</p>
+                <p className="text-[13px] font-black text-slate-900 dark:text-white leading-none truncate max-w-[90px]">{user!.name.split(' ').pop()}</p>
+              </div>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${userOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {userOpen && (
-              <div className="absolute top-[calc(100%+8px)] right-0 w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-slate-900/80 border border-slate-100 dark:border-slate-700 py-1.5 z-50">
-                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-700 mb-1">
-                  <p className="text-[13px] font-semibold text-slate-900 dark:text-white truncate">{user!.name}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Khách hàng Peteye</p>
-                </div>
+            <AnimatePresence>
+              {userOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute top-[calc(100%+12px)] right-0 w-64 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-[32px] shadow-2xl border border-slate-200/50 dark:border-slate-700/50 py-3 z-50"
+                >
+                  <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 mb-2">
+                    <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user!.name}</p>
+                    <p className="text-[11px] font-bold text-primary mt-1">Hạng Vàng • 2,450 xu</p>
+                  </div>
 
-                {[
-                  { to: '/profile', icon: <User className="w-3.5 h-3.5" />, label: 'Tài khoản của tôi' },
-                  { to: '/profile/pets', icon: <PawPrint className="w-3.5 h-3.5" />, label: 'Hồ sơ thú cưng' },
-                  { to: '/profile/bookings', icon: <Calendar className="w-3.5 h-3.5" />, label: 'Lịch đặt dịch vụ' },
-                  { to: '/camera', icon: <Video className="w-3.5 h-3.5" />, label: 'Camera lưu trú', badge: 'LIVE' },
-                  { to: '/profile/security', icon: <Settings className="w-3.5 h-3.5" />, label: 'Cài đặt' },
-                ].map(item => (
-                  <Link key={item.to} to={item.to}
-                    onClick={() => setUserOpen(false)}
-                    className={`flex items-center gap-2.5 px-3.5 py-2 text-[13px] transition-colors
-                      ${active(item.to) ? 'text-primary bg-primary/5' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white'}`}>
-                    <span className="text-slate-400 dark:text-slate-500">{item.icon}</span>
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge && (
-                      <span className="text-[9px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">{item.badge}</span>
-                    )}
-                  </Link>
-                ))}
+                  {[
+                    { to: '/profile', icon: <User size={16} />, label: 'Hồ sơ của tôi' },
+                    { to: '/profile/pets', icon: <PawPrint size={16} />, label: 'Thú cưng của tôi' },
+                    { to: '/profile/bookings', icon: <Calendar size={16} />, label: 'Lịch đặt hẹn' },
+                    { to: '/camera', icon: <Video size={16} />, label: 'Theo dõi Camera', badge: 'LIVE' },
+                    { to: '/profile/security', icon: <Settings size={16} />, label: 'Cài đặt bảo mật' },
+                  ].map(item => (
+                    <Link key={item.to} to={item.to} onClick={() => setUserOpen(false)}
+                      className={`flex items-center gap-3.5 px-6 py-3 text-[13.5px] font-bold transition-all
+                        ${active(item.to) ? 'text-primary bg-primary/5' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary'}`}>
+                      <span className="shrink-0">{item.icon}</span>
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[8px] font-black text-white bg-rose-500 px-2 py-0.5 rounded-lg animate-pulse">{item.badge}</span>
+                      )}
+                    </Link>
+                  ))}
 
-                <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">
-                  <button onClick={() => { logout(); navigate('/'); }}
-                    className="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-colors">
-                    <LogOut className="w-3.5 h-3.5" /> Đăng xuất
-                  </button>
-                </div>
-              </div>
-            )}
+                  <div className="border-t border-slate-100 dark:border-slate-800 mt-2 pt-2 px-3">
+                    <button onClick={() => { logout(); navigate('/'); }}
+                      className="flex items-center gap-3.5 px-4 py-3.5 text-[13.5px] font-black text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 w-full rounded-2xl transition-all">
+                      <LogOut size={16} /> Đăng xuất tài khoản
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Mobile hamburger */}
           <button onClick={() => setMobileOpen(v => !v)}
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            className="md:hidden w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 text-slate-500 transition-colors">
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu (auth) */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 pt-3 pb-5 space-y-1">
-          {[...NAV, { to: '/camera', label: 'Camera lưu trú' }, { to: '/messages', label: 'Tin nhắn' }].map(item => (
-            <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
-              className={`flex items-center px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors
-                ${active(item.to) ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden overflow-hidden border-t border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl"
+          >
+            <div className="px-6 py-8 space-y-2">
+              {[...NAV, { to: '/camera', label: 'Camera lưu trú' }, { to: '/messages', label: 'Tin nhắn' }].map(item => (
+                <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
+                  className={`flex items-center px-4 py-4 rounded-2xl text-[16px] font-black transition-all
+                    ${active(item.to) ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-700 dark:text-slate-300 hover:bg-primary/5 hover:text-primary'}`}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
