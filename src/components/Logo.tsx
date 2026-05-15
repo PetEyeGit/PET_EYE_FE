@@ -26,7 +26,9 @@ export default function Logo({ className = '', lightText = false }: { className?
                     </svg>
                 </div>
             </div>
-            <h2 className={`${lightText ? 'text-white' : 'text-slate-900 dark:text-white'} text-2xl font-extrabold tracking-tight`}>Peteye</h2>
+            <h2 className={`${lightText ? 'text-white' : 'text-slate-900 dark:text-white'} text-2xl font-black tracking-tighter font-display`}>
+                Pet<span className="text-primary">eye</span>
+            </h2>
         </div>
     );
 }

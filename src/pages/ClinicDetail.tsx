@@ -317,23 +317,29 @@ export default function ClinicDetail() {
     );
   }
 
+  const handleShare = async () => {
+    const shareData = {
+      title: shop?.shopName || 'Peteye',
+      text: `Khám phá ${shop?.shopName} trên Peteye - Nền tảng chăm sóc thú cưng hàng đầu.`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        import('react-hot-toast').then(({ toast }) => {
+          toast.success('Đã sao chép liên kết vào bộ nhớ tạm!');
+        });
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
   return (
     <div className="flex-1 bg-slate-50 dark:bg-slate-900">
-      {/* Breadcrumb */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 text-xs text-slate-400 overflow-x-auto whitespace-nowrap">
-          <Link to="/home" className="hover:text-[#1a2b4c] transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-sm">home</span>
-            Trang chủ
-          </Link>
-          <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <Link to="/search" className="hover:text-[#1a2b4c] transition-colors">
-            Cơ sở thú y
-          </Link>
-          <span className="material-symbols-outlined text-sm">chevron_right</span>
-          <span className="text-slate-700 dark:text-slate-300 font-medium">{shop?.shopName}</span>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Clinic Header */}
@@ -370,7 +376,10 @@ export default function ClinicDetail() {
               <span className="material-symbols-outlined text-base">chat</span>
               Nhắn tin
             </Link>
-            <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold">
+            <button 
+              onClick={handleShare}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold"
+            >
               <span className="material-symbols-outlined text-base">ios_share</span>
               Chia sẻ
             </button>

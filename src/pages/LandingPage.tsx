@@ -1,8 +1,27 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Video, Star, ArrowRight, CheckCircle2, PawPrint } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
+import { Search, MapPin, Video, Star, ArrowRight, ShieldCheck, Heart, Sparkles, Zap, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
+
+// Import assets
+import heroImage from '../assets/landing/landing_hero_pet_care_1778855096349.png';
+import cameraPreview from '../assets/landing/live_camera_preview_1778855116615.png';
+import spaImage from '../assets/landing/pet_spa_grooming_1778855139420.png';
+
+const fadeIn = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, ease: "easeOut" }
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -17,432 +36,445 @@ export default function Home() {
   };
 
   return (
-    <main className="flex-1">
-      <section id="hero" className="px-6 md:px-12 lg:px-20 py-16 md:py-24 relative overflow-hidden">
-        <div className="pattern-dots absolute inset-0 opacity-40 pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
-          <div className="flex flex-col gap-8 order-2 lg:order-1">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/20 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm w-fit">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                Nền tảng B2B2C Thú y số 1
+    <main className="flex-1 overflow-x-hidden font-display">
+      {/* Hero Section */}
+      <section className="relative min-h-[90vh] flex items-center justify-center pt-20 pb-32 px-6 overflow-hidden bg-slate-50 dark:bg-slate-950">
+        {/* Dynamic Background */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-mesh opacity-10 dark:opacity-20" />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.2, 1],
+              x: [0, 50, 0],
+              y: [0, -30, 0]
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px]"
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.3, 1],
+              x: [0, -40, 0],
+              y: [0, 60, 0]
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] bg-secondary/20 rounded-full blur-[120px]"
+          />
+          <div className="pattern-dots absolute inset-0 opacity-20 pointer-events-none" />
+        </div>
+
+        <div className="max-w-7xl mx-auto w-full relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Hero Content */}
+            <motion.div 
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className="flex flex-col gap-8 text-center lg:text-left"
+            >
+              <motion.div variants={fadeIn} className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full w-fit mx-auto lg:mx-0">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
+                  Nền tảng B2B2C Thú y số 1 Việt Nam
+                </span>
+              </motion.div>
+
+              <motion.h1 variants={fadeIn} className="text-6xl md:text-8xl font-black leading-[1] tracking-tight text-slate-900 dark:text-white">
+                Chăm sóc <br />
+                <span className="text-gradient">Thú cưng</span> <br />
+                thời đại số.
+              </motion.h1>
+
+              <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                Kết nối với mạng lưới chuyên gia, đặt lịch khám nhanh chóng và theo dõi bé yêu mọi lúc qua Live Camera 24/7.
+              </motion.p>
+
+              {/* Glassmorphic Search Bar */}
+              <motion.div variants={fadeIn} className="glass dark:glass-dark p-2 rounded-3xl mt-4 shadow-2xl group focus-within:ring-4 ring-primary/10 transition-all">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                  <div className="md:col-span-5 relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-primary w-5 h-5" />
+                    <input 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-none focus:ring-0 text-sm font-bold placeholder:text-slate-400" 
+                      placeholder="Tìm theo khu vực..." 
+                    />
+                  </div>
+                  <div className="md:col-span-4 relative border-l border-slate-100 dark:border-slate-800 hidden md:block">
+                    <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary w-5 h-5" />
+                    <select className="w-full pl-12 pr-4 py-4 bg-transparent border-none focus:ring-0 text-sm font-bold appearance-none cursor-pointer">
+                      <option>Tất cả dịch vụ</option>
+                      <option>Khám bệnh</option>
+                      <option>Spa & Grooming</option>
+                      <option>Hotel & Clinic</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-3">
+                    <button 
+                      onClick={() => handleAction('/search')}
+                      className="w-full h-full bg-primary hover:bg-primary-dark text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 py-4 shadow-lg shadow-primary/20 group-hover:scale-[1.02]"
+                    >
+                      <Search size={18} />
+                      TÌM KIẾM
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div variants={fadeIn} className="flex items-center gap-6 justify-center lg:justify-start mt-4">
+                <div className="flex -space-x-4">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="w-12 h-12 rounded-full border-4 border-white dark:border-slate-950 bg-slate-200 overflow-hidden shadow-xl">
+                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="user" />
+                    </div>
+                  ))}
+                </div>
+                <div className="text-left">
+                  <p className="text-slate-900 dark:text-white font-black text-lg leading-none">2,500+</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider mt-1">Đối tác đã tin dùng</p>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Hero Image / Visuals */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative z-10 w-full aspect-[4/5] rounded-[60px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border-8 border-white dark:border-slate-800">
+                <img src={heroImage} alt="Happy pets" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                
+                {/* Floating Elements */}
+                <motion.div 
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="absolute bottom-8 left-8 right-8 glass p-6 rounded-3xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-500/30">
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 dark:text-white">Đối tác đã xác thực</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">Uy tín & Chuyên nghiệp 100%</p>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              <h1 className="text-slate-900 dark:text-white text-5xl md:text-6xl font-black leading-[1.1] tracking-tight">
-                Tìm kiếm &amp; Đặt lịch <br />
-                {/* <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary pr-2">cơ sở thú y <br/> </span> */}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary pr-2">  cơ sở thú y uy tín<br />
-                  gần bạn
-                  <br /> </span>
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-xl">
-                Kết nối ngay với hàng ngàn phòng khám, spa và dịch vụ lưu trú chất lượng cao. So sánh giá, xem đánh giá thực tế và đặt lịch chỉ trong vài giây.
-              </p>
-            </div>
-            <div className="bg-white dark:bg-card-dark p-2 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700 mt-2">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                <div className="md:col-span-4 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400">location_on</span>
-                  </div>
-                  <input className="block w-full pl-10 pr-3 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary sm:text-sm" placeholder="Địa điểm (Quận, TP)" type="text" />
-                </div>
-                <div className="md:col-span-3 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400">category</span>
-                  </div>
-                  <select className="block w-full pl-10 pr-8 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary sm:text-sm appearance-none">
-                    <option>Loại dịch vụ</option>
-                    <option>Khám chữa bệnh</option>
-                    <option>Lưu trú</option>
-                    <option>Spa &amp; Grooming</option>
-                    <option>Tiêm chủng</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400 text-sm">expand_more</span>
-                  </div>
-                </div>
-                <div className="md:col-span-3 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400">pets</span>
-                  </div>
-                  <select className="block w-full pl-10 pr-8 py-3 border-none rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary sm:text-sm appearance-none">
-                    <option>Loại thú cưng</option>
-                    <option>Chó</option>
-                    <option>Mèo</option>
-                    <option>Khác</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <span className="material-symbols-outlined text-slate-400 text-sm">expand_more</span>
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <button
-                    onClick={() => handleAction('/search')}
-                    className="w-full h-full bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 py-3 md:py-0">
-                    <span className="material-symbols-outlined">search</span>
-                    Tìm
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-6 pt-4 mt-4">
-              <div className="flex -space-x-4">
-                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-300 shadow-sm"></div>
-                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-400 shadow-sm"></div>
-                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-slate-500 shadow-sm"></div>
-                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shadow-sm backdrop-blur-sm">+2k</div>
-              </div>
-              <div>
-                <p className="text-slate-900 dark:text-white font-bold text-sm"><span className="text-primary">2,000+</span> Cơ sở thú y đã tham gia</p>
-              </div>
-            </div>
-          </div>
-          <div className="order-1 lg:order-2 relative">
-            <span className="material-symbols-outlined absolute -top-8 -right-8 text-6xl text-primary/20 rotate-12 animate-bounce" style={{ animationDuration: "3s" }}>pets</span>
-            <span className="material-symbols-outlined absolute bottom-10 -left-10 text-5xl text-secondary/20 -rotate-12 animate-pulse">cruelty_free</span>
-            <div className="relative z-10 mx-auto w-full max-w-lg aspect-[4/5] md:aspect-square lg:aspect-[4/5]">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary to-secondary rounded-[3rem] rotate-6 opacity-20 transform translate-x-4 translate-y-4"></div>
-              <div className="absolute inset-0 bg-white dark:bg-slate-800 rounded-[3rem] -rotate-3 shadow-2xl opacity-80 border border-slate-100 dark:border-slate-700"></div>
-              <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-500 bg-slate-200">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuB3gE7pymHHNoJ8Eenc8IeK8BG_yCIednl0G3KL6VAv3-N9WBdyY2mWJktpO0M1-QP6fDMWBhbs6AdV3PKG7H2hYbqE7iPVy9Cz5KKwbTL-A7tvX7i51PfC5o0Kkpl2P7cfy1hPZoW6gSv1ovEXyniXWKLpffQtESWWqeNk_B6x1GZNbC4qKZaGzXsvEu5DxI4tJ-sxcmLV9saz6gO6bCRVRluMjYmd9bJQVY2rw7L02jx3vTqOSFtE8F3l4NcA8eYLH-J-knoworrm")` }}>
-                </div>
-                <div className="absolute bottom-6 left-6 right-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50 flex items-center gap-4 animate-fade-in-up">
-                  <div className="bg-green-100 text-green-600 p-2 rounded-xl">
-                    <span className="material-symbols-outlined">verified_user</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm">Đối tác đã xác thực</p>
-                    <p className="text-xs text-slate-500">Thông tin minh bạch 100%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+
+              {/* Decorative elements */}
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-yellow-400 rounded-full blur-[80px] opacity-30 animate-pulse" />
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute -top-6 -right-6 w-32 h-32 border-4 border-dashed border-primary/20 rounded-full"
+              />
+            </motion.div>
           </div>
         </div>
       </section>
-      <section id="co-so" className="bg-slate-50 dark:bg-slate-900/50 px-6 md:px-12 lg:px-20 py-24 relative">
-        <div className="absolute top-20 left-10 text-slate-200 dark:text-slate-800 opacity-50 rotate-[-15deg]">
-          <span className="material-symbols-outlined text-9xl">pets</span>
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16 space-y-4 max-w-2xl mx-auto">
-            <h2 className="text-primary font-bold tracking-widest uppercase text-sm bg-primary/10 w-fit mx-auto px-3 py-1 rounded-full">Gợi ý hàng đầu</h2>
-            <h3 className="text-slate-900 dark:text-white text-4xl md:text-5xl font-black tracking-tight leading-tight ">Cơ sở thú y &amp; Dịch vụ <br /><span className="text-transparent 
-                 bg-clip-text 
-                 bg-gradient-to-r 
-                 from-primary 
-                 to-secondary">
-              được yêu thích nhất
-            </span></h3>
+
+      {/* Trust & Stats Section */}
+      <section className="py-20 bg-white dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { label: "Cơ sở thú y", val: "200+", icon: <ShieldCheck className="text-primary" /> },
+              { label: "Người dùng", val: "15k+", icon: <Heart className="text-rose-500" /> },
+              { label: "Lịch hẹn", val: "50k+", icon: <Zap className="text-yellow-500" /> },
+              { label: "Đánh giá 5*", val: "98%", icon: <Star className="text-orange-500" /> }
+            ].map((stat, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="flex flex-col items-center text-center gap-2"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-2">
+                  {stat.icon}
+                </div>
+                <h3 className="text-3xl font-black text-slate-900 dark:text-white">{stat.val}</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+              </motion.div>
+            ))}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8"><div className="md:col-span-2 group cursor-pointer relative overflow-hidden rounded-3xl h-[500px]"><img alt="Clinic Main" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6oXx_u1YVkdtHjYoh6Uu-kfGetga5JcROKee0xBg0hPSb0nHqmv9q1JJu8YROnoKvG5Rd_bysvhxgJTHT8gH8C1Llbpf5--FuheT1Dc9hv4rtG8lTcWHtEGUjbj2MpdlQP2hpldAuE40DUdWZ5Z7eM4tObng5CiSzz7ne0hg8w9405R8Wc2x5clkCvRirQBvDr-ensgay-LOftIuu8I5VwOc7-thTZBLPKZN7Bm_3uz0oHqruBNy2vs0BxZyVnMQweUikfcPmoio6" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div><div className="absolute bottom-8 left-8 text-white"><h4 className="text-2xl font-bold mb-2">Phòng khám PetCare Center</h4><p className="flex items-center gap-2 text-sm opacity-90"><span className="material-symbols-outlined text-sm">location_on</span> Quận 3, TP.HCM</p></div><div className="absolute top-6 left-6 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-primary text-xs font-bold">Nổi bật</div><div className="absolute top-6 right-6 bg-secondary text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg"><span className="material-symbols-outlined text-sm">videocam</span> LIVE CAM</div></div><div className="flex flex-col gap-8"><div className="group cursor-pointer relative overflow-hidden rounded-3xl h-[234px]"><img alt="Spa" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvn1YtjFBMSi4BphgW3hjCSM6BCxf1oce1KeKpXttIwyWe48GkVnDpaLzr_bNQaMzsvLy5p2nPC9HmtWou4i3TVlf_Nelmpv5cNPy104dfmz7Rl95wzFUKvCtsoUl1DpmVw5daIRIyBCWWTUR0uGC1J_e6BZxYxOYJpXgBLI88T7WZ9-2H6HRISfkBhXXtPLueH3-WefnxIcv9glH9oUKN8KkpTYnRgRhevVVNoHGtPeaU6uk6xH4Lv3anZqKWG7UIks1wxxFzj8PR" /><div className="absolute inset-0 bg-black/20"></div><div className="absolute bottom-6 left-6 text-white"><h4 className="text-lg font-bold">Happy Paws Spa</h4></div></div><div className="group cursor-pointer relative overflow-hidden rounded-3xl h-[234px]"><img alt="Saigon Vet" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsGAK-5F_vJwGvWXgRo6_kZwaYacit8LWb4QQfRBlZGt_wA_cq9gJFqPZdsR9mlQuErE2dFpjpOMLfBvr1BNomlaCYcq4Tw9HEfWScR2Vrx6C8qOfhNv69Ase7UkBfozjR-LpeW-k6RCQfzqP90asSMtvCppGS7_nktV4ODNBXx12BlIb3NrwIgAVMWGPgQ5-bDty1cGAbHN4Nhc3gdQVbyPo2U9Hw6aJNN80N-7TEqIvc8U_dv7QAK3L7yCYDWz6_RhmhFzeL0Vhn" /><div className="absolute inset-0 bg-black/20"></div><div className="absolute bottom-6 left-6 text-white"><h4 className="text-lg font-bold">Saigon Vet Hospital</h4></div></div></div></div>
-          <div className="mt-12 text-center">
-            <button onClick={() => handleAction('/search')} className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-8 py-3 rounded-full font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
-              Xem tất cả cơ sở
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+        </div>
+      </section>
+
+      {/* Featured Services Showcase */}
+      <section id="co-so" className="py-32 px-6 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
+            <div className="max-w-2xl space-y-4">
+              <span className="text-primary font-black uppercase tracking-[0.2em] text-xs">Gợi ý tốt nhất</span>
+              <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-[1.1]">
+                Khám phá dịch vụ <br />
+                <span className="text-gradient">Được yêu thích</span>
+              </h2>
+            </div>
+            <button 
+              onClick={() => handleAction('/search')}
+              className="flex items-center gap-2 font-black text-sm text-slate-400 hover:text-primary transition-colors group"
+            >
+              XEM TẤT CẢ CƠ SỞ
+              <ChevronRight className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            {/* Featured Item Large */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="md:col-span-8 group cursor-pointer"
+            >
+              <div className="relative h-[600px] rounded-[50px] overflow-hidden shadow-2xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&q=80" 
+                  alt="Clinic" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute top-8 left-8 flex gap-2">
+                  <span className="glass px-4 py-2 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest">Nổi bật</span>
+                  <span className="bg-secondary/80 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    LIVE CAM
+                  </span>
+                </div>
+                <div className="absolute bottom-12 left-12 right-12 space-y-4">
+                  <h3 className="text-4xl font-black text-white leading-tight">Phòng khám PetCare Center</h3>
+                  <div className="flex items-center gap-6 text-white/80">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={18} className="text-primary-light" />
+                      <span className="font-bold text-sm">Quận 3, TP.HCM</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Star size={18} className="text-yellow-400" />
+                      <span className="font-bold text-sm">4.9 (1,200 đánh giá)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Side items */}
+            <div className="md:col-span-4 flex flex-col gap-8">
+              {[
+                { title: "Happy Paws Spa", img: spaImage, cat: "Grooming" },
+                { title: "Saigon Vet Hospital", img: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80", cat: "Clinic" }
+              ].map((item, i) => (
+                <motion.div 
+                  key={i}
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.2 }}
+                  className="group relative h-[284px] rounded-[40px] overflow-hidden shadow-xl cursor-pointer"
+                >
+                  <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                  <div className="absolute bottom-8 left-8">
+                    <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">{item.cat}</span>
+                    <h4 className="text-xl font-black text-white mt-1">{item.title}</h4>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
-      <section id="camera" className="relative overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 px-6 md:px-12 lg:px-20 py-24">
+
+      {/* Live Camera Showcase */}
+      <section id="camera" className="py-32 px-6 bg-slate-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[50%] h-full bg-primary/10 blur-[150px] -rotate-12" />
+        
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1 relative group">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl opacity-20 blur-xl group-hover:opacity-30 transition duration-500"></div>
-              <div className="relative bg-white dark:bg-slate-800 border-[8px] border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden aspect-video">
-                <div className="absolute top-0 left-0 right-0 h-10 bg-slate-100 dark:bg-slate-900 flex items-center px-4 gap-2 border-b border-slate-200 dark:border-slate-700">
-                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                  <div className="mx-auto text-xs font-mono text-slate-400">Live Camera - Peteye</div>
-                </div>
-                <div className="w-full h-full pt-10 relative bg-slate-900">
-                  <img alt="Live Camera Interface with happy dog playing" className="w-full h-full object-cover opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9-35MViKaTiKljoxOmZsNMQsboCLHaLrz2PUbxxOI80nLHSGmxaJKNAn8X_0gGNjQEcBvSfGr4_e_mJZySSPXSbNUVQapgf9fCy_2R-inc7_nRiBJFVRuhVPO0nlXZaaRWq-H6Cu2UgqjqAL0L30F8l1U1EaZOqnDed3AdG17Ry_vWTMGgSrKdG6L4uYXOs2BKFVjimLyV9_9UuVVlBgnVADeX6s03BDtyEy-R6P8imZf_DNIRUDCYhPHK2pZZkQesoQZJTT_NWn3" />
-                  <div className="absolute top-14 right-4 bg-secondary text-white text-[10px] font-bold px-3 py-1.5 rounded-full animate-pulse flex items-center gap-1 shadow-lg"><span className="w-2 h-2 rounded-full bg-white"></span> LIVE CAM</div>
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                    <div className="bg-black/50 backdrop-blur-sm p-2 rounded-lg text-white text-xs">
-                      <p className="font-bold">Lucky - Golden Retriever</p>
-                      <p className="opacity-70">Phòng Deluxe 102 • Happy Paws Spa</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-sm transition">
-                        <span className="material-symbols-outlined text-sm">mic</span>
-                      </button>
-                      <button className="p-2 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-sm transition">
-                        <span className="material-symbols-outlined text-sm">videocam</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2 space-y-8">
-              <div>
-                <span className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-                  <span className="material-symbols-outlined text-sm">videocam</span>
-                  Tính năng mới
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-10"
+            >
+              <div className="space-y-6">
+                <span className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">
+                  <Video size={16} />
+                  Tính năng độc quyền
                 </span>
-                <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white leading-tight mb-4">
+                <h2 className="text-5xl md:text-7xl font-black text-white leading-[1.1]">
                   An tâm tuyệt đối với <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Live Camera 24/7</span>
+                  <span className="text-gradient">Live Camera</span>
                 </h2>
-                <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Độc quyền tại Peteye - Kết nối trực tiếp với thú cưng của bạn mọi lúc, mọi nơi khi gửi tại các đối tác có hỗ trợ camera của chúng tôi.
+                <p className="text-lg text-slate-400 leading-relaxed font-medium">
+                  Theo dõi trực tiếp mọi khoảnh khắc của bé yêu 24/7 từ điện thoại. Bạn sẽ luôn cảm thấy gần gũi dù đang ở bất cứ đâu.
                 </p>
               </div>
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div className="flex gap-4 items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined">hd</span>
+
+              <div className="space-y-6">
+                {[
+                  { t: "Chất lượng HD 4K", d: "Hình ảnh sắc nét, mượt mà cả ngày lẫn đêm.", icon: <Sparkles className="text-primary" /> },
+                  { t: "Đàm thoại 2 chiều", d: "Trò chuyện và gọi tên bé cưng từ xa dễ dàng.", icon: <Video className="text-secondary" /> },
+                  { t: "Bảo mật nâng cao", d: "Mã hóa đầu cuối, đảm bảo chỉ bạn mới có quyền xem.", icon: <ShieldCheck className="text-green-500" /> }
+                ].map((item, i) => (
+                  <motion.div 
+                    key={i}
+                    className="flex gap-6 items-start group p-4 rounded-3xl hover:bg-white/5 transition-colors"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 group-hover:scale-110 transition-transform">
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-white text-lg">{item.t}</h4>
+                      <p className="text-slate-500 font-medium text-sm mt-1">{item.d}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => handleAction('/camera')}
+                className="w-fit bg-white text-slate-900 px-10 py-5 rounded-[20px] font-black flex items-center gap-3 hover:bg-primary hover:text-white transition-all shadow-2xl hover:shadow-primary/30"
+              >
+                TRẢI NGHIỆM NGAY
+                <ArrowRight size={20} />
+              </button>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="relative z-10 p-4 glass-dark rounded-[50px] shadow-3xl">
+                <div className="relative aspect-video rounded-[40px] overflow-hidden bg-black">
+                  <img src={cameraPreview} alt="Live feed" className="w-full h-full object-cover opacity-80" />
+                  <div className="absolute top-6 left-6 flex items-center gap-3">
+                    <div className="px-4 py-2 rounded-full glass text-[10px] font-black text-white flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      LIVE FEED
+                    </div>
+                    <span className="text-[10px] font-bold text-white/60 tracking-widest uppercase">REC 00:42:15</span>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-1">Hình ảnh HD sắc nét</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Chất lượng hình ảnh cao, rõ nét cả ngày lẫn đêm.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined">record_voice_over</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-1">Đàm thoại 2 chiều</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Trò chuyện và gọi tên bé cưng từ xa dễ dàng.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined">gpp_good</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-1">Bảo mật tuyệt đối</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Kết nối riêng tư, chỉ bạn mới có quyền truy cập.</p>
+                  <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                    <div className="glass p-3 rounded-2xl">
+                      <p className="text-xs font-black text-white">Lucky - Golden Retriever</p>
+                      <p className="text-[10px] font-medium text-white/60">Deluxe Room 102</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-10 h-10 rounded-xl glass flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors">
+                        <Video size={16} />
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform">
+                        <ArrowRight size={16} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="pt-4">
-                <button onClick={() => handleAction('/home')} className="bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/30 text-white px-8 py-4 rounded-full font-bold transition-all hover:-translate-y-1 flex items-center gap-2 group w-fit">
-                  Tìm cơ sở có Camera
-                  <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              
+              {/* Decorative blobs */}
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px]" />
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary/20 rounded-full blur-[100px]" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works - Timeline */}
+      <section id="quy-trinh" className="py-32 px-6 bg-white dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-24 space-y-6">
+            <span className="text-primary font-black uppercase tracking-[0.3em] text-xs">Quy trình thông minh</span>
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
+              Sử dụng Peteye <br />
+              <span className="text-gradient">Chỉ với 3 bước</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Connector Line */}
+            <div className="absolute top-24 left-[15%] right-[15%] h-1 border-t-4 border-dashed border-slate-100 dark:border-slate-800 hidden md:block" />
+            
+            {[
+              { t: "Tìm & So sánh", d: "Dễ dàng tìm thấy các cơ sở quanh bạn với đầy đủ thông tin giá cả và đánh giá.", n: "01", icon: <Search size={32} /> },
+              { t: "Đặt lịch 24/7", d: "Chọn khung giờ phù hợp và đặt lịch ngay lập tức mà không cần gọi điện.", n: "02", icon: <Sparkles size={32} /> },
+              { t: "Trải nghiệm & Review", d: "Theo dõi qua Camera, nhận thú cưng và chia sẻ đánh giá của bạn.", n: "03", icon: <Heart size={32} /> }
+            ].map((step, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                className="relative flex flex-col items-center text-center gap-8 group"
+              >
+                <div className="w-48 h-48 rounded-[40px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center relative group-hover:bg-primary/5 transition-all group-hover:-translate-y-4 duration-500">
+                  <div className="text-primary group-hover:scale-110 transition-transform duration-500">
+                    {step.icon}
+                  </div>
+                  <div className="absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center font-black text-primary border border-slate-100 dark:border-slate-800">
+                    {step.n}
+                  </div>
+                </div>
+                <div className="space-y-3 px-4">
+                  <h4 className="text-2xl font-black text-slate-900 dark:text-white">{step.t}</h4>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                    {step.d}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 px-6 bg-white dark:bg-slate-900">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative rounded-[60px] overflow-hidden bg-primary p-12 md:p-24 text-center"
+          >
+            {/* BG elements */}
+            <div className="absolute top-0 left-0 w-full h-full bg-mesh opacity-20" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px]" />
+            
+            <div className="relative z-10 max-w-3xl mx-auto space-y-10">
+              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight">
+                Bắt đầu hành trình <br />
+                chăm sóc tuyệt vời nhất.
+              </h2>
+              <p className="text-xl text-white/80 font-medium leading-relaxed">
+                Hàng ngàn chủ nuôi đã tin tưởng Peteye. Hãy để chúng tôi đồng hành cùng bạn và bé yêu ngay hôm nay.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+                <button 
+                  onClick={() => navigate('/register')}
+                  className="w-full sm:w-auto px-12 py-5 bg-white text-primary rounded-2xl font-black shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                >
+                  ĐĂNG KÝ NGAY
+                </button>
+                <button 
+                  onClick={() => navigate('/search')}
+                  className="w-full sm:w-auto px-12 py-5 bg-white/10 text-white rounded-2xl font-black backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all"
+                >
+                  TÌM KIẾM CƠ SỞ
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-      <section className="px-6 md:px-12 lg:px-20 py-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24 space-y-4">
-            <h3 className="text-4xl md:text-5xl font-black  leading-tight md:leading-[1.3] text-transparent bg-clip-text bg-gradient-to-r from-black to-secondary ">
-              Quy trình kết nối
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg">Cách Peteye kết nối bạn với dịch vụ tốt nhất</p>
-          </div>
-          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 z-0">
-              <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                <path d="M0,0 Q150,50 300,0 T600,0" fill="none" stroke="url(#gradient-line)" strokeDasharray="8 8" strokeWidth="2"></path>
-                <defs>
-                  <linearGradient id="gradient-line" x1="0%" x2="100%" y1="0%" y2="0%">
-                    <stop offset="0%" stopColor="#0ea5e9"></stop>
-                    <stop offset="100%" stopColor="#f472b6"></stop>
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <div className="relative flex flex-col items-center text-center gap-6 z-10 group">
-              <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-800 border-4 border-primary/20 group-hover:border-primary flex items-center justify-center shadow-lg transition-all duration-300 group-hover:-translate-y-2">
-                <span className="text-4xl material-symbols-outlined text-primary">travel_explore</span>
-                <div className="absolute -right-2 -top-2 bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white dark:border-slate-800">1</div>
-              </div>
-              <div className="space-y-3 px-4">
-                <h4 className="text-xl font-bold text-slate-900 dark:text-white">Tìm &amp; So sánh</h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">Tìm kiếm theo vị trí, xem giá cả và đánh giá từ cộng đồng.</p>
-              </div>
-            </div>
-            <div className="relative flex flex-col items-center text-center gap-6 z-10 group">
-              <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-800 border-4 border-secondary/20 group-hover:border-secondary flex items-center justify-center shadow-lg transition-all duration-300 group-hover:-translate-y-2">
-                <span className="text-4xl material-symbols-outlined text-secondary">event_available</span>
-                <div className="absolute -right-2 -top-2 bg-secondary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white dark:border-slate-800">2</div>
-              </div>
-              <div className="space-y-3 px-4">
-                <h4 className="text-xl font-bold text-slate-900 dark:text-white">Đặt lịch trực tuyến</h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">Chọn khung giờ phù hợp và đặt lịch hẹn ngay lập tức.</p>
-              </div>
-            </div>
-            <div className="relative flex flex-col items-center text-center gap-6 z-10 group">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary-dark text-white flex items-center justify-center shadow-lg shadow-primary/40 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110">
-                <span className="material-symbols-outlined text-4xl animate-pulse">reviews</span>
-                <div className="absolute -right-2 -top-2 bg-slate-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white dark:border-slate-800">3</div>
-              </div>
-              <div className="space-y-3 px-4">
-                <h4 className="text-xl font-bold text-slate-900 dark:text-white">Trải nghiệm &amp; Đánh giá</h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">Sử dụng dịch vụ và chia sẻ trải nghiệm thực tế của bạn.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section id="ly-do" className="bg-primary/5 dark:bg-slate-900/80 px-6 md:px-12 lg:px-20 py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl md:text-5xl font-black  leading-tight md:leading-[1.3] text-transparent bg-clip-text bg-gradient-to-r from-black to-secondary mb-3 ">
-              Tại sao chọn Peteye?
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg">Giá trị mang lại cho cả hai phía</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="bg-white dark:bg-card-dark p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden">
-              <div className="absolute -right-10 -top-10 w-40 h-40 bg-accent/30 dark:bg-slate-800 rounded-full opacity-50"></div>
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-12 h-12 bg-accent/50 text-primary rounded-xl flex items-center justify-center">
-                  <span className="material-symbols-outlined">person</span>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Dành cho Chủ nuôi</h3>
-              </div>
-              <ul className="space-y-4 relative z-10">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Minh bạch giá cả</h4>
-                    <p className="text-sm text-slate-500">So sánh bảng giá dịch vụ công khai từ các cơ sở.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Review thật 100%</h4>
-                    <p className="text-sm text-slate-500">Xem đánh giá từ những người dùng đã trải nghiệm thực tế.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Đặt lịch nhanh chóng</h4>
-                    <p className="text-sm text-slate-500">Không cần gọi điện, đặt lịch 24/7 qua nền tảng.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-white dark:bg-card-dark p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden">
-              <div className="absolute -right-10 -top-10 w-40 h-40 bg-secondary/10 dark:bg-slate-800 rounded-full opacity-50"></div>
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-12 h-12 bg-secondary/20 text-secondary rounded-xl flex items-center justify-center">
-                  <span className="material-symbols-outlined">storefront</span>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Dành cho Cơ sở thú y</h3>
-              </div>
-              <ul className="space-y-4 relative z-10">
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Tiếp cận khách hàng mới</h4>
-                    <p className="text-sm text-slate-500">Mở rộng phạm vi tiếp cận tới hàng ngàn chủ nuôi tiềm năng.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Quản lý dễ dàng</h4>
-                    <p className="text-sm text-slate-500">Hệ thống quản lý lịch hẹn, hồ sơ khách hàng chuyên nghiệp.</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-green-500 mt-1">check_circle</span>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white">Tăng uy tín thương hiệu</h4>
-                    <p className="text-sm text-slate-500">Được chứng thực và đề xuất trên nền tảng uy tín.</p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section id="cong-dong" className="bg-white dark:bg-slate-900 px-6 md:px-12 lg:px-20 py-24 overflow-hidden relative">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-8 leading-tight text-slate-900 dark:text-white italic ">Cộng đồng yêu thú cưng  <br /><span className="text-primary text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">tin tưởng chúng tôi</span></h2>
-              <div className="space-y-6">
-                <div className="bg-slate-50 dark:bg-card-dark p-8 rounded-3xl shadow-soft hover:shadow-hover transition-all duration-300 relative group">
-                  <span className="absolute top-8 left-6 text-6xl text-primary/10 font-serif leading-none">"</span>
-                  <div className="relative z-10 pl-6">
-                    <p className="text-slate-600 dark:text-slate-300 mb-6 text-lg italic leading-relaxed">"Tìm được phòng khám 24/7 ngay gần nhà lúc nửa đêm nhờ Peteye. Ứng dụng cứu cánh thực sự cho những người nuôi mèo như mình."</p>
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary shadow-md">
-                        <img
-                          src="https://i.pravatar.cc/150?img=5"
-                          alt="Minh Anh"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>                      <div>
-                        <h5 className="font-bold text-slate-900 dark:text-white">Minh Anh</h5>
-                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide">Chủ nuôi Mèo</p>
-                      </div>
-                      <div className="ml-auto flex text-yellow-400">
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-slate-50 dark:bg-card-dark p-8 rounded-3xl shadow-soft hover:shadow-hover transition-all duration-300 relative group ml-8 opacity-90 hover:opacity-100">
-                  <span className="absolute top-8 left-6 text-6xl text-primary/10 font-serif leading-none">"</span>
-                  <div className="relative z-10 pl-6">
-                    <p className="text-slate-600 dark:text-slate-300 mb-6 text-lg italic leading-relaxed">"Hệ thống quản lý lịch hẹn của Peteye giúp phòng khám của tôi giảm thiểu tình trạng khách quên lịch và tối ưu hóa thời gian làm việc."</p>
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-secondary shadow-md">
-                        <img
-                          src="https://randomuser.me/api/portraits/men/32.jpg"
-                          alt="Doctor Hoàng Nam"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>                      <div>
-                        <h5 className="font-bold text-slate-900 dark:text-white">Dr. Hoàng Nam</h5>
-                        <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide">Phòng khám PetHealth</p>
-                      </div>
-                      <div className="ml-auto flex text-yellow-400">
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                        <span className="material-symbols-outlined text-sm">star</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-12">
-              <div className="text-center lg:text-left">
-                <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Đối tác chiến lược</h4>
-                <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Mạng lưới phòng khám hàng đầu</h3>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">VetCity</span>
-                </div>
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">PawCare</span>
-                </div>
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">HappyTail</span>
-                </div>
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">PetHealth</span>
-                </div>
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">ZooVet</span>
-                </div>
-                <div className="h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 hover:text-primary hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <span className="group-hover:scale-110 transition-transform">LittleHome</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </section>
     </main>

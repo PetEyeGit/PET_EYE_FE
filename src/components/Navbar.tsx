@@ -51,8 +51,8 @@ function GuestNavbar() {
     <header
       className={`sticky top-0 z-50 transition-all duration-500
         ${scrolled
-          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/20 dark:shadow-slate-900/40 py-2'
-          : 'bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm py-4'}`}
+          ? 'glass py-2 shadow-2xl shadow-slate-200/20'
+          : 'bg-transparent py-5'}`}
     >
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-8">
         <Link to="/" className="shrink-0 hover:scale-105 transition-transform duration-300">
@@ -63,6 +63,7 @@ function GuestNavbar() {
           {[
             { label: 'Cơ sở thú y', id: 'co-so' },
             { label: 'Camera 24/7', id: 'camera' },
+            { label: 'Quy trình', id: 'quy-trinh' },
           ].map(item => (
             <button key={item.id} onClick={() => goto(item.id)}
               className="h-10 px-5 rounded-xl text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-primary/5 transition-all">
@@ -79,7 +80,7 @@ function GuestNavbar() {
             Đăng nhập
           </Link>
           <Link to="/register"
-            className="h-11 px-8 bg-primary hover:bg-primary/90 text-white rounded-2xl text-[14px] font-black transition-all shadow-xl shadow-primary/20 hover:-translate-y-1 hover:shadow-primary/40 active:scale-95">
+            className="h-11 px-8 bg-primary hover:bg-primary-dark text-white rounded-2xl text-[14px] font-black transition-all shadow-xl shadow-primary/20 hover:-translate-y-1 hover:shadow-primary/40 active:scale-95 flex items-center justify-center">
             Khám phá ngay
           </Link>
         </div>
@@ -166,10 +167,10 @@ function AuthNavbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500 border-b
+      className={`sticky top-0 z-50 transition-all duration-500
         ${scrolled
-          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-slate-200/50 dark:border-slate-800/50 shadow-xl shadow-slate-200/20 py-2'
-          : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-transparent py-3'}`}
+          ? 'glass py-2 border-b border-white/10'
+          : 'bg-transparent py-4'}`}
     >
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">
 

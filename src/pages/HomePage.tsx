@@ -425,7 +425,7 @@ export default function HomePage() {
                             </div>
 
                             {/* Category Filter Pills */}
-                            <div className="flex overflow-x-auto gap-2 pb-2 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 scroll-smooth">
+                            <div className="flex overflow-x-auto gap-2 pt-2 pb-4 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 scroll-smooth">
                                 {['Tất cả', 'CLINIC', 'GROOMING', 'HOTEL'].map((cat) => (
                                     <button
                                         key={cat}
@@ -433,10 +433,10 @@ export default function HomePage() {
                                             setSelectedCategory(cat);
                                             setVisibleCount(4);
                                         }}
-                                        className={`px-6 py-2.5 rounded-xl text-[13px] font-black transition-all whitespace-nowrap flex items-center gap-2 border-2 flex-shrink-0 ${
+                                        className={`px-6 py-2.5 rounded-xl text-[13px] font-black transition-all duration-300 whitespace-nowrap flex items-center gap-2 border-2 flex-shrink-0 ${
                                             selectedCategory === cat
-                                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25 translate-y-[-2px]'
-                                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-primary/30 hover:text-primary'
+                                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25 translate-y-[-4px]'
+                                                : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-primary/30 hover:text-primary hover:translate-y-[-2px]'
                                         }`}
                                     >
                                         {cat === 'CLINIC' && <span className="material-symbols-outlined text-lg">medical_services</span>}
@@ -451,7 +451,7 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 min-h-[400px]">
                         {featuredServices
                             .filter(s => {
                                 const sCat = (s.category || '').toUpperCase();

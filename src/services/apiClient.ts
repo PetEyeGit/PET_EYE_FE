@@ -40,7 +40,9 @@ apiClient.interceptors.response.use(
     const requestUrl = error.config?.url ?? '';
     const isAuthRequest = requestUrl.includes('/auth/');
 
-    if (error.response?.status === 401 && !isAuthPage && !isAuthRequest) {
+    const hasUser = !!localStorage.getItem('Peteye_user');
+
+    if (error.response?.status === 401 && !isAuthPage && !isAuthRequest && hasUser) {
       localStorage.removeItem('Peteye_user');
       window.location.href = '/login';
     }
