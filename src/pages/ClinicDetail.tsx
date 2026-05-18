@@ -130,6 +130,7 @@ export default function ClinicDetail() {
   const [showPetModal, setShowPetModal] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [petNote, setPetNote] = useState('');
+  const [selectedServiceForDetail, setSelectedServiceForDetail] = useState<ServiceResponse | null>(null);
 
   const toggleService = (serviceId: number) => {
     setSelectedServiceIds(prev =>
@@ -665,12 +666,22 @@ export default function ClinicDetail() {
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
                               {svc.description}
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">⏱ {svc.durationMinutes} phút</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <p className="text-xs text-slate-400">⏱ {svc.durationMinutes} phút</p>
+                              <span className="text-slate-300 dark:text-slate-600">•</span>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setSelectedServiceForDetail(svc); }}
+                                className="text-xs text-[#1a2b4c] dark:text-teal-400 hover:underline flex items-center gap-1"
+                              >
+                                <span className="material-symbols-outlined text-xs">info</span>
+                                Chi tiết
+                              </button>
+                            </div>
                           </div>
 
                           {/* Price */}
-                          <div className="text-right shrink-0">
-                            <span className="block font-bold text-slate-900 dark:text-slate-100 text-sm">
+                          <div className="text-right shrink-0 flex items-baseline gap-1">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                               {svc.price.toLocaleString('vi-VN')}đ
                             </span>
                             <span className="text-xs text-slate-400">/lần</span>
@@ -1550,6 +1561,126 @@ export default function ClinicDetail() {
                   className="px-8 py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-bold hover:opacity-90 transition-all shadow-xl shadow-slate-200 dark:shadow-none"
                 >
                   Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Service Detail Modal */}
+      {selectedServiceForDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedServiceForDetail(null)}>
+          <div 
+            className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header / Cover */}
+            <div className="relative h-48 bg-slate-100 dark:bg-slate-800">
+              {selectedServiceForDetail.imageUrl ? (
+                <img 
+                  src={selectedServiceForDetail.imageUrl} 
+                  alt={selectedServiceForDetail.serviceName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-[#1a2b4c] to-indigo-900">
+                  <span className="material-symbols-outlined text-white text-6xl">pets</span>
+                </div>
+              )}
+              <button 
+                onClick={() => setSelectedServiceForDetail(null)}
+                className="absolute top-4 right-4 size-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors backdrop-blur-md"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-8">
+              {/* Title & Price */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                    {selectedServiceForDetail.serviceName}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold uppercase tracking-wider">
+                      {selectedServiceForDetail.category}
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">schedule</span>
+                      {selectedServiceForDetail.durationMinutes} phút
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="block font-black text-2xl text-slate-900 dark:text-white">
+                    {selectedServiceForDetail.price.toLocaleString('vi-VN')}đ
+                  </span>
+                  <span className="text-xs text-slate-400">/lần</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <section className="mb-6">
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">description</span>
+                  Mô tả dịch vụ
+                </h4>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {selectedServiceForDetail.description || 'Chưa có mô tả chi tiết cho dịch vụ này.'}
+                </p>
+              </section>
+
+              {/* Features / Benefits */}
+              <section className="mb-6">
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">task_alt</span>
+                  Bao gồm trong dịch vụ
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-teal-500 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span>Quy trình chuẩn y khoa / chuyên nghiệp</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-teal-500 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span>Sử dụng sản phẩm cao cấp, an toàn</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-teal-500 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span>Nhân viên có chứng chỉ chuyên môn</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-teal-500 text-base" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    <span>Tư vấn chăm sóc sau dịch vụ</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Action */}
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+                <button 
+                  onClick={() => setSelectedServiceForDetail(null)}
+                  className="px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+                >
+                  Đóng
+                </button>
+                <button 
+                  onClick={() => {
+                    toggleService(selectedServiceForDetail.id);
+                    setSelectedServiceForDetail(null);
+                  }}
+                  className={`px-6 py-3 rounded-2xl font-bold transition-all shadow-xl flex items-center gap-2 ${
+                    selectedServiceIds.includes(selectedServiceForDetail.id)
+                      ? 'bg-red-500 text-white hover:bg-red-600 shadow-red-200 dark:shadow-none'
+                      : 'bg-[#1a2b4c] text-white hover:bg-[#243d6b] shadow-slate-200 dark:shadow-none'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">
+                    {selectedServiceIds.includes(selectedServiceForDetail.id) ? 'remove_circle' : 'add_circle'}
+                  </span>
+                  {selectedServiceIds.includes(selectedServiceForDetail.id) ? 'Bỏ chọn' : 'Chọn dịch vụ'}
                 </button>
               </div>
             </div>
