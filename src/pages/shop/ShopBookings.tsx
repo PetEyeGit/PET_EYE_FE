@@ -22,6 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 
 const STATUS_CONFIG: Record<string, any> = {
   PENDING_PAYMENT: { label: 'Chờ thanh toán', icon: AlertCircle, className: 'bg-slate-100 text-slate-500', color: 'bg-amber-500' },
+  WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', icon: Info, className: 'bg-purple-100 text-purple-700', color: 'bg-purple-500' },
   CONFIRMED: { label: 'Chờ xử lý', icon: Clock, className: 'bg-orange-100 text-orange-700', color: 'bg-blue-500' },
   IN_PROGRESS: { label: 'Đang làm', icon: Loader2, className: 'bg-blue-100 text-blue-700', color: 'bg-indigo-500' },
   COMPLETED: { label: 'Hoàn thành', icon: CheckCircle, className: 'bg-green-100 text-green-700', color: 'bg-emerald-500' },
@@ -35,6 +36,11 @@ export default function ShopBookings() {
     const [searchTerm, setSearchTerm] = useState('');
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+    
+    // Staff Change Request States
+    const [showReasonModal, setShowReasonModal] = useState(false);
+    const [pendingStaffChange, setPendingStaffChange] = useState<{ bookingId: number, staffId: number } | null>(null);
+    const [changeReason, setChangeReason] = useState('');
     
     // Calendar States
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -71,6 +77,9 @@ export default function ShopBookings() {
             } else if (status === 'IN_PROGRESS' || status === 'COMPLETED') {
                 await taskService.updateStatus(bookingId, status as any);
                 toast.success(status === 'IN_PROGRESS' ? 'Đã bắt đầu công việc' : 'Đã hoàn thành công việc');
+            } else if (status === 'CONFIRMED') {
+                await taskService.updateStatus(bookingId, status as any);
+                toast.success('Đã duyệt đơn hàng');
             }
             refetchList();
             refetchCalendar();
@@ -85,6 +94,16 @@ export default function ShopBookings() {
     };
 
     const handleAssignStaff = async (bookingId: number, staffId: number | 'unassign') => {
+        const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
+        const currentStaffId = booking ? (booking.staffId || (booking.staff && booking.staff.id)) : null;
+        const isChange = booking && currentStaffId && currentStaffId !== staffId;
+        
+        if (isChange && staffId !== 'unassign') {
+            setPendingStaffChange({ bookingId, staffId });
+            setShowReasonModal(true);
+            return;
+        }
+
         setUpdatingId(bookingId);
         try {
             if (staffId === 'unassign') {
@@ -98,6 +117,30 @@ export default function ShopBookings() {
             refetchCalendar();
         } catch {
             toast.error('Giao việc thất bại');
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const submitStaffChangeRequest = async () => {
+        if (!pendingStaffChange || !changeReason) {
+            toast.error('Vui lòng nhập lý do đổi nhân viên');
+            return;
+        }
+        setUpdatingId(pendingStaffChange.bookingId);
+        try {
+            await taskService.requestStaffChange(
+                pendingStaffChange.bookingId, 
+                pendingStaffChange.staffId, 
+                changeReason
+            );
+            toast.success('Đã gửi yêu cầu đổi nhân viên tới khách hàng');
+            setShowReasonModal(false);
+            setChangeReason('');
+            setPendingStaffChange(null);
+            refetchList();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Gửi yêu cầu thất bại');
         } finally {
             setUpdatingId(null);
         }
@@ -175,7 +218,7 @@ export default function ShopBookings() {
                                         />
                                     </div>
                                     <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-                                        {[{ v: 'ALL', l: 'Tất cả' }, { v: 'CONFIRMED', l: 'Chờ xử lý' }, { v: 'IN_PROGRESS', l: 'Đang làm' }, { v: 'COMPLETED', l: 'Xong' }].map(t => (
+                                        {[{ v: 'ALL', l: 'Tất cả' }, { v: 'WAITING_SHOP_APPROVAL', l: 'Chờ duyệt' }, { v: 'CONFIRMED', l: 'Chờ xử lý' }, { v: 'IN_PROGRESS', l: 'Đang làm' }, { v: 'COMPLETED', l: 'Xong' }].map(t => (
                                             <button
                                                 key={t.v}
                                                 onClick={() => setFilter(t.v)}
@@ -285,15 +328,15 @@ export default function ShopBookings() {
                                                         Xem chi tiết
                                                     </button>
 
-                                                    {booking.status === 'CONFIRMED' && (
+                                                    {booking.status === 'WAITING_SHOP_APPROVAL' && (
                                                         <div className="flex flex-col gap-2">
                                                             <button
                                                                 disabled={updatingId === booking.bookingId}
-                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'IN_PROGRESS')}
-                                                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')}
+                                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                                                             >
-                                                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-                                                                Bắt đầu
+                                                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                                                Duyệt đơn
                                                             </button>
                                                             <button
                                                                 disabled={updatingId === booking.bookingId}
@@ -301,20 +344,12 @@ export default function ShopBookings() {
                                                                 className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
                                                             >
                                                                 <XCircle size={12} />
-                                                                Hủy đơn
+                                                                Từ chối
                                                             </button>
                                                         </div>
                                                     )}
-                                                    {booking.status === 'IN_PROGRESS' && (
-                                                        <button
-                                                            disabled={updatingId === booking.bookingId}
-                                                            onClick={() => handleUpdateStatus(booking.bookingId, 'COMPLETED')}
-                                                            className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                                                        >
-                                                            {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                                            Hoàn thành
-                                                        </button>
-                                                    )}
+
+                                                    {/* Removed CONFIRMED and IN_PROGRESS actions as requested */}
                                                     {booking.status === 'COMPLETED' && (
                                                         <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
                                                             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
@@ -614,6 +649,61 @@ export default function ShopBookings() {
                                         )}
                                     </div>
                                 </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Staff Change Reason Modal */}
+            <AnimatePresence>
+                {showReasonModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => {
+                                setShowReasonModal(false);
+                                setPendingStaffChange(null);
+                                setChangeReason('');
+                            }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden p-6"
+                        >
+                            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Lý do đổi nhân viên</h3>
+                            <p className="text-xs text-slate-500 mb-4">Vui lòng nhập lý do đổi nhân viên để thông báo cho khách hàng.</p>
+                            
+                            <textarea
+                                value={changeReason}
+                                onChange={(e) => setChangeReason(e.target.value)}
+                                placeholder="Ví dụ: Nhân viên cũ bận việc đột xuất, Nhân viên này có chuyên môn tốt hơn..."
+                                className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[100px]"
+                            />
+                            
+                            <div className="mt-6 flex gap-3">
+                                <button 
+                                    onClick={() => {
+                                        setShowReasonModal(false);
+                                        setPendingStaffChange(null);
+                                        setChangeReason('');
+                                    }}
+                                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
+                                >
+                                    Hủy
+                                </button>
+                                <button 
+                                    onClick={submitStaffChangeRequest}
+                                    disabled={!changeReason.trim()}
+                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Gửi yêu cầu
+                                </button>
                             </div>
                         </motion.div>
                     </div>

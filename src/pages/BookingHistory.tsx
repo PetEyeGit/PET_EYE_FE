@@ -5,10 +5,11 @@ import {
   Calendar, Clock, Plus, Home, Stethoscope, Scissors,
   Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
   ChevronRight, MessageCircle, RefreshCw, Sparkles,
-  Search, ArrowUpRight, Wallet, Heart, Info, X
+  Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus
 } from 'lucide-react';
 import { bookingService } from '../services/booking.service';
 import { reviewService } from '../services/review.service';
+import { taskService } from '../services/task.service';
 import type { BookingResponse } from '../types/api';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -29,6 +30,7 @@ function getTabKey(b: BookingResponse): TabKey {
 
 const STATUS_META: Record<string, { label: string; bg: string; text: string; icon: any }> = {
   PENDING_PAYMENT: { label: 'Chờ thanh toán', bg: 'bg-amber-100 dark:bg-amber-500/10', text: 'text-amber-600', icon: Info },
+  WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', bg: 'bg-purple-100 dark:bg-purple-500/10', text: 'text-purple-600', icon: Clock },
   CONFIRMED:       { label: 'Sắp diễn ra',   bg: 'bg-blue-100 dark:bg-blue-500/10',   text: 'text-blue-600',   icon: Calendar },
   IN_PROGRESS:     { label: 'Đang thực hiện', bg: 'bg-emerald-100 dark:bg-emerald-500/10', text: 'text-emerald-600', icon: Wifi },
   COMPLETED:       { label: 'Hoàn tất',      bg: 'bg-slate-100 dark:bg-slate-800',     text: 'text-slate-500',  icon: CheckCircle },
@@ -85,6 +87,25 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
     const cat = CATEGORY_META[category];
     const status = STATUS_META[booking.status] || STATUS_META.CONFIRMED;
     const isLive = booking.status === 'IN_PROGRESS';
+
+    const queryClient = useQueryClient();
+    const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
+        queryKey: ['staffChangeRequest', booking.id],
+        queryFn: () => taskService.getPendingStaffChangeRequest(booking.id),
+        enabled: !!booking.id
+    });
+
+    const handleRespond = async (status: 'ACCEPTED' | 'REJECTED') => {
+        if (!staffChangeRequest) return;
+        try {
+            await taskService.respondToStaffChange(staffChangeRequest.id, status);
+            toast.success(status === 'ACCEPTED' ? 'Đã đồng ý đổi nhân viên' : 'Đã từ chối đổi nhân viên');
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            refetchRequest();
+        } catch {
+            toast.error('Thao tác thất bại');
+        }
+    };
 
     return (
         <motion.div 
@@ -157,6 +178,48 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                         </div>
                     </div>
                 </div>
+
+                {/* Staff Change Request Alert */}
+                {staffChangeRequest && (
+                    <div className="mb-4 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-700/30 rounded-3xl flex flex-col gap-4 shadow-sm backdrop-blur-sm">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
+                                <UserPlus size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                    <p className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Đổi nhân viên phục vụ</p>
+                                    <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-200/50 dark:border-amber-700/30">
+                                        Chờ duyệt
+                                    </span>
+                                </div>
+                                <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                                    Shop đề xuất đổi nhân viên sang <span className="font-extrabold text-slate-900 dark:text-white underline decoration-amber-300 decoration-2 underline-offset-2">{staffChangeRequest.proposedStaff?.fullName}</span>.
+                                </p>
+                                {staffChangeRequest.reason && (
+                                    <div className="mt-2 p-2.5 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-amber-100 dark:border-slate-700/50 text-[11px] text-slate-600 dark:text-slate-300 italic flex gap-1.5 items-start">
+                                        <span className="text-amber-500 font-bold not-italic">Lý do:</span>
+                                        <span>"{staffChangeRequest.reason}"</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex gap-2 justify-end pt-1">
+                            <button 
+                                onClick={() => handleRespond('REJECTED')}
+                                className="px-5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5"
+                            >
+                                <X size={12} /> Từ chối
+                            </button>
+                            <button 
+                                onClick={() => handleRespond('ACCEPTED')}
+                                className="px-5 py-2 bg-primary text-white rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-primary/20 flex items-center gap-1.5"
+                            >
+                                <Check size={12} /> Đồng ý
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-2">

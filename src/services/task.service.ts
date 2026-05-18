@@ -82,4 +82,24 @@ export const taskService = {
     );
     return response.data.result!;
   },
+
+  /** GET /tasks/:bookingId/staff-change-request — Get pending request */
+  getPendingStaffChangeRequest: async (bookingId: number): Promise<any> => {
+    const response = await apiClient.get<ApiResponse<any>>(`/tasks/${bookingId}/staff-change-request`);
+    return response.data.result ?? null;
+  },
+
+  /** POST /tasks/:bookingId/request-change/:staffId — Owner: request staff change */
+  requestStaffChange: async (bookingId: number, staffId: number, reason: string): Promise<void> => {
+    await apiClient.post(`/tasks/${bookingId}/request-change/${staffId}`, { reason });
+  },
+
+  /** PUT /tasks/staff-change/:requestId/respond — Customer: respond to staff change */
+  respondToStaffChange: async (requestId: number, status: 'ACCEPTED' | 'REJECTED'): Promise<TaskResponse> => {
+    const response = await apiClient.put<ApiResponse<TaskResponse>>(
+      `/tasks/staff-change/${requestId}/respond`,
+      { status }
+    );
+    return response.data.result!;
+  },
 };
