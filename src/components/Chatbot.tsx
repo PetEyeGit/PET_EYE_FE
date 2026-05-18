@@ -432,15 +432,25 @@ export default function Chatbot() {
           throw new Error('Khong lay duoc link thanh toan');
         }
       } else {
-        const booking = await bookingService.createCashBooking({
+        const result = await bookingService.initiateCashDeposit({
           shopId: pickerData.shopId,
           serviceId: pickerData.serviceId,
           petId: pickerData.petId,
           appointmentDatetime: datetime,
           paymentMethod: 'CASH',
         });
-        // Inject a success message directly into the chat
-        await sendMessage('Da dat lich thanh cong! Ma booking: #' + booking.id + ' - ' + pickerData.shopName + ' - ' + pickerData.serviceName + ' - ' + datetime);
+        if (result.checkoutUrl) {
+          // Lưu flag để PaymentResult biết đây là cash deposit
+          // Dùng localStorage vì sessionStorage bị xóa khi redirect sang domain khác (PayOS)
+          localStorage.setItem('pendingCashDeposit', result.orderCode.toString());
+          await sendMessage(
+            `Để giữ lịch, bạn cần đặt cọc **${result.amount.toLocaleString('vi-VN')}đ** (10%) qua PayOS. ` +
+            `Đang chuyển đến trang thanh toán...`
+          );
+          setTimeout(() => { window.location.href = result.checkoutUrl; }, 1500);
+        } else {
+          throw new Error('Không lấy được link thanh toán cọc');
+        }
       }
     } catch (err) {
       await sendMessage('Dat lich that bai: ' + (err instanceof Error ? err.message : 'Loi khong xac dinh'));

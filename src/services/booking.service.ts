@@ -33,9 +33,19 @@ export const bookingService = {
     return response.data.result!;
   },
 
-  /** Cash: create booking immediately */
-  createCashBooking: async (data: BookingRequest): Promise<BookingResponse> => {
-    const response = await apiClient.post<ApiResponse<BookingResponse>>('/bookings/cash', data);
+  /** Cash Step 1: validate + create PayOS link for 10% deposit. No booking saved yet. */
+  initiateCashDeposit: async (data: BookingRequest): Promise<InitiatePaymentResponse> => {
+    const response = await apiClient.post<ApiResponse<InitiatePaymentResponse>>(
+      '/bookings/cash/initiate', data
+    );
+    return response.data.result!;
+  },
+
+  /** Cash Step 2: verify 10% deposit paid → create booking */
+  confirmCashDeposit: async (orderCode: number): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(
+      `/bookings/cash/confirm?orderCode=${orderCode}`
+    );
     return response.data.result!;
   },
 

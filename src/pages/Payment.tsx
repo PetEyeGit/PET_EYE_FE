@@ -62,6 +62,7 @@ export default function Payment() {
     : [{ id: booking.serviceId, name: booking.serviceName, price: booking.servicePrice }];
 
   const totalPrice = serviceList.reduce((sum, s) => sum + s.price, 0);
+  const depositAmount = Math.ceil(totalPrice * 0.1 / 1000) * 1000; // 10% làm tròn lên 1000đ
 
   async function handlePay() {
     if (!agreed || loading) return;
@@ -70,7 +71,8 @@ export default function Payment() {
 
     if (payMethod === 'cash') {
       try {
-        const result = await bookingService.createCashBooking({
+        // Cash flow: tạo PayOS link cho 10% tiền cọc
+        const result = await bookingService.initiateCashDeposit({
           shopId: booking.shopId,
           serviceId: booking.serviceId,
           petId: booking.petId,
@@ -79,7 +81,15 @@ export default function Payment() {
           note: booking.petNote,
           paymentMethod: 'CASH',
         });
-        navigate('/booking/success', { state: { booking: result, bookingInfo: booking } });
+        if (result.checkoutUrl) {
+          // Lưu flag để PaymentResult biết đây là cash deposit
+          // Dùng localStorage vì sessionStorage bị xóa khi redirect sang domain khác (PayOS)
+          localStorage.setItem('pendingCashDeposit', result.orderCode.toString());
+          window.location.href = result.checkoutUrl;
+        } else {
+          setError('Không lấy được link thanh toán cọc. Vui lòng thử lại.');
+          setLoading(false);
+        }
       } catch (e: any) {
         setError(e?.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại.');
         setLoading(false);
@@ -234,9 +244,10 @@ export default function Payment() {
                 <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
                   <span className="material-symbols-outlined text-amber-500 mt-0.5">info</span>
                   <div>
-                    <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">Thanh toán tại quầy</p>
-                    <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
-                      Bạn sẽ thanh toán trực tiếp tại cơ sở vào ngày hẹn. Vui lòng đến đúng giờ để không mất lịch.
+                    <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">Thanh toán tại quầy — Cần đặt cọc 10%</p>
+                    <p className="text-amber-700 dark:text-amber-300 text-xs mt-1 leading-relaxed">
+                      Bạn cần thanh toán <strong>{depositAmount.toLocaleString('vi-VN')}đ</strong> tiền cọc (10%) qua PayOS ngay bây giờ để giữ lịch.
+                      Phần còn lại <strong>{(totalPrice - depositAmount).toLocaleString('vi-VN')}đ</strong> sẽ thanh toán trực tiếp tại cơ sở vào ngày hẹn.
                     </p>
                   </div>
                 </div>
@@ -287,6 +298,19 @@ export default function Payment() {
                 <span className="text-xl font-black text-[#1a2b4c] dark:text-teal-400">{formatVND(totalPrice)}</span>
               </div>
 
+              {payMethod === 'cash' && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 space-y-1.5 text-xs border border-amber-200 dark:border-amber-800">
+                  <div className="flex justify-between text-amber-700 dark:text-amber-300">
+                    <span>Tiền cọc ngay (10% qua PayOS)</span>
+                    <span className="font-bold">{formatVND(depositAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>Còn lại (tiền mặt tại quầy)</span>
+                    <span className="font-semibold">{formatVND(totalPrice - depositAmount)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-3 space-y-2 text-xs text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm text-green-500">verified_user</span>
@@ -319,8 +343,8 @@ export default function Payment() {
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined">check_circle</span>
-                    Xác nhận đặt lịch
+                    <span className="material-symbols-outlined">qr_code_2</span>
+                    Đặt cọc {formatVND(depositAmount)} qua PayOS
                   </>
                 )}
               </button>
