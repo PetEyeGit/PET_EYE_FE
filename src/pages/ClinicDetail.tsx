@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopService } from '../services/shop.service';
@@ -1059,18 +1059,20 @@ export default function ClinicDetail() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                                {svc.serviceName}
-                              </span>
+                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
+  <span>{svc.serviceName}</span>
+
+  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-400">
+    ( {svc.durationMinutes} phút
+    )
+  </span>
+</span>
                               <span className="text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">
                                 {svc.price.toLocaleString('vi-VN')}đ
                               </span>
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-0.5">
-                                <span className="material-symbols-outlined text-[11px]">schedule</span>
-                                {svc.durationMinutes} phút
-                              </span>
+                             
                               {svc.description && (
                                 <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
                                   · {svc.description}
