@@ -97,17 +97,16 @@ export default function ShopDashboard() {
            </p>
         </div>
         <div className="flex items-center gap-3">
-            <button className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-400 hover:text-[#1a2b4c] transition-all relative">
-                <Bell size={20} />
-                <span className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-800" />
-            </button>
-            <div className="h-12 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2" />
             <Link 
                 to="/shop/camera" 
-                className="px-6 py-3 bg-[#1a2b4c] text-white rounded-2xl font-bold shadow-lg shadow-indigo-900/20 flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all text-sm"
+                className="px-6 py-3 bg-[#1a2b4c] text-white rounded-2xl font-bold shadow-lg shadow-indigo-900/20 flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 transition-all text-sm group/btn relative overflow-hidden"
             >
-                <Video size={18} />
-                Live Camera
+                <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Video size={18} className="group-hover/btn:rotate-12 transition-transform" />
+                <span>Live Camera</span>
             </Link>
         </div>
       </header>

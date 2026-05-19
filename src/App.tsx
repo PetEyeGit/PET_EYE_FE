@@ -8,7 +8,6 @@ import Home from './pages/LandingPage';
 import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ShopLogin from './pages/ShopLogin';
 import ShopRegister from './pages/ShopRegister';
 import ShopRegisterSuccess from './pages/ShopRegisterSuccess';
 import ShopLayout from './pages/shop/ShopLayout';
@@ -64,7 +63,7 @@ import Chatbot from './components/Chatbot';
 const SHOP_ROUTES_PREFIX = '/shop';
 const STAFF_ROUTES_PREFIX = '/staff';
 const ADMIN_ROUTES_PREFIX = '/admin';
-const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile', '/verify-email', '/forgot-password'];
+const NO_NAVBAR_ROUTES = ['/login', '/register', '/login/zalo/callback', '/login/facebook/callback', '/complete-profile', '/verify-email', '/forgot-password', '/shop/login'];
 
 function AppLayout() {
   const location = useLocation();
@@ -116,7 +115,7 @@ function AppLayout() {
           <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/shop/login" element={<ShopLogin />} />
+          <Route path="/shop/login" element={<Login />} />
           <Route path="/shop/register" element={<ShopRegister />} />
           <Route path="/shop/register/success" element={<ShopRegisterSuccess />} />
           

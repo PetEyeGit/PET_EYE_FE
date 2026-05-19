@@ -89,6 +89,12 @@ export const taskService = {
     return response.data.result ?? null;
   },
 
+  /** GET /tasks/:bookingId/staff-change-history — Get staff change history */
+  getStaffChangeHistory: async (bookingId: number): Promise<any[]> => {
+    const response = await apiClient.get<ApiResponse<any[]>>(`/tasks/${bookingId}/staff-change-history`);
+    return response.data.result ?? [];
+  },
+
   /** POST /tasks/:bookingId/request-change/:staffId — Owner: request staff change */
   requestStaffChange: async (bookingId: number, staffId: number, reason: string): Promise<void> => {
     await apiClient.post(`/tasks/${bookingId}/request-change/${staffId}`, { reason });

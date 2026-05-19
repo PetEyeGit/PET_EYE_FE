@@ -4,11 +4,13 @@ import {
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
     LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Plus,
     Timer, MessageCircle, MoreVertical, CheckCircle2, Video,
-    MapPin, Phone, Mail, Scissors, Info, X, Play
+    MapPin, Phone, Mail, Scissors, Info, X, Play,
+    Activity, Utensils, Syringe, Heart, Sparkles
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
 import { bookingService } from '../../services/booking.service';
+import { careLogService } from '../../services/care-log.service';
 import { BookingResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 import { 
@@ -18,7 +20,7 @@ import {
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const STATUS_CONFIG: Record<string, any> = {
   PENDING_PAYMENT: { label: 'Chờ thanh toán', icon: AlertCircle, className: 'bg-slate-100 text-slate-500', color: 'bg-amber-500' },
@@ -29,7 +31,237 @@ const STATUS_CONFIG: Record<string, any> = {
   CANCELLED: { label: 'Đã hủy', icon: XCircle, className: 'bg-red-100 text-red-700', color: 'bg-red-500' },
 };
 
+const CARE_LOG_TYPES = [
+  { id: 'FEEDING', label: 'Cho ăn', icon: Utensils, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20 dark:text-orange-400' },
+  { id: 'CLEANING', label: 'Vệ sinh', icon: Activity, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400' },
+  { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400' },
+  { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400' },
+];
+
+interface StaffAssignmentSelectProps {
+    bookingId: number;
+    status: string;
+    currentStaffId: number | null;
+    staffList: StaffResponse[];
+    updatingId: number | null;
+    onAssign: (bookingId: number, staffId: number | 'unassign') => void;
+    selectClassName?: string;
+}
+
+function StaffAssignmentSelect({
+    bookingId,
+    status,
+    currentStaffId,
+    staffList,
+    updatingId,
+    onAssign,
+    selectClassName
+}: StaffAssignmentSelectProps) {
+    const { data: pendingRequest, isLoading } = useQuery({
+        queryKey: ['pendingStaffChangeRequest', bookingId],
+        queryFn: () => taskService.getPendingStaffChangeRequest(bookingId),
+        enabled: !!bookingId && (status === 'WAITING_SHOP_APPROVAL' || status === 'CONFIRMED' || status === 'IN_PROGRESS'),
+    });
+
+    const { data: changeHistory } = useQuery({
+        queryKey: ['staffChangeHistory', bookingId],
+        queryFn: () => taskService.getStaffChangeHistory(bookingId),
+        enabled: !!bookingId,
+    });
+
+    const acceptedRequests = changeHistory?.filter((req: any) => req.status === 'ACCEPTED') || [];
+    const hasAcceptedChange = acceptedRequests.length > 0;
+
+    const isPending = !!pendingRequest;
+    const isCompletedOrCancelled = status === 'COMPLETED' || status === 'CANCELLED' || status === 'IN_PROGRESS';
+    const isDisabled = updatingId === bookingId || isCompletedOrCancelled || isPending || isLoading;
+    const selectClass = selectClassName || "w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[11px] font-bold text-[#1a2b4c] dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900";
+
+    return (
+        <div className="space-y-1.5 w-full">
+            <div className="relative group/select">
+                <select 
+                    disabled={isDisabled}
+                    value={isPending ? (pendingRequest.proposedStaff?.id || '') : (currentStaffId || '')} 
+                    onChange={(e) => onAssign(bookingId, e.target.value === '' ? 'unassign' : Number(e.target.value))}
+                    className={selectClass}
+                >
+                    {isPending ? (
+                        <option value={pendingRequest.proposedStaff?.id}>
+                            {pendingRequest.proposedStaff?.fullName} (Đang chờ duyệt)
+                        </option>
+                    ) : (
+                        <>
+                            <option value="">Chưa giao việc</option>
+                            {staffList.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
+                        </>
+                    )}
+                </select>
+                <ChevronDown size={selectClassName ? 10 : 12} className={`absolute ${selectClassName ? 'right-2.5' : 'right-3'} top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none group-hover/select:translate-y-[-40%] transition-transform`} />
+            </div>
+            
+            {isPending && (
+                <div className="flex items-center gap-1.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30 leading-normal">
+                    <Clock size={10} className="animate-pulse shrink-0" />
+                    <span>Đang chờ khách duyệt đổi từ <strong>{pendingRequest.oldStaff?.fullName || 'Chưa giao'}</strong> sang <strong>{pendingRequest.proposedStaff?.fullName}</strong></span>
+                </div>
+            )}
+
+            {!isPending && hasAcceptedChange && (
+                <div className="flex items-center gap-1.5 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 leading-normal">
+                    <CheckCircle size={10} className="shrink-0 text-emerald-500" />
+                    <span>Đã đổi: {acceptedRequests.map((r: any) => `${r.oldStaff?.fullName || 'Chưa giao'} ➔ ${r.proposedStaff?.fullName}`).join(', ')}</span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+interface BookingListItemProps {
+    booking: any;
+    staffList: StaffResponse[];
+    updatingId: number | null;
+    onAssign: (bookingId: number, staffId: number | 'unassign') => void;
+    handleUpdateStatus: (bookingId: number, status: string) => void;
+    setSelectedBooking: (booking: any) => void;
+}
+
+function BookingListItem({
+    booking,
+    staffList,
+    updatingId,
+    onAssign,
+    handleUpdateStatus,
+    setSelectedBooking
+}: BookingListItemProps) {
+    const { data: pendingRequest } = useQuery({
+        queryKey: ['pendingStaffChangeRequest', booking.bookingId],
+        queryFn: () => taskService.getPendingStaffChangeRequest(booking.bookingId),
+        enabled: !!booking.bookingId && (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS'),
+    });
+
+    const isPending = !!pendingRequest;
+    const cfg = STATUS_CONFIG[booking.status] || STATUS_CONFIG.CONFIRMED;
+    const StatusIcon = cfg.icon;
+
+    return (
+        <div 
+            className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 group relative"
+        >
+            <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-5">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-[#1a2b4c] dark:text-indigo-400 font-black text-lg">
+                            #{booking.bookingId.toString().slice(-3)}
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white">Đơn hàng #{booking.bookingId}</h3>
+                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cfg.className}`}>
+                                    <StatusIcon size={10} className={booking.status === 'IN_PROGRESS' ? 'animate-spin' : ''} />
+                                    {cfg.label}
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-bold flex items-center gap-2">
+                                {booking.serviceName}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><User size={14} /></div>
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Khách hàng</p>
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{booking.customerName}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><Clock size={14} /></div>
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        {format(parseISO(booking.appointmentDatetime), "eee, dd/MM - HH:mm", { locale: vi })}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400">🐾</div>
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Thú cưng</p>
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{booking.petName}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><UserCheck size={14} /></div>
+                                <div className="flex-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Phụ trách</p>
+                                    <StaffAssignmentSelect 
+                                        bookingId={booking.bookingId}
+                                        status={booking.status}
+                                        currentStaffId={booking.staffId}
+                                        staffList={staffList}
+                                        updatingId={updatingId}
+                                        onAssign={onAssign}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="lg:w-48 flex flex-col justify-center gap-2">
+                    <button
+                        onClick={() => setSelectedBooking(booking)}
+                        className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10"
+                    >
+                        <Info size={12} />
+                        Xem chi tiết
+                    </button>
+
+                    {booking.status === 'WAITING_SHOP_APPROVAL' && (
+                        <div className="flex flex-col gap-2">
+                            {!isPending && (
+                                <button
+                                    disabled={updatingId === booking.bookingId}
+                                    onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')}
+                                    className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                    Duyệt đơn
+                                </button>
+                            )}
+                            <button
+                                disabled={updatingId === booking.bookingId}
+                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
+                                className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                <XCircle size={12} />
+                                Từ chối
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Removed CONFIRMED and IN_PROGRESS actions as requested */}
+                    {booking.status === 'COMPLETED' && (
+                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
+                            <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
+                            <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ShopBookings() {
+    const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
     const [staffList, setStaffList] = useState<StaffResponse[]>([]);
     const [filter, setFilter] = useState<string>('ALL');
@@ -64,6 +296,13 @@ export default function ShopBookings() {
         enabled: viewMode === 'calendar'
     });
 
+    const selectedBookingId = selectedBooking?.bookingId || selectedBooking?.id;
+    const { data: careLogs = [], isLoading: loadingLogs } = useQuery({
+        queryKey: ['shopBookingCareLogs', selectedBookingId],
+        queryFn: () => careLogService.getLogs(selectedBookingId),
+        enabled: !!selectedBookingId && (selectedBooking.status === 'IN_PROGRESS' || selectedBooking.status === 'COMPLETED'),
+    });
+
     useEffect(() => {
         staffService.getMyShopStaff().then(data => setStaffList(data.filter(s => s.isActive)));
     }, []);
@@ -94,10 +333,23 @@ export default function ShopBookings() {
     };
 
     const handleAssignStaff = async (bookingId: number, staffId: number | 'unassign') => {
-        const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
+        const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId)
+                     || calendarBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
         const currentStaffId = booking ? (booking.staffId || (booking.staff && booking.staff.id)) : null;
-        const isChange = booking && currentStaffId && currentStaffId !== staffId;
+        // Only require staff change request flow if the booking status is WAITING_SHOP_APPROVAL, CONFIRMED or IN_PROGRESS
+        const isChange = booking && 
+            (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && 
+            currentStaffId && 
+            currentStaffId !== staffId;
         
+        // Prevent direct unassignment if a staff is already assigned
+        if (booking && (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS')) {
+            if (staffId === 'unassign' && currentStaffId) {
+                toast.error('Không thể gỡ nhân viên khi đã có nhân viên phụ trách');
+                return;
+            }
+        }
+
         if (isChange && staffId !== 'unassign') {
             setPendingStaffChange({ bookingId, staffId });
             setShowReasonModal(true);
@@ -115,6 +367,9 @@ export default function ShopBookings() {
             }
             refetchList();
             refetchCalendar();
+            await queryClient.invalidateQueries({
+                queryKey: ['pendingStaffChangeRequest', bookingId]
+            });
         } catch {
             toast.error('Giao việc thất bại');
         } finally {
@@ -139,6 +394,10 @@ export default function ShopBookings() {
             setChangeReason('');
             setPendingStaffChange(null);
             refetchList();
+            refetchCalendar();
+            await queryClient.invalidateQueries({
+                queryKey: ['pendingStaffChangeRequest', pendingStaffChange.bookingId]
+            });
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Gửi yêu cầu thất bại');
         } finally {
@@ -240,127 +499,17 @@ export default function ShopBookings() {
                                         <Loader2 size={40} className="animate-spin text-[#1a2b4c]" />
                                         <p className="text-slate-400 font-bold">Đang đồng bộ dữ liệu...</p>
                                     </div>
-                                ) : filteredList.map((booking) => {
-                                    const cfg = STATUS_CONFIG[booking.status] || STATUS_CONFIG.CONFIRMED;
-                                    const StatusIcon = cfg.icon;
-
-                                    return (
-                                        <div 
-                                            key={booking.bookingId} 
-                                            className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 group relative"
-                                        >
-                                            <div className="flex flex-col lg:flex-row gap-6">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-4 mb-5">
-                                                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-[#1a2b4c] dark:text-indigo-400 font-black text-lg">
-                                                            #{booking.bookingId.toString().slice(-3)}
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                                <h3 className="text-lg font-black text-slate-900 dark:text-white">Đơn hàng #{booking.bookingId}</h3>
-                                                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cfg.className}`}>
-                                                                    <StatusIcon size={10} className={booking.status === 'IN_PROGRESS' ? 'animate-spin' : ''} />
-                                                                    {cfg.label}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs text-slate-500 font-bold flex items-center gap-2">
-                                                                {booking.serviceName}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                        <div className="space-y-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><User size={14} /></div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Khách hàng</p>
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{booking.customerName}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><Clock size={14} /></div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                                        {format(parseISO(booking.appointmentDatetime), "eee, dd/MM - HH:mm", { locale: vi })}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="space-y-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400">🐾</div>
-                                                                <div>
-                                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Thú cưng</p>
-                                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{booking.petName}</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><UserCheck size={14} /></div>
-                                                                <div className="flex-1">
-                                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Phụ trách</p>
-                                                                    <div className="relative group/select">
-                                                                        <select 
-                                                                            disabled={updatingId === booking.bookingId || booking.status === 'COMPLETED' || booking.status === 'CANCELLED'}
-                                                                            value={booking.staffId || ''} 
-                                                                            onChange={(e) => handleAssignStaff(booking.bookingId, e.target.value === '' ? 'unassign' : Number(e.target.value))}
-                                                                            className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[11px] font-bold text-[#1a2b4c] dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900"
-                                                                        >
-                                                                            <option value="">Chưa giao việc</option>
-                                                                            {staffList.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
-                                                                        </select>
-                                                                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none group-hover/select:translate-y-[-40%] transition-transform" />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="lg:w-48 flex flex-col justify-center gap-2">
-                                                    <button
-                                                        onClick={() => setSelectedBooking(booking)}
-                                                        className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10"
-                                                    >
-                                                        <Info size={12} />
-                                                        Xem chi tiết
-                                                    </button>
-
-                                                    {booking.status === 'WAITING_SHOP_APPROVAL' && (
-                                                        <div className="flex flex-col gap-2">
-                                                            <button
-                                                                disabled={updatingId === booking.bookingId}
-                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')}
-                                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                                                            >
-                                                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                                                Duyệt đơn
-                                                            </button>
-                                                            <button
-                                                                disabled={updatingId === booking.bookingId}
-                                                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
-                                                                className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-                                                            >
-                                                                <XCircle size={12} />
-                                                                Từ chối
-                                                            </button>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Removed CONFIRMED and IN_PROGRESS actions as requested */}
-                                                    {booking.status === 'COMPLETED' && (
-                                                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
-                                                            <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
-                                                            <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                ) : filteredList.map((booking) => (
+                                    <BookingListItem 
+                                        key={booking.bookingId}
+                                        booking={booking}
+                                        staffList={staffList}
+                                        updatingId={updatingId}
+                                        onAssign={handleAssignStaff}
+                                        handleUpdateStatus={handleUpdateStatus}
+                                        setSelectedBooking={setSelectedBooking}
+                                    />
+                                ))}
                             </div>
                         </motion.div>
                     ) : (
@@ -493,18 +642,15 @@ export default function ShopBookings() {
                                             <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 space-y-3">
                                                 <div>
                                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Khách: <span className="text-slate-700 dark:text-slate-300 ml-1">{b.customerName || 'Khách lẻ'}</span></p>
-                                                    <div className="relative group/select">
-                                                        <select 
-                                                            disabled={updatingId === b.id || b.status === 'COMPLETED' || b.status === 'CANCELLED'}
-                                                            value={b.staffId || ''} 
-                                                            onChange={(e) => handleAssignStaff(b.id, e.target.value === '' ? 'unassign' : Number(e.target.value))}
-                                                            className="w-full pl-3 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
-                                                        >
-                                                            <option value="">Chưa giao việc</option>
-                                                            {staffList.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
-                                                        </select>
-                                                        <ChevronDown size={10} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover/select:translate-y-[-40%] transition-transform" />
-                                                    </div>
+                                                    <StaffAssignmentSelect 
+                                                        bookingId={b.id}
+                                                        status={b.status}
+                                                        currentStaffId={b.staffId}
+                                                        staffList={staffList}
+                                                        updatingId={updatingId}
+                                                        onAssign={handleAssignStaff}
+                                                        selectClassName="w-full pl-3 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-bold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+                                                    />
                                                 </div>
 
                                                 {b.status === 'CONFIRMED' && (
@@ -631,6 +777,60 @@ export default function ShopBookings() {
                                             "{selectedBooking.note || 'Không có ghi chú'}"
                                         </div>
                                     </div>
+
+                                    {/* Care Logs */}
+                                    {(selectedBooking.status === 'IN_PROGRESS' || selectedBooking.status === 'COMPLETED') && (
+                                        <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nhật ký chăm sóc ({careLogs.length})</p>
+                                                {loadingLogs && <Loader2 size={12} className="animate-spin text-slate-400" />}
+                                            </div>
+
+                                            {careLogs.length === 0 ? (
+                                                <p className="text-xs text-slate-400 italic">Chưa có hoạt động chăm sóc nào được ghi nhận.</p>
+                                            ) : (
+                                                <div className="relative pl-6 border-l-2 border-indigo-100 dark:border-indigo-900/40 ml-3 space-y-6 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                                                    {careLogs.map((log: any) => {
+                                                        const logType = CARE_LOG_TYPES.find(t => t.id === log.type) || {
+                                                            label: log.type,
+                                                            icon: Activity,
+                                                            color: 'text-slate-500 bg-slate-50 dark:bg-slate-900 dark:text-slate-400'
+                                                        };
+                                                        const LogIcon = logType.icon;
+
+                                                        return (
+                                                            <div key={log.id} className="relative group/timeline-item">
+                                                                {/* Dot icon */}
+                                                                <div className={`absolute -left-[37px] top-0 w-7 h-7 rounded-xl ${logType.color} border-4 border-white dark:border-slate-800 flex items-center justify-center shadow-sm`}>
+                                                                    <LogIcon size={11} />
+                                                                </div>
+
+                                                                <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-100/80 dark:border-slate-700 hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all duration-300">
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200">{logType.label}</span>
+                                                                            <span className="text-[9px] text-slate-400 font-bold">• Nhân viên: {log.staffName}</span>
+                                                                        </div>
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                                                            {format(parseISO(log.timestamp), 'HH:mm • dd/MM', { locale: vi })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                                                        {log.note}
+                                                                    </p>
+                                                                    {log.imageUrl && (
+                                                                        <div className="mt-3 max-w-sm rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                                                                            <img src={log.imageUrl} alt="Đính kèm" className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="pt-6 flex gap-3">
                                         <button 

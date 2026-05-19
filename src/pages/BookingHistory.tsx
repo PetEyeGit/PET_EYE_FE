@@ -5,11 +5,13 @@ import {
   Calendar, Clock, Plus, Home, Stethoscope, Scissors,
   Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
   ChevronRight, MessageCircle, RefreshCw, Sparkles,
-  Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus
+  Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus,
+  Activity, Utensils, Syringe, BookOpen
 } from 'lucide-react';
 import { bookingService } from '../services/booking.service';
 import { reviewService } from '../services/review.service';
 import { taskService } from '../services/task.service';
+import { careLogService } from '../services/care-log.service';
 import type { BookingResponse } from '../types/api';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -54,6 +56,13 @@ function formatVND(n: number) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 }
 
+const CARE_LOG_TYPES = [
+  { id: 'FEEDING', label: 'Cho ăn', icon: Utensils, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20 dark:text-orange-400' },
+  { id: 'CLEANING', label: 'Vệ sinh', icon: Activity, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400' },
+  { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400' },
+  { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400' },
+];
+
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'all',       label: 'Tất cả' },
   { key: 'upcoming',  label: 'Sắp tới' },
@@ -89,10 +98,18 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
     const isLive = booking.status === 'IN_PROGRESS';
 
     const queryClient = useQueryClient();
+    const [showLogs, setShowLogs] = useState(false);
+
     const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
         queryKey: ['staffChangeRequest', booking.id],
         queryFn: () => taskService.getPendingStaffChangeRequest(booking.id),
         enabled: !!booking.id
+    });
+
+    const { data: careLogs = [] } = useQuery({
+        queryKey: ['bookingCareLogs', booking.id],
+        queryFn: () => careLogService.getLogs(booking.id),
+        enabled: !!booking.id && (booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED'),
     });
 
     const handleRespond = async (status: 'ACCEPTED' | 'REJECTED') => {
@@ -221,6 +238,63 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                     </div>
                 )}
 
+                {/* Care Logs Timeline Section */}
+                <AnimatePresence>
+                    {showLogs && careLogs.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden pt-2 pb-4 border-t border-slate-100 dark:border-slate-800/80"
+                        >
+                            <div className="flex items-center gap-2 mb-4 mt-2">
+                                <Sparkles className="text-indigo-500 animate-pulse" size={14} />
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Dòng thời gian hoạt động chăm sóc</h4>
+                            </div>
+
+                            <div className="relative pl-6 border-l-2 border-indigo-100 dark:border-indigo-900/40 ml-3 space-y-6">
+                                {careLogs.map((log: any) => {
+                                    const logType = CARE_LOG_TYPES.find(t => t.id === log.type) || {
+                                        label: log.type,
+                                        icon: Activity,
+                                        color: 'text-slate-500 bg-slate-50 dark:bg-slate-900 dark:text-slate-400'
+                                    };
+                                    const LogIcon = logType.icon;
+
+                                    return (
+                                        <div key={log.id} className="relative group/timeline-item">
+                                            {/* Dot icon */}
+                                            <div className={`absolute -left-[37px] top-0 w-7 h-7 rounded-xl ${logType.color} border-4 border-white dark:border-slate-950 flex items-center justify-center shadow-sm group-hover/timeline-item:scale-115 transition-transform duration-300`}>
+                                                <LogIcon size={11} />
+                                            </div>
+
+                                            <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-4 border border-slate-100/80 dark:border-slate-800/55 hover:border-indigo-100 dark:hover:border-indigo-900/30 transition-all duration-300">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-slate-800 dark:text-slate-200">{logType.label}</span>
+                                                        <span className="text-[9px] text-slate-400 font-bold">• Nhân viên: {log.staffName}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                                        {format(parseISO(log.timestamp), 'HH:mm • dd/MM/yyyy', { locale: vi })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                                    {log.note}
+                                                </p>
+                                                {log.imageUrl && (
+                                                    <div className="mt-3 max-w-sm rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                                                        <img src={log.imageUrl} alt="Đính kèm" className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-3">
@@ -232,6 +306,18 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                         {booking.status === 'COMPLETED' && (
                             <button onClick={() => onReview(booking)} className="px-5 py-2.5 bg-amber-400 text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-amber-400/20 hover:scale-105 transition-all">
                                 <Star size={14} className="fill-current" /> Đánh giá
+                            </button>
+                        )}
+                        {careLogs.length > 0 && (
+                            <button 
+                                onClick={() => setShowLogs(!showLogs)} 
+                                className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${
+                                    showLogs 
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
+                                    : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/60'
+                                }`}
+                            >
+                                <BookOpen size={14} /> Nhật ký chăm sóc ({careLogs.length})
                             </button>
                         )}
                         <Link to="/messages" className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">

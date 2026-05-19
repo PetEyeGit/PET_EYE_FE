@@ -321,7 +321,7 @@ export default function Home() {
 
               <div className="space-y-6">
                 {[
-                  { t: "Chất lượng HD 4K", d: "Hình ảnh sắc nét, mượt mà cả ngày lẫn đêm.", icon: <Sparkles className="text-primary" /> },
+                  { t: "Chất lượng HD 4K", d: "Hình ảnh sắc nét, mượt mà cả ngày lẫn đêm.", icon: <Sparkles className="text-amber-400" /> },
                   { t: "Đàm thoại 2 chiều", d: "Trò chuyện và gọi tên bé cưng từ xa dễ dàng.", icon: <Video className="text-secondary" /> },
                   { t: "Bảo mật nâng cao", d: "Mã hóa đầu cuối, đảm bảo chỉ bạn mới có quyền xem.", icon: <ShieldCheck className="text-green-500" /> }
                 ].map((item, i) => (
