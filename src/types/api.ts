@@ -103,6 +103,7 @@ export interface StaffResponse {
 export interface BookingRequest {
   shopId: number;
   serviceId: number;
+  serviceIds?: number[];
   petId: number;
   staffId?: number;
   appointmentDatetime: string;

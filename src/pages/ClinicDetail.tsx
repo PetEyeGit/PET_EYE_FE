@@ -9,8 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 import type { ServiceResponse, StaffResponse } from '../types/api';
 import type { Pet } from '../types';
 
-const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
-
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
 const CAMERA_TIER_META: Record<string, { label: string; desc: string; icon: string; defaultPrice: number }> = {
@@ -117,7 +115,16 @@ export default function ClinicDetail() {
   const [staffWithAvailability, setStaffWithAvailability] = useState<StaffResponse[]>([]);
   const [staffAvailabilityError, setStaffAvailabilityError] = useState(false);
 
-  // Primary service duration for availability check
+  // Tổng duration của tất cả services đã chọn — dùng để check conflict
+  const totalServiceDuration = useMemo(() => {
+    if (selectedServiceIds.length === 0) return 60;
+    return selectedServiceIds.reduce((sum, id) => {
+      const svc = apiServices.find((s: ServiceResponse) => s.id === id);
+      return sum + (svc?.durationMinutes ?? 0);
+    }, 0) || 60;
+  }, [selectedServiceIds, apiServices]);
+
+  // primaryServiceDuration: duration service đầu tiên (dùng cho staff availability check)
   const primaryServiceDuration = useMemo(() => {
     if (selectedServiceIds.length > 0) {
       const svc = apiServices.find((s: ServiceResponse) => s.id === selectedServiceIds[0]);
@@ -126,11 +133,107 @@ export default function ClinicDetail() {
     return 60;
   }, [selectedServiceIds, apiServices]);
 
+  // ── Derived booleans — khai báo sớm để dùng trong useEffects bên dưới ──────
+  const hasNormalServices = selectedServiceIds.length > 0;
+
+  // ── Available time slots (from API) ────────────────────────────────────────
+  // availableSlots: mảng "HH:mm" của các slot còn nhân viên rảnh (từ BE)
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  // Tất cả slots của shop trong ngày — bước cố định 60 phút để UI đẹp
+  // Slot nào không có trong availableSlots thì disabled
+  const allTimeSlots = useMemo(() => {
+    if (!hasNormalServices) return [];
+    const openStr  = shop?.openTime  ?? '08:00';
+    const closeStr = shop?.closeTime ?? '20:00';
+    const parseTime = (t: string) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+    const openMin  = parseTime(openStr);
+    const closeMin = parseTime(closeStr);
+    const STEP = 60; // bước cố định 60 phút
+    const slots: string[] = [];
+    // Sinh đến khi slot + totalDuration vẫn còn trong giờ đóng cửa
+    for (let m = openMin; m + totalServiceDuration <= closeMin; m += STEP) {
+      const hh = String(Math.floor(m / 60)).padStart(2, '0');
+      const mm = String(m % 60).padStart(2, '0');
+      slots.push(`${hh}:${mm}`);
+    }
+    return slots;
+  }, [shop?.openTime, shop?.closeTime, totalServiceDuration, hasNormalServices]);
+
+  // Fetch available slots mỗi khi date hoặc services thay đổi
+  useEffect(() => {
+    if (!shopId || !selectedDate || !hasNormalServices) {
+      setAvailableSlots([]);
+      return;
+    }
+    let cancelled = false;
+    setSlotsLoading(true);
+    bookingService
+      .getAvailableTimeSlotsForServices(shopId, selectedDate, selectedServiceIds)
+      .then((slots) => {
+        if (cancelled) return;
+        // BE trả về ISO datetime "2026-05-19T08:00:00", extract "HH:mm"
+        const times = slots.map((s) => s.substring(11, 16));
+        setAvailableSlots(times);
+        // Nếu slot đang chọn không còn available → reset
+        setSelectedTime((prev) => (prev && !times.includes(prev) ? null : prev));
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [shopId, selectedDate, selectedServiceIds, hasNormalServices]);
+
   // ── Pet selection modal ─────────────────────────────────────────────────────
   const [showPetModal, setShowPetModal] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [petNote, setPetNote] = useState('');
   const [selectedServiceForDetail, setSelectedServiceForDetail] = useState<ServiceResponse | null>(null);
+  const [checkingPet, setCheckingPet] = useState(false);
+
+  // Availability map: petId → true (available) | false (busy) | undefined (loading)
+  const [petAvailabilityMap, setPetAvailabilityMap] = useState<Record<number, boolean>>({});
+  const [loadingPetAvailability, setLoadingPetAvailability] = useState(false);
+  // Pet đang xem lịch hẹn
+  const [viewingBookingsPetId, setViewingBookingsPetId] = useState<number | null>(null);
+  const [petBookings, setPetBookings] = useState<any[]>([]);
+  const [loadingPetBookings, setLoadingPetBookings] = useState(false);
+
+  // Khi modal mở: check availability tất cả pets
+  useEffect(() => {
+    if (!showPetModal) return;
+    const activePets = (myPets as any[]).filter((p: any) => p.active);
+    if (activePets.length === 0) return;
+
+    const appointmentDatetime = hasNormalServices && selectedDate && selectedTime
+      ? `${selectedDate}T${selectedTime}:00`
+      : checkInDate ? `${checkInDate}T12:00:00` : null;
+
+    if (!appointmentDatetime) return;
+
+    const durationForCheck = isHotelSelected ? boardingDays * 24 * 60 : totalServiceDuration;
+
+    setLoadingPetAvailability(true);
+    Promise.all(
+      activePets.map((pet: any) =>
+        bookingService.checkPetAvailability(pet.id, appointmentDatetime, durationForCheck)
+          .then(available => ({ id: pet.id, available }))
+          .catch(() => ({ id: pet.id, available: true })) // fallback: cho phép chọn nếu lỗi
+      )
+    ).then(results => {
+      const map: Record<number, boolean> = {};
+      results.forEach(r => { map[r.id] = r.available; });
+      setPetAvailabilityMap(map);
+      setLoadingPetAvailability(false);
+    });
+  }, [showPetModal]);
 
   const toggleService = (serviceId: number) => {
     setSelectedServiceIds(prev =>
@@ -138,6 +241,9 @@ export default function ClinicDetail() {
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
+    // Reset time khi thay đổi services (tổng duration thay đổi → slots thay đổi)
+    setSelectedTime(null);
+    setAvailableSlots([]);
   };
 
   const cameraTierExtraPrice = isHotelSelected
@@ -155,7 +261,6 @@ export default function ClinicDetail() {
   // - Boarding only: cần checkIn + checkOut
   // - Dịch vụ thường only: cần ít nhất 1 service + date + time
   // - Cả 2: cần đủ cả boarding dates VÀ date+time cho dịch vụ thường
-  const hasNormalServices = selectedServiceIds.length > 0;
   const boardingReady = isHotelSelected ? (!!checkInDate && !!checkOutDate && checkInDate < checkOutDate) : true;
   const normalReady = hasNormalServices ? (!!selectedDate && !!selectedTime) : true;
 
@@ -214,8 +319,37 @@ export default function ClinicDetail() {
   }
 
   // ── After pet selected → go to payment page with state ──────────────────────
-  function handleConfirmPet() {
+  async function handleConfirmPet() {
     if (!selectedPet) return;
+
+    // appointmentDatetime:
+    // - Nếu có dịch vụ thường → dùng date+time của dịch vụ thường (BE validate @Future)
+    // - Nếu chỉ có boarding → dùng check-in date lúc 12:00
+    const appointmentDatetime = hasNormalServices
+      ? `${selectedDate}T${selectedTime}:00`
+      : `${checkInDate}T12:00:00`;
+
+    const durationForCheck = isHotelSelected ? boardingDays * 24 * 60 : totalServiceDuration;
+
+    setCheckingPet(true);
+    try {
+      const isAvailable = await bookingService.checkPetAvailability(selectedPet.id, appointmentDatetime, durationForCheck);
+      if (!isAvailable) {
+        import('react-hot-toast').then(({ toast }) => {
+          toast.error('Thú cưng này đã có lịch hẹn trong khoảng thời gian này. Vui lòng chọn bé khác hoặc thời gian khác.');
+        });
+        setCheckingPet(false);
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('Lỗi kiểm tra lịch trống của thú cưng. Vui lòng thử lại.');
+      });
+      setCheckingPet(false);
+      return;
+    }
+    setCheckingPet(false);
     setShowPetModal(false);
 
     // Tập hợp tất cả services đã chọn (thường + boarding)
@@ -239,13 +373,6 @@ export default function ClinicDetail() {
     const primaryServiceId = hasNormalServices
       ? selectedServiceIds[0]
       : boardingService?.id;
-
-    // appointmentDatetime:
-    // - Nếu có dịch vụ thường → dùng date+time của dịch vụ thường (BE validate @Future)
-    // - Nếu chỉ có boarding → dùng check-in date lúc 12:00
-    const appointmentDatetime = hasNormalServices
-      ? `${selectedDate}T${selectedTime}:00`
-      : `${checkInDate}T12:00:00`;
 
     const totalServicePrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
@@ -667,9 +794,13 @@ export default function ClinicDetail() {
                               {svc.description}
                             </p>
                             <div className="flex items-center gap-3 mt-1">
-                              <p className="text-xs text-slate-400">⏱ {svc.durationMinutes} phút</p>
+                              <span className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                                isSelected ? 'text-[#1a2b4c] dark:text-teal-400' : 'text-slate-400'
+                              }`}>
+                                ⏱ {svc.durationMinutes} phút
+                              </span>
                               <span className="text-slate-300 dark:text-slate-600">•</span>
-                              <button 
+                              <button
                                 onClick={(e) => { e.stopPropagation(); setSelectedServiceForDetail(svc); }}
                                 className="text-xs text-[#1a2b4c] dark:text-teal-400 hover:underline flex items-center gap-1"
                               >
@@ -679,12 +810,23 @@ export default function ClinicDetail() {
                             </div>
                           </div>
 
-                          {/* Price */}
-                          <div className="text-right shrink-0 flex items-baseline gap-1">
-                            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                              {svc.price.toLocaleString('vi-VN')}đ
-                            </span>
-                            <span className="text-xs text-slate-400">/lần</span>
+                          {/* Price + checkbox */}
+                          <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                            <div className="flex items-baseline gap-1">
+                              <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                                {svc.price.toLocaleString('vi-VN')}đ
+                              </span>
+                              <span className="text-xs text-slate-400">/lần</span>
+                            </div>
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                              isSelected
+                                ? 'bg-[#1a2b4c] border-[#1a2b4c] dark:bg-teal-500 dark:border-teal-500'
+                                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700'
+                            }`}>
+                              {isSelected && (
+                                <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'wght' 700" }}>check</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -924,9 +1066,17 @@ export default function ClinicDetail() {
                                 {svc.price.toLocaleString('vi-VN')}đ
                               </span>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                              {svc.description}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-0.5">
+                                <span className="material-symbols-outlined text-[11px]">schedule</span>
+                                {svc.durationMinutes} phút
+                              </span>
+                              {svc.description && (
+                                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                                  · {svc.description}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </label>
                       ))}
@@ -939,6 +1089,16 @@ export default function ClinicDetail() {
                         <span>Dịch vụ đã chọn:</span>
                         <span>{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
                       </div>
+                      {/* Hiển thị tổng thời gian nếu có dịch vụ thường */}
+                      {selectedServiceIds.length > 0 && (
+                        <div className="flex justify-between items-center text-xs opacity-70 mb-1">
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[11px]">schedule</span>
+                            Tổng thời gian:
+                          </span>
+                          <span>{totalServiceDuration} phút</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-bold">Tổng cộng:</span>
                         <span className="text-base font-black text-teal-400">
@@ -1014,7 +1174,7 @@ export default function ClinicDetail() {
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
-                          Khung giờ trống
+                          Khung giờ
                         </span>
                         <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
                           {selectedDate
@@ -1022,24 +1182,56 @@ export default function ClinicDetail() {
                             : `${dayName}, ${dateStr}`}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {TIME_SLOTS.map((time) => (
-                          <button
-                            key={time}
-                            onClick={() => setSelectedTime(time)}
-                            className={`py-2 text-xs font-semibold rounded border transition-all ${
-                              selectedTime === time
-                                ? "bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md"
-                                : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c]"
-                            }`}
-                          >
-                            {time}
-                          </button>
-                        ))}
-                        <button className="py-2 text-xs font-semibold rounded border bg-slate-100 dark:bg-slate-800 text-slate-300 cursor-not-allowed border-slate-200 dark:border-slate-700">
-                          17:00
-                        </button>
-                      </div>
+
+                      {slotsLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-4">
+                          <span className="w-4 h-4 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin" />
+                          <span className="text-xs text-slate-400">Đang tải khung giờ...</span>
+                        </div>
+                      ) : allTimeSlots.length === 0 ? (
+                        <div className="py-4 text-center">
+                          <span className="material-symbols-outlined text-slate-300 text-3xl block mb-1">schedule</span>
+                          <p className="text-xs text-slate-400 font-medium">Chọn dịch vụ để xem khung giờ</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {allTimeSlots.map((time) => {
+                            const isAvailable = availableSlots.includes(time);
+                            const isSelected  = selectedTime === time;
+                            return (
+                              <button
+                                key={time}
+                                disabled={!isAvailable}
+                                onClick={() => isAvailable && setSelectedTime(time)}
+                                title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
+                                className={`py-2 text-xs font-semibold rounded border transition-all relative ${
+                                  isSelected
+                                    ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
+                                    : isAvailable
+                                      ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
+                                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
+                                }`}
+                              >
+                                {time}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Chú thích */}
+                      {!slotsLoading && allTimeSlots.length > 0 && (
+                        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-slate-200 dark:border-slate-700">
+                          <div className="flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-sm bg-white border border-slate-300 inline-block" />
+                            <span className="text-[10px] text-slate-400">Còn trống</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200 inline-block" />
+                            <span className="text-[10px] text-slate-400">Hết nhân viên</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -1362,7 +1554,7 @@ export default function ClinicDetail() {
                 <p className="text-xs text-slate-500 mt-0.5">Bé nào sẽ sử dụng dịch vụ hôm nay?</p>
               </div>
               <button
-                onClick={() => setShowPetModal(false)}
+                onClick={() => { setShowPetModal(false); setViewingBookingsPetId(null); setPetBookings([]); setPetAvailabilityMap({}); }}
                 className="w-9 h-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
               >
                 <span className="material-symbols-outlined text-slate-500">close</span>
@@ -1383,51 +1575,156 @@ export default function ClinicDetail() {
                     + Thêm thú cưng
                   </Link>
                 </div>
+              ) : loadingPetAvailability ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
+                  <span className="material-symbols-outlined animate-spin text-xl">progress_activity</span>
+                  <span className="text-sm">Đang kiểm tra lịch hẹn...</span>
+                </div>
               ) : (
-                myPets.filter((p: any) => p.active).map((pet: any) => (
-                  <button
-                    key={pet.id}
-                    onClick={() => setSelectedPet(pet)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                      selectedPet?.id === pet.id
-                        ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40'
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 border-2 border-white dark:border-slate-600 shadow">
-                      {pet.avatar
-                        ? <img src={pet.avatar} alt={pet.name} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center">
-                            <span className="material-symbols-outlined text-slate-400">pets</span>
+                (myPets as any[]).filter((p: any) => p.active).map((pet: any) => {
+                  const isAvailable = petAvailabilityMap[pet.id] !== false; // undefined = chưa check = cho phép
+                  const isBusy = petAvailabilityMap[pet.id] === false;
+                  const isSelected = selectedPet?.id === pet.id;
+
+                  return (
+                    <div key={pet.id} className="flex items-center gap-2">
+                      {/* Pet card */}
+                      <button
+                        onClick={() => !isBusy && setSelectedPet(pet)}
+                        disabled={isBusy}
+                        className={`flex-1 flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                          isBusy
+                            ? 'border-slate-200 dark:border-slate-700 opacity-50 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50'
+                            : isSelected
+                              ? 'border-[#1a2b4c] bg-[#1a2b4c]/5 dark:border-teal-400 dark:bg-teal-900/10'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-[#1a2b4c]/40'
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-700 border-2 border-white dark:border-slate-600 shadow">
+                          {pet.avatar
+                            ? <img src={pet.avatar} alt={pet.name} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-slate-400">pets</span>
+                              </div>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 dark:text-white">{pet.name}</p>
+                          <p className="text-xs text-slate-500">{pet.species} · {pet.breed} · {pet.weight}kg</p>
+                          {isBusy && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-full">
+                              <span className="material-symbols-outlined text-xs">event_busy</span>
+                              Đã có lịch hẹn
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && !isBusy && (
+                          <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 shrink-0" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
+                        )}
+                      </button>
+
+                      {/* Nút xem lịch hẹn — chỉ hiện khi pet bị busy */}
+                      {isBusy && (
+                        <button
+                          onClick={async () => {
+                            setViewingBookingsPetId(pet.id);
+                            setLoadingPetBookings(true);
+                            try {
+                              const bookings = await bookingService.getMyBookings();
+                              const active = bookings.filter((b: any) =>
+                                b.petId === pet.id &&
+                                ['CONFIRMED', 'IN_PROGRESS'].includes(b.status)
+                              );
+                              setPetBookings(active);
+                            } catch {
+                              setPetBookings([]);
+                            } finally {
+                              setLoadingPetBookings(false);
+                            }
+                          }}
+                          className="shrink-0 w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400 hover:bg-amber-100 transition-colors"
+                          title="Xem lịch hẹn của bé"
+                        >
+                          <span className="material-symbols-outlined text-lg">calendar_month</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+
+              {/* Panel xem lịch hẹn của pet */}
+              {viewingBookingsPetId !== null && (
+                <div className="mt-2 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base">event_busy</span>
+                      Lịch hẹn đang hoạt động
+                    </p>
+                    <button
+                      onClick={() => { setViewingBookingsPetId(null); setPetBookings([]); }}
+                      className="text-amber-500 hover:text-amber-700"
+                    >
+                      <span className="material-symbols-outlined text-base">close</span>
+                    </button>
+                  </div>
+                  {loadingPetBookings ? (
+                    <div className="flex items-center gap-2 text-amber-600 text-xs">
+                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      Đang tải...
+                    </div>
+                  ) : petBookings.length === 0 ? (
+                    <p className="text-xs text-amber-600">Không tìm thấy lịch hẹn.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {petBookings.map((b: any) => (
+                        <div key={b.id} className="bg-white dark:bg-slate-800 rounded-lg p-3 text-xs border border-amber-100 dark:border-amber-900">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-slate-800 dark:text-slate-100">#{b.id} · {b.shopName}</span>
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                              b.status === 'CONFIRMED'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            }`}>
+                              {b.status === 'CONFIRMED' ? 'Đã xác nhận' : 'Đang thực hiện'}
+                            </span>
                           </div>
-                      }
+                          <p className="text-slate-600 dark:text-slate-400">{b.serviceName}</p>
+                          <p className="text-slate-500 dark:text-slate-500 mt-0.5">
+                            🕐 {new Date(b.appointmentDatetime).toLocaleString('vi-VN', {
+                              day: '2-digit', month: '2-digit', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 dark:text-white">{pet.name}</p>
-                      <p className="text-xs text-slate-500">{pet.species} · {pet.breed} · {pet.weight}kg</p>
-                    </div>
-                    {selectedPet?.id === pet.id && (
-                      <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400 shrink-0" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
-                    )}
-                  </button>
-                ))
+                  )}
+                </div>
               )}
             </div>
 
             {/* Footer */}
             <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex gap-3">
               <button
-                onClick={() => setShowPetModal(false)}
+                onClick={() => { setShowPetModal(false); setViewingBookingsPetId(null); setPetBookings([]); setPetAvailabilityMap({}); }}
                 className="flex-1 py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
               >
                 Hủy
               </button>
               <button
                 onClick={handleConfirmPet}
-                disabled={!selectedPet}
-                className="flex-1 py-3 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                disabled={!selectedPet || checkingPet}
+                className="flex-1 py-3 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
-                Tiếp tục thanh toán →
+                {checkingPet ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                    Đang kiểm tra...
+                  </>
+                ) : (
+                  'Tiếp tục thanh toán →'
+                )}
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { bookingService } from '../services/booking.service';
 
@@ -69,12 +69,15 @@ export default function Payment() {
     setLoading(true);
     setError('');
 
+    const serviceIds = serviceList.map(s => s.id);
+
     if (payMethod === 'cash') {
       try {
         // Cash flow: tạo PayOS link cho 10% tiền cọc
         const result = await bookingService.initiateCashDeposit({
           shopId: booking.shopId,
           serviceId: booking.serviceId,
+          serviceIds: serviceIds,
           petId: booking.petId,
           staffId: booking.staffId,
           appointmentDatetime: booking.appointmentDatetime,
@@ -101,6 +104,7 @@ export default function Payment() {
       const result = await bookingService.initiatePayment({
         shopId: booking.shopId,
         serviceId: booking.serviceId,
+        serviceIds: serviceIds,
         petId: booking.petId,
         staffId: booking.staffId,
         appointmentDatetime: booking.appointmentDatetime,

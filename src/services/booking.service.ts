@@ -14,6 +14,7 @@ export const bookingService = {
   initiatePayment: async (data: {
     shopId: number;
     serviceId: number;
+    serviceIds?: number[];
     petId: number;
     staffId?: number;
     appointmentDatetime: string;
@@ -93,6 +94,46 @@ export const bookingService = {
     if (end) params.end = end;
     
     const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/bookings/shop', { params });
+    return response.data.result ?? [];
+  },
+
+  /** Check if a pet is available for booking at a specific time */
+  checkPetAvailability: async (petId: number, appointmentDatetime: string, durationMinutes: number = 60): Promise<boolean> => {
+    const response = await apiClient.get<ApiResponse<boolean>>(`/bookings/pet/${petId}/availability`, {
+      params: { appointmentDatetime, durationMinutes }
+    });
+    return response.data.result ?? false;
+  },
+
+  /**
+   * Get available time slots for a shop given a list of service IDs.
+   * Total duration = sum of all selected services. Slots step = 60 min.
+   */
+  getAvailableTimeSlotsForServices: async (
+    shopId: number,
+    date: string,
+    serviceIds: number[]
+  ): Promise<string[]> => {
+    const response = await apiClient.get<ApiResponse<string[]>>(
+      `/bookings/shop/${shopId}/available-slots-by-services`,
+      { params: { date, serviceIds: serviceIds.join(',') } }
+    );
+    return response.data.result ?? [];
+  },
+
+  /**
+   * Get available time slots for a shop on a specific date.
+   * @deprecated Dùng getAvailableTimeSlotsForServices thay thế khi có serviceIds
+   */
+  getAvailableTimeSlots: async (
+    shopId: number,
+    date: string,
+    durationMinutes: number = 60
+  ): Promise<string[]> => {
+    const response = await apiClient.get<ApiResponse<string[]>>(
+      `/bookings/shop/${shopId}/available-slots`,
+      { params: { date, durationMinutes } }
+    );
     return response.data.result ?? [];
   },
 };
