@@ -225,13 +225,27 @@ export default function BookingSuccess() {
               );
             })()}
 
-            {/* Pet */}
-            <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl px-4 py-3">
-              <span className="text-2xl">🐾</span>
-              <div>
-                <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Thú cưng</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{bookingInfo.petName}</p>
+            {/* Pet & Staff */}
+            <div className={bookingInfo.staffId ? "grid grid-cols-2 gap-3" : ""}>
+              <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl px-4 py-3">
+                <span className="text-2xl">🐾</span>
+                <div>
+                  <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Thú cưng</p>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">{bookingInfo.petName}</p>
+                </div>
               </div>
+
+              {bookingInfo.staffId && (
+                <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl px-4 py-3">
+                  <span className="material-symbols-outlined text-2xl text-blue-600 dark:text-blue-400">support_agent</span>
+                  <div>
+                    <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Nhân viên</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                      {bookingInfo.staffName || `Mã số #${bookingInfo.staffId}`}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Services list */}

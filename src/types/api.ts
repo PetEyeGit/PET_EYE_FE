@@ -116,6 +116,7 @@ export interface BookingResponse {
   userId: number;
   shopId: number;
   shopName: string;
+  shopAddress?: string;
   serviceId: number;
   serviceName: string;
   servicePrice: number;

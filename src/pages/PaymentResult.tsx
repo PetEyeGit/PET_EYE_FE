@@ -67,6 +67,7 @@ export default function PaymentResult() {
             bookingInfo: {
               shopId: booking.shopId,
               shopName: booking.shopName,
+              shopAddress: booking.shopAddress,
               serviceId: booking.serviceId,
               serviceName: booking.serviceName,
               servicePrice: booking.servicePrice,
@@ -74,6 +75,7 @@ export default function PaymentResult() {
               petName: booking.petName,
               petNote: booking.note,
               staffId: booking.staffId,
+              staffName: booking.staffName,
               appointmentDatetime: booking.appointmentDatetime,
               date: new Date(booking.appointmentDatetime).toLocaleDateString('vi-VN', {
                 weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit'
