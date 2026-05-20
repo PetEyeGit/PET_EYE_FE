@@ -75,6 +75,17 @@ export default function ClinicDetail() {
     enabled: !!shopId,
   });
 
+  // Cơ sở gần đây — lấy shop cùng thành phố, sort theo rating cao nhất
+  const { data: nearbyShops = [] } = useQuery({
+    queryKey: ['nearby-shops', shop?.city],
+    queryFn: () => shopService.searchPublic({ city: shop!.city }),
+    enabled: !!shop?.city,
+    select: (data) => data
+      .filter(s => s.id !== shopId)
+      .sort((a, b) => b.ratingAvg - a.ratingAvg)
+      .slice(0, 4),
+  });
+
   const { data: myPets = [] } = useQuery({
     queryKey: ['my-pets', user?.id],
     queryFn: () => petService.getByOwner(Number(user?.id)),
@@ -1473,8 +1484,17 @@ export default function ClinicDetail() {
                 <div className="flex items-start gap-3 px-1">
                   <span className="material-symbols-outlined text-slate-400 mt-0.5 text-xl">schedule</span>
                   <div className="flex flex-col text-sm">
-                    <span className="text-green-600 dark:text-green-400 font-semibold">Đang mở cửa</span>
-                    <span className="text-slate-500 dark:text-slate-400">08:00 - 20:00 (T2 - CN)</span>
+                    {shop?.openTime && shop?.closeTime ? (
+                      <>
+                        <span className="text-green-600 dark:text-green-400 font-semibold">Đang mở cửa</span>
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {shop.openTime} - {shop.closeTime}
+                          {shop.workingDays ? ` (${shop.workingDays})` : ''}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400 dark:text-slate-500">Chưa cập nhật giờ mở cửa</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 px-1">
@@ -1492,26 +1512,29 @@ export default function ClinicDetail() {
                   Cơ sở gần đây
                 </h3>
                 <div className="flex flex-col gap-3">
-                  {[
-                    { name: 'Bệnh Viện Thú Y Quận 1', dist: '2.8 km', rating: 4.6 },
-                    { name: 'PetCare Bình Thạnh', dist: '4.5 km', rating: 4.5 },
-                  ].map((c) => (
+                  {nearbyShops.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic px-1">
+                      {shop?.city ? 'Không có cơ sở nào khác tại ' + shop.city : 'Chưa có dữ liệu'}
+                    </p>
+                  ) : nearbyShops.map((c) => (
                     <Link
-                      key={c.name}
-                      to="/clinic/2"
+                      key={c.id}
+                      to={`/clinic/${c.id}`}
                       className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 transition-colors"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 text-xs leading-tight">
-                          {c.name}
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+                          {c.shopName}
                         </p>
-                        <p className="text-xs text-slate-400">{c.dist}</p>
+                        <p className="text-xs text-slate-400">{c.city}</p>
                       </div>
                       <div className="flex items-center gap-1 text-amber-400">
                         <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
                           star
                         </span>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{c.rating}</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          {c.ratingAvg > 0 ? c.ratingAvg.toFixed(1) : 'Mới'}
+                        </span>
                       </div>
                     </Link>
                   ))}
