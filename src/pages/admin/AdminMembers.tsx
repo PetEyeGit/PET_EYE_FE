@@ -23,17 +23,28 @@ export default function AdminMembers() {
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['admin-members'],
     queryFn: adminService.getAllUsers,
+    staleTime: 0,
   });
 
   const deactivateMutation = useMutation({
     mutationFn: adminService.deactivateUser,
-    onSuccess: () => { toast.success('Đã khóa tài khoản'); qc.invalidateQueries({ queryKey: ['admin-members'] }); },
+    onSuccess: (_, userId) => {
+      toast.success('Đã khóa tài khoản');
+      qc.setQueryData<AdminUserResponse[]>(['admin-members'], old =>
+        old?.map(m => m.id === userId ? { ...m, isActive: false } : m) ?? []
+      );
+    },
     onError: () => toast.error('Khóa thất bại'),
   });
 
   const activateMutation = useMutation({
     mutationFn: adminService.activateUser,
-    onSuccess: () => { toast.success('Đã mở khóa tài khoản'); qc.invalidateQueries({ queryKey: ['admin-members'] }); },
+    onSuccess: (_, userId) => {
+      toast.success('Đã mở khóa tài khoản');
+      qc.setQueryData<AdminUserResponse[]>(['admin-members'], old =>
+        old?.map(m => m.id === userId ? { ...m, isActive: true } : m) ?? []
+      );
+    },
     onError: () => toast.error('Mở khóa thất bại'),
   });
 
@@ -177,9 +188,14 @@ export default function AdminMembers() {
                 )}
                 <div>
                   <p className="font-bold text-slate-900 text-lg">{detail.fullName || '—'}</p>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLOR[detail.roles?.[0]?.name ?? 'USER']}`}>
-                    {ROLE_LABEL[detail.roles?.[0]?.name ?? 'USER']}
-                  </span>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLOR[detail.roles?.[0]?.name ?? 'USER']}`}>
+                      {ROLE_LABEL[detail.roles?.[0]?.name ?? 'USER']}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${detail.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {detail.isActive !== false ? 'Hoạt động' : 'Đã khóa'}
+                    </span>
+                  </div>
                 </div>
               </div>
               {[
@@ -197,12 +213,18 @@ export default function AdminMembers() {
               )}
               <div className="flex gap-3 pt-2">
                 {detail.isActive !== false ? (
-                  <button onClick={() => { deactivateMutation.mutate(detail.id); setDetail(null); }}
+                  <button onClick={() => {
+                    deactivateMutation.mutate(detail.id);
+                    setDetail(prev => prev ? { ...prev, isActive: false } : null);
+                  }}
                     className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center gap-2 text-sm">
                     <Ban size={15} /> Khóa tài khoản
                   </button>
                 ) : (
-                  <button onClick={() => { activateMutation.mutate(detail.id); setDetail(null); }}
+                  <button onClick={() => {
+                    activateMutation.mutate(detail.id);
+                    setDetail(prev => prev ? { ...prev, isActive: true } : null);
+                  }}
                     className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm">
                     <CheckCircle size={15} /> Mở khóa
                   </button>

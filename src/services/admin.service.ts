@@ -60,6 +60,7 @@ export interface AdminUserResponse {
   avatar?: string;
   roles: { name: string }[];
   isActive?: boolean;
+  active?: boolean; // field thực tế BE trả về
 }
 
 export interface PagedResponse<T> {
@@ -149,7 +150,14 @@ export const adminService = {
   // Users
   getAllUsers: async (): Promise<AdminUserResponse[]> => {
     const res = await apiClient.get<ApiResponse<AdminUserResponse[]>>('/users');
-    return res.data.result ?? [];
+    const data = res.data.result ?? [];
+    if (data.length > 0) {
+      console.log('[DEBUG] raw user[0]:', JSON.stringify(data[0]));
+    }
+    return data.map(u => ({
+      ...u,
+      isActive: Boolean((u as any).active ?? u.isActive),
+    }));
   },
 
   deactivateUser: async (id: number): Promise<void> => {
