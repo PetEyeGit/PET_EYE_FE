@@ -70,6 +70,17 @@ export default function Payment() {
     setError('');
 
     const serviceIds = serviceList.map(s => s.id);
+    
+    // Lưu tạm thông tin đơn hàng để nếu bị lỗi / huỷ vẫn hiện được lên trang PaymentFailure
+    const summaryData = {
+      shopName: booking.shopName,
+      shopAddress: booking.shopAddress,
+      shopImage: booking.shopImage,
+      services: serviceList,
+      totalPrice: payMethod === 'cash' ? depositAmount : totalPrice,
+      isDeposit: payMethod === 'cash'
+    };
+    localStorage.setItem('pendingBookingSummary', JSON.stringify(summaryData));
 
     if (payMethod === 'cash') {
       try {

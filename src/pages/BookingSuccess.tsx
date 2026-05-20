@@ -61,7 +61,7 @@ export default function BookingSuccess() {
   const totalPrice = serviceList.reduce((sum: number, s: BookingServiceItem) => sum + s.price, 0);
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 min-h-screen flex items-center justify-center p-4">
+    <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 flex items-center justify-center py-12 px-4">
 
       {/* Confetti container */}
       <div ref={confettiRef} className="fixed inset-0 pointer-events-none overflow-hidden z-50" />

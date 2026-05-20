@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -6,7 +6,7 @@ import {
   Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
   ChevronRight, MessageCircle, RefreshCw, Sparkles,
   Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus,
-  Activity, Utensils, Syringe, BookOpen
+  Activity, Utensils, Syringe, BookOpen, SlidersHorizontal
 } from 'lucide-react';
 import { bookingService } from '../services/booking.service';
 import { reviewService } from '../services/review.service';
@@ -99,6 +99,8 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
 
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
+    const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED';
+    const [isExpanded, setIsExpanded] = useState(!isOld);
 
     const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
         queryKey: ['staffChangeRequest', booking.id],
@@ -123,6 +125,54 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
             toast.error('Thao tác thất bại');
         }
     };
+
+    if (!isExpanded) {
+        return (
+            <motion.div 
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setIsExpanded(true)}
+                className="group bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800/80 p-4 flex items-center justify-between gap-4 cursor-pointer hover:shadow-lg transition-all duration-300"
+            >
+                <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
+                        <img 
+                            src={`https://images.unsplash.com/photo-${booking.id % 2 === 0 ? '1548199973-03cce0bbc87b' : '1516734212186-a967f81ad0d7'}?auto=format&fit=crop&q=80&w=150`} 
+                            alt="shop" className="w-full h-full object-cover"
+                        />
+                    </div>
+
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-xs">{booking.shopName}</h4>
+                            <span className="text-[10px] text-slate-400 font-bold">• Bé: {booking.petName}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.serviceName}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="hidden sm:block text-right">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            {format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className={`px-2.5 py-1 rounded-full ${status.bg} ${status.text} text-[9px] font-black uppercase tracking-widest flex items-center gap-1`}>
+                            <status.icon size={10} /> {status.label}
+                        </div>
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{formatVND(booking.servicePrice)}</span>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-all">
+                            <ChevronRight size={16} />
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div 
@@ -334,6 +384,14 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                                 {cancelling ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Hủy lịch
                             </button>
                         )}
+                        {isOld && (
+                            <button 
+                                onClick={() => setIsExpanded(false)}
+                                className="px-5 py-2.5 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition-all flex items-center gap-2"
+                            >
+                                Thu gọn
+                            </button>
+                        )}
                         <Link to={`/clinic/${booking.shopId}`} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all">
                             <ChevronRight size={20} />
                         </Link>
@@ -348,6 +406,11 @@ export default function BookingHistory() {
     const qc = useQueryClient();
     const [activeTab, setActiveTab] = useState<TabKey>('all');
     const [cancellingId, setCancellingId] = useState<number | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedPet, setSelectedPet] = useState<string>('all');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [visibleCount, setVisibleCount] = useState(5);
+    const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -361,6 +424,11 @@ export default function BookingHistory() {
         queryFn: bookingService.getMyBookings,
         staleTime: 30_000,
     });
+
+    const petsList = useMemo(() => {
+        const pets = bookings.map(b => b.petName).filter(Boolean);
+        return ['all', ...Array.from(new Set(pets))];
+    }, [bookings]);
 
     const cancelMutation = useMutation({
         mutationFn: (id: number) => bookingService.cancel(id),
@@ -405,8 +473,61 @@ export default function BookingHistory() {
         }
     };
 
-    const sorted = [...bookings].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const filtered = activeTab === 'all' ? sorted : sorted.filter(b => getTabKey(b) === activeTab);
+    const sorted = useMemo(() => {
+        return [...bookings].sort((a, b) => new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime());
+    }, [bookings]);
+
+    const filtered = useMemo(() => {
+        let list = sorted;
+        
+        // 1. Tab status filter
+        if (activeTab !== 'all') {
+            list = list.filter(b => getTabKey(b) === activeTab);
+        }
+        
+        // 2. Search query filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            list = list.filter(b => 
+                b.shopName.toLowerCase().includes(query) ||
+                b.serviceName.toLowerCase().includes(query) ||
+                (b.petName && b.petName.toLowerCase().includes(query)) ||
+                b.id.toString().includes(query)
+            );
+        }
+        
+        // 3. Pet filter
+        if (selectedPet !== 'all') {
+            list = list.filter(b => b.petName === selectedPet);
+        }
+        
+        // 4. Category filter
+        if (selectedCategory !== 'all') {
+            list = list.filter(b => guessCategory(b.serviceName) === selectedCategory);
+        }
+        
+        return list;
+    }, [sorted, activeTab, searchQuery, selectedPet, selectedCategory]);
+
+    const groupedBookings = useMemo(() => {
+        const visibleList = filtered.slice(0, visibleCount);
+        
+        const groups: Record<string, BookingResponse[]> = {};
+        visibleList.forEach(b => {
+            let monthStr = 'Thời gian khác';
+            try {
+                const date = parseISO(b.appointmentDatetime);
+                monthStr = 'Tháng ' + format(date, 'MM/yyyy');
+            } catch (e) {
+                console.error(e);
+            }
+            if (!groups[monthStr]) {
+                groups[monthStr] = [];
+            }
+            groups[monthStr].push(b);
+        });
+        return groups;
+    }, [filtered, visibleCount]);
 
     const counts: Record<TabKey, number> = {
         all: sorted.length,
@@ -417,7 +538,7 @@ export default function BookingHistory() {
     };
 
     const totalSpent = bookings.filter(b => b.status === 'COMPLETED').reduce((s, b) => s + b.servicePrice, 0);
-    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED').map(b => b.petName))].length;
+    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED').map(b => b.petName).filter(Boolean))].length;
 
     if (isLoading) return (
         <div className="flex-1 flex flex-col items-center justify-center py-32 gap-6">
@@ -460,49 +581,202 @@ export default function BookingHistory() {
                 <StatCard label="Tổng chi tiêu" value={formatVND(totalSpent)} icon={Wallet} color="bg-amber-500" delay={0.4} />
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 p-1.5 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-slate-800 w-fit">
-                {TABS.map(tab => (
-                    <button 
-                        key={tab.key} onClick={() => setActiveTab(tab.key)}
-                        className={`px-6 py-3 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2.5 ${activeTab === tab.key ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                        {tab.label}
-                        {counts[tab.key] > 0 && (
-                            <span className={`px-1.5 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800'}`}>
-                                {counts[tab.key]}
-                            </span>
+            {/* Filters & Search Control Panel */}
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 bg-slate-50/50 dark:bg-slate-900/30 p-4 rounded-[2rem] border border-slate-100 dark:border-slate-800/80">
+                {/* Navigation Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 overflow-x-auto shrink-0 max-w-full">
+                    {TABS.map(tab => (
+                        <button 
+                            key={tab.key} onClick={() => { setActiveTab(tab.key); setVisibleCount(5); }}
+                            className={`px-4 py-2 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 whitespace-nowrap ${activeTab === tab.key ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            {tab.label}
+                            {counts[tab.key] > 0 && (
+                                <span className={`px-1.5 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                                    {counts[tab.key]}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Search + Filter Button */}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {/* Search Input */}
+                    <div className="relative flex-1 min-w-0">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(5); }}
+                            placeholder="Tìm theo shop, dịch vụ, thú cưng..."
+                            className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none font-bold text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:border-primary/50 transition-all shadow-sm"
+                        />
+                        {searchQuery && (
+                            <button 
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                                <X size={14} />
+                            </button>
                         )}
-                    </button>
-                ))}
+                    </div>
+
+                    {/* Filter Dropdown Button */}
+                    <div className="relative shrink-0">
+                        <button
+                            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                            className={`relative p-3 rounded-2xl border transition-all flex items-center gap-2 text-xs font-bold ${
+                                (selectedPet !== 'all' || selectedCategory !== 'all')
+                                    ? 'bg-primary/10 border-primary/30 text-primary dark:bg-primary/20 dark:border-primary/40 dark:text-primary'
+                                    : showFilterDropdown
+                                        ? 'bg-white dark:bg-slate-900 border-primary/50 text-slate-700 dark:text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600 hover:border-slate-200'
+                            }`}
+                        >
+                            <SlidersHorizontal size={16} />
+                            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">Bộ lọc</span>
+                            {(selectedPet !== 'all' || selectedCategory !== 'all') && (
+                                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-md shadow-primary/30">
+                                    {(selectedPet !== 'all' ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0)}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Filter Dropdown Panel */}
+                        <AnimatePresence>
+                            {showFilterDropdown && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-0 top-full mt-2 z-50 w-72 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none p-5 space-y-5"
+                                >
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest">Bộ lọc nâng cao</h4>
+                                        {(selectedPet !== 'all' || selectedCategory !== 'all') && (
+                                            <button
+                                                onClick={() => { setSelectedPet('all'); setSelectedCategory('all'); setVisibleCount(5); }}
+                                                className="text-[10px] font-bold text-primary hover:underline"
+                                            >
+                                                Xóa bộ lọc
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Pet Filter */}
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thú cưng</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {petsList.map(petName => (
+                                                <button
+                                                    key={petName}
+                                                    onClick={() => { setSelectedPet(petName); setVisibleCount(5); }}
+                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                                                        selectedPet === petName
+                                                            ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                                                            : 'bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white border-slate-100 dark:border-slate-700'
+                                                    }`}
+                                                >
+                                                    {petName === 'all' ? 'Tất cả' : petName}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="h-px bg-slate-100 dark:bg-slate-800" />
+
+                                    {/* Category Filter */}
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loại dịch vụ</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {[
+                                                { key: 'all', label: 'Tất cả' },
+                                                { key: 'boarding', label: '🏠 Lưu trú' },
+                                                { key: 'grooming', label: '✂️ Làm đẹp' },
+                                                { key: 'clinic', label: '🩺 Khám bệnh' }
+                                            ].map(cat => (
+                                                <button
+                                                    key={cat.key}
+                                                    onClick={() => { setSelectedCategory(cat.key); setVisibleCount(5); }}
+                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                                                        selectedCategory === cat.key
+                                                            ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
+                                                            : 'bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white border-slate-100 dark:border-slate-700'
+                                                    }`}
+                                                >
+                                                    {cat.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Apply Button */}
+                                    <button
+                                        onClick={() => setShowFilterDropdown(false)}
+                                        className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all"
+                                    >
+                                        Áp dụng
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
             </div>
 
             {/* List Section */}
-            <div className="space-y-6">
-                <AnimatePresence mode="popLayout">
-                    {filtered.length === 0 ? (
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-slate-800 p-24 text-center"
-                        >
-                            <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
-                                <Search size={40} />
+            <div className="space-y-10">
+                {filtered.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-slate-800 p-24 text-center">
+                        <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
+                            <Search size={40} />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Không tìm thấy lịch hẹn</h3>
+                        <p className="text-slate-400 text-sm max-w-xs mx-auto">Chúng tôi không tìm thấy bất kỳ lịch hẹn nào khớp với bộ lọc. Hãy thử đổi từ khóa hoặc bộ lọc!</p>
+                    </div>
+                ) : (
+                    <div className="space-y-10">
+                        {Object.entries(groupedBookings).map(([monthStr, monthBookings]) => (
+                            <div key={monthStr} className="space-y-4">
+                                {/* Month Section Header */}
+                                <div className="flex items-center gap-4 ml-2">
+                                    <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{monthStr}</span>
+                                    <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800/80" />
+                                </div>
+                                
+                                {/* Month Bookings */}
+                                <div className="space-y-6">
+                                    {monthBookings.map(b => (
+                                        <BookingItem 
+                                            key={b.id} 
+                                            booking={b} 
+                                            onCancel={(id: number) => cancelMutation.mutate(id)}
+                                            cancelling={cancellingId === b.id}
+                                            onReview={handleOpenReview}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">Không tìm thấy lịch hẹn</h3>
-                            <p className="text-slate-400 text-sm max-w-xs mx-auto">Chúng tôi không tìm thấy bất kỳ lịch hẹn nào trong mục này. Hãy thử chọn danh mục khác!</p>
-                        </motion.div>
-                    ) : (
-                        filtered.map(b => (
-                            <BookingItem 
-                                key={b.id} 
-                                booking={b} 
-                                onCancel={(id: number) => cancelMutation.mutate(id)}
-                                cancelling={cancellingId === b.id}
-                                onReview={handleOpenReview}
-                            />
-                        ))
-                    )}
-                </AnimatePresence>
+                        ))}
+                    </div>
+                )}
+                
+                {/* Load More Control */}
+                {filtered.length > visibleCount && (
+                    <div className="flex justify-center pt-4">
+                        <button
+                            onClick={() => setVisibleCount(prev => prev + 5)}
+                            className="px-10 py-4 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-3xl text-xs font-black uppercase tracking-widest hover:shadow-xl hover:scale-105 active:scale-95 transition-all shadow-md shadow-slate-900/10 flex items-center gap-2"
+                        >
+                            <Plus size={14} />
+                            Xem thêm cuộc hẹn ({filtered.length - visibleCount})
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Review Modal */}
@@ -574,3 +848,5 @@ export default function BookingHistory() {
         </div>
     );
 }
+// Force HMR refresh for BookingHistory page
+

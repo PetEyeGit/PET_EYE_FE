@@ -8,6 +8,13 @@ export default function PaymentResult() {
 
   useEffect(() => {
     const handlePaymentResult = async () => {
+      // Đọc thông tin tóm tắt đơn hàng đã lưu trước khi chuyển sang PayOS
+      const rawSummary = localStorage.getItem('pendingBookingSummary');
+      let bookingInfo = null;
+      if (rawSummary) {
+        try { bookingInfo = JSON.parse(rawSummary); } catch (e) {}
+      }
+
       // PayOS redirect params: ?code=00&id=xxx&cancel=false&status=PAID&orderCode=xxx
       const code      = searchParams.get('code');      // '00' = success
       const status    = searchParams.get('status');    // 'PAID' | 'CANCELLED'
@@ -16,10 +23,10 @@ export default function PaymentResult() {
 
       // ── Bị huỷ ───────────────────────────────────────────────────────────
       if (cancel === 'true' || status === 'CANCELLED') {
-        // Dọn localStorage nếu có
         localStorage.removeItem('pendingCashDeposit');
+        localStorage.removeItem('pendingBookingSummary');
         navigate('/payment/failure', {
-          state: { error: 'Bạn đã huỷ thanh toán. Lịch hẹn chưa được tạo.' },
+          state: { error: 'Bạn đã huỷ thanh toán. Lịch hẹn chưa được tạo.', bookingInfo },
           replace: true
         });
         return;
@@ -27,8 +34,9 @@ export default function PaymentResult() {
 
       // ── Thiếu orderCode ───────────────────────────────────────────────────
       if (!orderCode) {
+        localStorage.removeItem('pendingBookingSummary');
         navigate('/payment/failure', {
-          state: { error: 'Thông tin thanh toán không hợp lệ (thiếu orderCode).' },
+          state: { error: 'Thông tin thanh toán không hợp lệ (thiếu orderCode).', bookingInfo },
           replace: true
         });
         return;
@@ -37,28 +45,28 @@ export default function PaymentResult() {
       // ── Thanh toán không thành công ───────────────────────────────────────
       if (code !== '00' || status !== 'PAID') {
         localStorage.removeItem('pendingCashDeposit');
+        localStorage.removeItem('pendingBookingSummary');
         navigate('/payment/failure', {
-          state: { error: `Thanh toán không thành công (code=${code}, status=${status}). Vui lòng thử lại.` },
+          state: { error: `Thanh toán không thành công (code=${code}, status=${status}). Vui lòng thử lại.`, bookingInfo },
           replace: true
         });
         return;
       }
 
       // ── Thanh toán thành công — xác định loại booking ─────────────────────
-      // Dùng localStorage (persist qua redirect sang PayOS domain)
       const cashDepositOrderCode = localStorage.getItem('pendingCashDeposit');
       const isCashDeposit = cashDepositOrderCode === orderCode;
 
       try {
         let booking;
         if (isCashDeposit) {
-          // Cash deposit: xác nhận cọc 10% → tạo booking
           localStorage.removeItem('pendingCashDeposit');
           booking = await bookingService.confirmCashDeposit(parseInt(orderCode));
         } else {
-          // PayOS thường: xác nhận thanh toán đầy đủ → tạo booking
           booking = await bookingService.confirmPayment(parseInt(orderCode));
         }
+        
+        localStorage.removeItem('pendingBookingSummary'); // Dọn dẹp sau khi thành công
 
         navigate('/booking/success', {
           state: {
@@ -89,11 +97,12 @@ export default function PaymentResult() {
         });
       } catch (error: any) {
         console.error('Error confirming payment:', error);
+        localStorage.removeItem('pendingBookingSummary');
         const msg = error?.response?.data?.message
           || error?.message
           || 'Không thể xác nhận thanh toán. Vui lòng liên hệ hỗ trợ.';
         navigate('/payment/failure', {
-          state: { error: msg },
+          state: { error: msg, bookingInfo },
           replace: true
         });
       }

@@ -145,7 +145,7 @@ function AuthNavbar() {
   useOutsideClick(userRef, () => setUserOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
 
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead, deleteRead } = useNotifications(!!user);
   const active = (p: string) => location.pathname === p;
 
   useEffect(() => {
@@ -246,9 +246,14 @@ function AuthNavbar() {
                 >
                   <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                     <h4 className="text-sm font-black text-slate-900 dark:text-white">Thông báo mới</h4>
-                    {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[11px] font-black text-primary hover:underline">Đã đọc tất cả</button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {unreadCount > 0 && (
+                        <button onClick={() => markAllRead()} className="text-[11px] font-black text-primary hover:underline">Đã đọc tất cả</button>
+                      )}
+                      {notifications.some(n => n.isRead) && (
+                        <button onClick={() => deleteRead()} className="text-[11px] font-black text-rose-500 hover:underline">Xóa đã đọc</button>
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-[420px] overflow-y-auto scrollbar-hide py-2">
                     {notifications.length === 0 ? (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, CheckCheck, Loader2, AlertCircle, RefreshCw, BellOff, Inbox } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, AlertCircle, RefreshCw, BellOff, Inbox, Trash2 } from 'lucide-react';
 import { useNotifications, type AppNotification } from '../hooks/useNotifications';
 import { format, parseISO, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -38,11 +38,19 @@ function groupByDate(notifications: AppNotification[]): { label: string; items: 
 
 // ─── Notification Item ────────────────────────────────────────────────────────
 
-function NotifItem({ notif, onRead }: { notif: AppNotification; onRead: (id: number) => void }) {
+function NotifItem({ 
+  notif, 
+  onRead, 
+  onDelete 
+}: { 
+  notif: AppNotification; 
+  onRead: (id: number) => void;
+  onDelete: (id: number) => void;
+}) {
   return (
-    <button
+    <div
       onClick={() => !notif.isRead && onRead(notif.id)}
-      className={`w-full text-left flex items-start gap-4 px-5 py-4 rounded-2xl transition-all group
+      className={`w-full text-left flex items-start gap-4 px-5 py-4 rounded-2xl transition-all group relative cursor-pointer
         ${notif.isRead
           ? 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800'
           : 'bg-blue-50/60 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-blue-100 dark:border-blue-500/20'
@@ -59,7 +67,7 @@ function NotifItem({ notif, onRead }: { notif: AppNotification; onRead: (id: num
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pr-8">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-sm leading-snug ${notif.isRead ? 'font-medium text-slate-700 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>
             {notif.title}
@@ -75,7 +83,19 @@ function NotifItem({ notif, onRead }: { notif: AppNotification; onRead: (id: num
           {formatNotifTime(notif.createdAt)}
         </p>
       </div>
-    </button>
+
+      {/* Delete button shown on hover */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(notif.id);
+        }}
+        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 opacity-0 group-hover:opacity-100 transition-all duration-200"
+        title="Xóa thông báo"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
   );
 }
 
@@ -84,7 +104,7 @@ function NotifItem({ notif, onRead }: { notif: AppNotification; onRead: (id: num
 type FilterKey = 'all' | 'unread' | 'read';
 
 export default function ProfileNotifications() {
-  const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead } = useNotifications();
+  const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead, deleteRead, deleteSingle } = useNotifications();
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const filtered = notifications.filter(n => {
@@ -128,6 +148,15 @@ export default function ProfileNotifications() {
             >
               <CheckCheck className="w-4 h-4" />
               Đánh dấu tất cả đã đọc
+            </button>
+          )}
+          {notifications.some(n => n.isRead) && (
+            <button
+              onClick={() => deleteRead()}
+              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-rose-600/20 hover:-translate-y-0.5 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              Xóa thông báo đã đọc
             </button>
           )}
         </div>
@@ -200,7 +229,7 @@ export default function ProfileNotifications() {
               {/* Items */}
               <div className="flex flex-col gap-2">
                 {group.items.map(n => (
-                  <NotifItem key={n.id} notif={n} onRead={markRead} />
+                  <NotifItem key={n.id} notif={n} onRead={markRead} onDelete={deleteSingle} />
                 ))}
               </div>
             </div>

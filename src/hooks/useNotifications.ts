@@ -73,12 +73,54 @@ export function useNotifications(enabled = true) {
     },
   });
 
+  const deleteReadMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.delete('/users/notifications/read');
+    },
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['my-notifications'] });
+      const prev = qc.getQueryData<AppNotification[]>(['my-notifications']);
+      qc.setQueryData<AppNotification[]>(['my-notifications'],
+        old => (old ?? []).filter(n => !n.isRead)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['my-notifications'] });
+    },
+  });
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiClient.delete(`/users/notifications/${id}`);
+    },
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['my-notifications'] });
+      const prev = qc.getQueryData<AppNotification[]>(['my-notifications']);
+      qc.setQueryData<AppNotification[]>(['my-notifications'],
+        old => (old ?? []).filter(n => n.id !== id)
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['my-notifications'] });
+    },
+  });
+
   return { 
     notifications, 
     unreadCount, 
     isLoading, 
     refetch, 
     markRead: markReadMutation.mutate,
-    markAllRead: markAllReadMutation.mutate
+    markAllRead: markAllReadMutation.mutate,
+    deleteRead: deleteReadMutation.mutate,
+    deleteSingle: deleteSingleMutation.mutate
   };
 }
