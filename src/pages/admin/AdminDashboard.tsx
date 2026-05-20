@@ -15,10 +15,14 @@ const DAY_LABELS: Record<string, string> = {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#84cc16'];
 
 function fmt(n: number) {
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K';
-  return String(n);
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+}
+
+function fmtShort(n: number) {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + ' tỷ đ';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' triệu đ';
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K đ';
+  return n.toLocaleString('vi-VN') + 'đ';
 }
 
 export default function AdminDashboard() {
@@ -57,7 +61,7 @@ export default function AdminDashboard() {
     : [];
 
   const cards = stats ? [
-    { label: 'Tổng doanh thu', value: fmt(stats.totalRevenue) + 'đ', icon: DollarSign, color: 'blue' },
+    { label: 'Tổng doanh thu', value: fmtShort(stats.totalRevenue), icon: DollarSign, color: 'blue' },
     { label: 'Tổng người dùng', value: fmt(stats.totalUsers), icon: Users, color: 'green' },
     { label: 'Tổng shop', value: String(stats.totalShops), icon: Store, color: 'indigo' },
     { label: 'Tổng booking', value: fmt(stats.totalBookings), icon: Calendar, color: 'purple' },
@@ -131,7 +135,7 @@ export default function AdminDashboard() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} formatter={(v: any) => [`${v}M`, 'Doanh thu']} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: '12px' }} formatter={(v: any) => [fmt(v * 1_000_000), 'Doanh thu']} />
                   <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#revGrad)" />
                 </AreaChart>
               </ResponsiveContainer>

@@ -147,7 +147,7 @@ export default function AdminAIAssistant() {
 
       {/* Stats bar */}
       <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0 bg-white border-b border-slate-100">
-        <StatCard icon={<TrendingUp size={16} className="text-blue-600" />} label="Doanh thu" value={stats ? (stats.totalRevenue / 1_000_000).toFixed(1) + 'M' : '—'} sub="tổng tích lũy" color="bg-blue-50 border-blue-100 text-blue-900" />
+        <StatCard icon={<TrendingUp size={16} className="text-blue-600" />} label="Doanh thu" value={stats ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', notation: 'compact', maximumFractionDigits: 1 }).format(stats.totalRevenue) : '—'} sub="tổng tích lũy" color="bg-blue-50 border-blue-100 text-blue-900" />
         <StatCard icon={<Users size={16} className="text-purple-600" />} label="Người dùng" value={stats?.totalUsers?.toLocaleString() ?? '—'} sub={`${users.filter(u => u.roles?.[0]?.name === 'USER').length} khách hàng`} color="bg-purple-50 border-purple-100 text-purple-900" />
         <StatCard icon={<Store size={16} className="text-indigo-600" />} label="Shop" value={stats?.totalShops?.toString() ?? '—'} sub={`${pendingCount} chờ duyệt`} color="bg-indigo-50 border-indigo-100 text-indigo-900" />
         <StatCard icon={<BarChart2 size={16} className="text-emerald-600" />} label="Booking" value={stats?.totalBookings?.toLocaleString() ?? '—'} sub="tổng đặt lịch" color="bg-emerald-50 border-emerald-100 text-emerald-900" />
