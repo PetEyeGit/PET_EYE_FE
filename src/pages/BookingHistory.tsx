@@ -24,7 +24,7 @@ type TabKey = 'all' | 'upcoming' | 'active' | 'completed' | 'cancelled';
 
 function getTabKey(b: BookingResponse): TabKey {
     const s = b.status;
-    if (s === 'CANCELLED' || s === 'PENDING_PAYMENT') return 'cancelled';
+    if (s === 'CANCELLED' || s === 'PENDING_PAYMENT' || s === 'WAITING_REFUND') return 'cancelled';
     if (s === 'COMPLETED') return 'completed';
     if (s === 'IN_PROGRESS') return 'active';
     return 'upcoming';
@@ -36,6 +36,8 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string; ico
     CONFIRMED: { label: 'Sắp diễn ra', bg: 'bg-blue-100 dark:bg-blue-500/10', text: 'text-blue-600', icon: Calendar },
     IN_PROGRESS: { label: 'Đang thực hiện', bg: 'bg-emerald-100 dark:bg-emerald-500/10', text: 'text-emerald-600', icon: Wifi },
     COMPLETED: { label: 'Hoàn tất', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-500', icon: CheckCircle },
+    CANCEL_REQUESTED: { label: 'Chờ duyệt hủy', bg: 'bg-orange-100 dark:bg-orange-500/10', text: 'text-orange-600', icon: AlertCircle },
+    WAITING_REFUND: { label: 'Đợi hoàn tiền', bg: 'bg-pink-100 dark:bg-pink-500/10', text: 'text-pink-600', icon: Clock },
     CANCELLED: { label: 'Đã hủy lịch', bg: 'bg-rose-100 dark:bg-rose-500/10', text: 'text-rose-600', icon: XCircle },
 };
 
@@ -99,7 +101,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
 
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
-    const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED';
+    const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED' || booking.status === 'WAITING_REFUND';
     const [isExpanded, setIsExpanded] = useState(!isOld);
 
     const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
@@ -233,6 +235,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.serviceName}</p>
                         </div>
                     </div>
+                    {booking.status === 'CANCEL_REQUESTED' && booking.cancellationReason && (
+                        <div className="mt-4 rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/20 p-4 text-sm text-slate-700 dark:text-orange-200">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2">Lý do hủy</p>
+                            <p className="leading-relaxed">{booking.cancellationReason}</p>
+                        </div>
+                    )}
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center text-primary shadow-sm">
                             <Clock size={20} />
@@ -375,13 +383,18 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {booking.status === 'CONFIRMED' && (
+                        {(booking.status === 'CONFIRMED' || booking.status === 'WAITING_SHOP_APPROVAL') && (
                             <button
-                                onClick={() => onCancel(booking.id)} disabled={cancelling}
+                                onClick={() => onCancel(booking)} disabled={cancelling}
                                 className="px-5 py-2.5 border border-rose-100 dark:border-rose-900/30 text-rose-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all flex items-center gap-2"
                             >
                                 {cancelling ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Hủy lịch
                             </button>
+                        )}
+                        {booking.status === 'CANCEL_REQUESTED' && (
+                            <div className="px-5 py-2.5 rounded-2xl bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-orange-100 dark:border-orange-900/40">
+                                <AlertCircle size={14} /> Đang chờ shop duyệt hủy
+                            </div>
                         )}
                         {isOld && (
                             <button
@@ -412,7 +425,13 @@ export default function BookingHistory() {
 
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
+    const [cancelReasonOption, setCancelReasonOption] = useState<string>('');
+    const [cancelReasonOther, setCancelReasonOther] = useState('');
+    const [cancelBankName, setCancelBankName] = useState('');
+    const [cancelBankAccount, setCancelBankAccount] = useState('');
+    const [cancelAccountHolder, setCancelAccountHolder] = useState('');
     const [rating, setRating] = useState(5);
     const [comment, setComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -429,13 +448,13 @@ export default function BookingHistory() {
     }, [bookings]);
 
     const cancelMutation = useMutation({
-        mutationFn: (id: number) => bookingService.cancel(id),
-        onMutate: (id) => setCancellingId(id),
+        mutationFn: ({ id, reason, bankName, bankAccount, accountHolder }: { id: number; reason: string; bankName: string; bankAccount: string; accountHolder: string }) => bookingService.requestCancel(id, { reason, bankName, bankAccount, accountHolder }),
+        onMutate: ({ id }) => setCancellingId(id),
         onSuccess: () => {
-            toast.success('Đã huỷ lịch hẹn');
+            toast.success('Yêu cầu hủy lịch đã được gửi tới shop');
             qc.invalidateQueries({ queryKey: ['my-bookings'] });
         },
-        onError: () => toast.error('Không thể huỷ lịch. Vui lòng thử lại.'),
+        onError: () => toast.error('Không thể gửi yêu cầu hủy. Vui lòng thử lại.'),
         onSettled: () => setCancellingId(null),
     });
 
@@ -444,6 +463,41 @@ export default function BookingHistory() {
         setRating(5);
         setComment('');
         setShowReviewModal(true);
+    };
+
+    const handleOpenCancel = (booking: BookingResponse) => {
+        setSelectedBooking(booking);
+        setCancelReasonOption('');
+        setCancelReasonOther('');
+        setCancelBankName('');
+        setCancelBankAccount('');
+        setCancelAccountHolder('');
+        setShowCancelModal(true);
+    };
+
+    const handleSubmitCancelRequest = async () => {
+        if (!selectedBooking) return;
+        const reason = cancelReasonOption === 'OTHER' ? cancelReasonOther.trim() : cancelReasonOption;
+        if (!reason) {
+            toast.error('Vui lòng chọn hoặc nhập lý do hủy');
+            return;
+        }
+        if (!cancelBankName.trim() || !cancelBankAccount.trim() || !cancelAccountHolder.trim()) {
+            toast.error('Vui lòng cung cấp đầy đủ thông tin ngân hàng để nhận hoàn tiền');
+            return;
+        }
+        try {
+            cancelMutation.mutate({
+                id: selectedBooking.id,
+                reason,
+                bankName: cancelBankName.trim(),
+                bankAccount: cancelBankAccount.trim(),
+                accountHolder: cancelAccountHolder.trim(),
+            });
+            setShowCancelModal(false);
+        } catch {
+            setShowCancelModal(false);
+        }
     };
 
     const handleSubmitReview = async () => {
@@ -536,7 +590,7 @@ export default function BookingHistory() {
     };
 
     const totalSpent = bookings.filter(b => b.status === 'COMPLETED').reduce((s, b) => s + b.servicePrice, 0);
-    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED').map(b => b.petName).filter(Boolean))].length;
+    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED' && b.status !== 'WAITING_REFUND').map(b => b.petName).filter(Boolean))].length;
 
     if (isLoading) return (
         <div className="flex-1 flex flex-col items-center justify-center py-32 gap-6">
@@ -697,7 +751,7 @@ export default function BookingHistory() {
                                         <BookingItem
                                             key={b.id}
                                             booking={b}
-                                            onCancel={(id: number) => cancelMutation.mutate(id)}
+                                            onCancel={handleOpenCancel}
                                             cancelling={cancellingId === b.id}
                                             onReview={handleOpenReview}
                                         />
@@ -721,6 +775,143 @@ export default function BookingHistory() {
                     </div>
                 )}
             </div>
+
+            {/* Cancel Request Modal */}
+            <AnimatePresence>
+                {showCancelModal && selectedBooking && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setShowCancelModal(false)}
+                            className="absolute inset-0 bg-slate-950/75 backdrop-blur-xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.94, y: 28 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.94, y: 28 }}
+                            className="relative w-full max-w-2xl bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
+                        >
+                            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 p-8 text-white">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                                        <XCircle size={32} className="text-white" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl font-black tracking-tight">Gửi yêu cầu hủy lịch</h2>
+                                        <p className="text-sm opacity-90 leading-relaxed">Chúng tôi sẽ chuyển yêu cầu này đến shop và cập nhật khi có phản hồi.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-center rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Đơn hàng</p>
+                                        <p className="mt-2 text-base font-black text-slate-900 dark:text-white">{selectedBooking.serviceName}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedBooking.shopName} • Bé: {selectedBooking.petName}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{format(parseISO(selectedBooking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}</p>
+                                    </div>
+                                    <div className="rounded-3xl bg-white dark:bg-slate-950 shadow-sm border border-slate-200 dark:border-slate-800 px-4 py-3 text-right">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400">Tổng tiền</p>
+                                        <p className="mt-1 text-xl font-black text-slate-900 dark:text-white">{formatVND(selectedBooking.servicePrice)}</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Chọn lý do hủy</p>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Bắt buộc</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[
+                                            { value: 'Không thể đến', label: 'Không thể đến' },
+                                            { value: 'Thay đổi lịch trình', label: 'Thay đổi lịch trình' },
+                                            { value: 'Tìm thấy dịch vụ khác', label: 'Tìm thấy dịch vụ khác' },
+                                            { value: 'OTHER', label: 'Khác' },
+                                        ].map(option => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setCancelReasonOption(option.value)}
+                                                className={`rounded-[1.5rem] border p-4 text-left transition-all duration-200 ${cancelReasonOption === option.value ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-sm' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                            >
+                                                <p className="text-sm font-bold">{option.label}</p>
+                                                <p className="text-[11px] text-slate-400 mt-1">{option.value === 'OTHER' ? 'Ghi lý do khác' : 'Chỉ chọn một'}.</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {cancelReasonOption === 'OTHER' && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Lý do chi tiết</p>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">Tối đa 250 ký tự</span>
+                                        </div>
+                                        <textarea
+                                            value={cancelReasonOther}
+                                            onChange={e => setCancelReasonOther(e.target.value)}
+                                            placeholder="Mô tả ngắn gọn lý do hủy..."
+                                            className="w-full min-h-[140px] rounded-[1.75rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-5 py-4 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Ngân hàng</label>
+                                        <input
+                                            value={cancelBankName}
+                                            onChange={e => setCancelBankName(e.target.value)}
+                                            placeholder="Ví dụ: Vietcombank"
+                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Số tài khoản</label>
+                                        <input
+                                            value={cancelBankAccount}
+                                            onChange={e => setCancelBankAccount(e.target.value)}
+                                            placeholder="Nhập số tài khoản"
+                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên người hưởng thụ</label>
+                                    <input
+                                        value={cancelAccountHolder}
+                                        onChange={e => setCancelAccountHolder(e.target.value)}
+                                        placeholder="Nhập tên chủ tài khoản"
+                                        className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                    />
+                                </div>
+
+                                <div className="rounded-[2rem] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 text-sm text-slate-500 dark:text-slate-400">
+                                    <p className="font-bold text-slate-700 dark:text-slate-200">Lưu ý:</p>
+                                    <p className="mt-2 leading-6">Shop sẽ xem xét yêu cầu hủy và phản hồi trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi yêu cầu được duyệt hoặc từ chối.</p>
+                                </div>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <button
+                                        onClick={() => setShowCancelModal(false)}
+                                        className="px-6 py-4 rounded-3xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-black uppercase tracking-[0.25em] hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
+                                    >
+                                        Quay lại
+                                    </button>
+                                    <button
+                                        onClick={handleSubmitCancelRequest}
+                                        disabled={cancelMutation.isLoading}
+                                        className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
+                                    >
+                                        {cancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Review Modal */}
             <AnimatePresence>

@@ -27,6 +27,8 @@ const STATUS_CONFIG: Record<string, any> = {
   WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', icon: Info, className: 'bg-purple-100 text-purple-700', color: 'bg-purple-500' },
   CONFIRMED: { label: 'Chờ xử lý', icon: Clock, className: 'bg-orange-100 text-orange-700', color: 'bg-blue-500' },
   IN_PROGRESS: { label: 'Đang làm', icon: Loader2, className: 'bg-blue-100 text-blue-700', color: 'bg-indigo-500' },
+  CANCEL_REQUESTED: { label: 'Yêu cầu hủy', icon: AlertCircle, className: 'bg-orange-100 text-orange-700', color: 'bg-orange-500' },
+  WAITING_REFUND: { label: 'Đợi hoàn tiền', icon: Clock, className: 'bg-pink-100 text-pink-700', color: 'bg-pink-500' },
   COMPLETED: { label: 'Hoàn thành', icon: CheckCircle, className: 'bg-green-100 text-green-700', color: 'bg-emerald-500' },
   CANCELLED: { label: 'Đã hủy', icon: XCircle, className: 'bg-red-100 text-red-700', color: 'bg-red-500' },
 };
@@ -73,7 +75,7 @@ function StaffAssignmentSelect({
     const hasAcceptedChange = acceptedRequests.length > 0;
 
     const isPending = !!pendingRequest;
-    const isCompletedOrCancelled = status === 'COMPLETED' || status === 'CANCELLED' || status === 'IN_PROGRESS';
+    const isCompletedOrCancelled = status === 'COMPLETED' || status === 'CANCELLED' || status === 'WAITING_REFUND' || status === 'IN_PROGRESS';
     const isDisabled = updatingId === bookingId || isCompletedOrCancelled || isPending || isLoading;
     const selectClass = selectClassName || "w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[11px] font-bold text-[#1a2b4c] dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900";
 
@@ -243,6 +245,23 @@ function BookingListItem({
                             >
                                 <XCircle size={12} />
                                 Từ chối
+                            </button>
+                        </div>
+                    )}
+
+                    {booking.status === 'CANCEL_REQUESTED' && (
+                        <div className="flex flex-col gap-3">
+                            <div className="rounded-3xl border border-orange-100 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900/40 p-4">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 mb-2">Lý do hủy</p>
+                                <p className="text-xs font-bold text-slate-700 dark:text-orange-200">{booking.cancellationReason || 'Khách hàng yêu cầu hủy lịch'}</p>
+                            </div>
+                            <button
+                                disabled={updatingId === booking.bookingId}
+                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
+                                className="w-full py-3 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                            >
+                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                Duyệt hủy lịch
                             </button>
                         </div>
                     )}
@@ -480,7 +499,7 @@ export default function ShopBookings() {
                                         />
                                     </div>
                                     <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-                                        {[{ v: 'ALL', l: 'Tất cả' }, { v: 'WAITING_SHOP_APPROVAL', l: 'Chờ duyệt' }, { v: 'CONFIRMED', l: 'Chờ xử lý' }, { v: 'IN_PROGRESS', l: 'Đang làm' }, { v: 'COMPLETED', l: 'Xong' }].map(t => (
+                                        {[{ v: 'ALL', l: 'Tất cả' }, { v: 'WAITING_SHOP_APPROVAL', l: 'Chờ duyệt' }, { v: 'CANCEL_REQUESTED', l: 'Yêu cầu hủy' }, { v: 'WAITING_REFUND', l: 'Đợi hoàn tiền' }, { v: 'CONFIRMED', l: 'Chờ xử lý' }, { v: 'IN_PROGRESS', l: 'Đang làm' }, { v: 'COMPLETED', l: 'Xong' }].map(t => (
                                             <button
                                                 key={t.v}
                                                 onClick={() => setFilter(t.v)}
@@ -554,6 +573,8 @@ export default function ShopBookings() {
                                         // Get priority status for coloring
                                         const getDayStatus = () => {
                                             if (dayBookings.some(b => b.status === 'IN_PROGRESS')) return 'IN_PROGRESS';
+                                            if (dayBookings.some(b => b.status === 'CANCEL_REQUESTED')) return 'CANCEL_REQUESTED';
+                                            if (dayBookings.some(b => b.status === 'WAITING_REFUND')) return 'WAITING_REFUND';
                                             if (dayBookings.some(b => b.status === 'CONFIRMED')) return 'CONFIRMED';
                                             if (dayBookings.some(b => b.status === 'PENDING_PAYMENT')) return 'PENDING_PAYMENT';
                                             if (dayBookings.some(b => b.status === 'COMPLETED')) return 'COMPLETED';
@@ -780,6 +801,33 @@ export default function ShopBookings() {
                                             "{selectedBooking.note || 'Không có ghi chú'}"
                                         </div>
                                     </div>
+
+                                    {selectedBooking.status === 'CANCEL_REQUESTED' && (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest mb-2.5">Lý do hủy</p>
+                                                <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900 text-xs text-slate-700 dark:text-orange-200">
+                                                    {selectedBooking.cancellationReason || 'Khách hàng chưa ghi rõ lý do hủy'}
+                                                </div>
+                                            </div>
+                                            {(selectedBooking.bankName || selectedBooking.bankAccount || selectedBooking.accountHolder) && (
+                                                <div className="grid gap-3 sm:grid-cols-3">
+                                                    <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+                                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Ngân hàng</p>
+                                                        <p>{selectedBooking.bankName || 'N/A'}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+                                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Số tài khoản</p>
+                                                        <p>{selectedBooking.bankAccount || 'N/A'}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
+                                                        <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Chủ tài khoản</p>
+                                                        <p>{selectedBooking.accountHolder || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Care Logs */}
                                     {(selectedBooking.status === 'IN_PROGRESS' || selectedBooking.status === 'COMPLETED') && (

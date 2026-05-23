@@ -65,6 +65,7 @@ const NEXT_STATUS: Record<string, TaskStatus | null> = {
     CONFIRMED: 'IN_PROGRESS', 
     IN_PROGRESS: 'COMPLETED', 
     COMPLETED: null, 
+    WAITING_REFUND: null,
     CANCELLED: null, 
     PENDING_PAYMENT: null,
 };
@@ -353,9 +354,9 @@ export default function StaffDashboard() {
                             className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-4 sm:px-8 py-3.5 rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${activeTab === 'mine' ? 'bg-white dark:bg-slate-700 text-primary shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             <User size={16} /> Cá nhân
-                            {myTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length > 0 && 
+                            {myTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && t.status !== 'WAITING_REFUND').length > 0 && 
                                 <span className="ml-1 bg-primary text-white w-5 h-5 rounded-full flex items-center justify-center text-[9px]">
-                                    {myTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length}
+                                    {myTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && t.status !== 'WAITING_REFUND').length}
                                 </span>
                             }
                         </button>

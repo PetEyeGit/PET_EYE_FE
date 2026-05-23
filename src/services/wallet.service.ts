@@ -101,6 +101,18 @@ export const walletService = {
     return res.data.result!;
   },
 
+  confirmWithdrawal: async (id: number): Promise<WithdrawalRequestResponse> => {
+    const res = await apiClient.post<ApiResponse<WithdrawalRequestResponse>>(
+      `/wallet/admin/withdrawals/${id}/confirm-manual`
+    );
+    return res.data.result!;
+  },
+
+  confirmRefundForBooking: async (bookingId: number): Promise<void> => {
+    const res = await apiClient.post<ApiResponse<string>>(`/wallet/admin/refunds/${bookingId}/confirm`);
+    return res.data.result ? Promise.resolve() : Promise.resolve();
+  },
+
   rejectWithdrawal: async (id: number, adminNote?: string): Promise<WithdrawalRequestResponse> => {
     const res = await apiClient.post<ApiResponse<WithdrawalRequestResponse>>(
       `/wallet/admin/withdrawals/${id}/reject`,

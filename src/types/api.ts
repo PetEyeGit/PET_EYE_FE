@@ -130,6 +130,10 @@ export interface BookingResponse {
   appointmentDatetime: string;
   status: string;
   note?: string;
+  cancellationReason?: string;
+  bankName?: string;
+  bankAccount?: string;
+  accountHolder?: string;
   payosOrderCode: number;
   createdAt: string;
   checkoutUrl?: string;

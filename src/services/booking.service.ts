@@ -68,6 +68,12 @@ export const bookingService = {
     return response.data.result!;
   },
 
+  /** Request a booking cancellation with a reason, pending shop approval */
+  requestCancel: async (id: number, payload: { reason: string; bankName: string; bankAccount: string; accountHolder: string }): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(`/bookings/${id}/cancel-request`, payload);
+    return response.data.result!;
+  },
+
   /** Get active staff for a shop */
   getShopStaff: async (shopId: number): Promise<StaffResponse[]> => {
     const response = await apiClient.get<ApiResponse<StaffResponse[]>>(`/bookings/staff/${shopId}`);

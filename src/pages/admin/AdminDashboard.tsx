@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Store, Users, DollarSign, Calendar, Clock, MessageCircle, ArrowUpRight, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service';
@@ -24,6 +24,18 @@ function fmtShort(n: number) {
   if (n >= 1_000) return (n / 1_000).toFixed(0) + 'K đ';
   return n.toLocaleString('vi-VN') + 'đ';
 }
+
+function formatDate(value: string) {
+  try {
+    return new Intl.DateTimeFormat('vi-VN', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(value.replace(' ', 'T')));
+  } catch {
+    return value;
+  }
+}
+
 
 export default function AdminDashboard() {
   const currentYear = new Date().getFullYear();
@@ -79,11 +91,12 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-black text-slate-900">Tổng quan hệ thống</h1>
-        <p className="text-slate-500 text-sm mt-1">Thống kê toàn bộ hoạt động của Peteye</p>
-      </div>
+    <>
+      <div className="p-6 md:p-8 space-y-8">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Tổng quan hệ thống</h1>
+          <p className="text-slate-500 text-sm mt-1">Thống kê toàn bộ hoạt động của Peteye</p>
+        </div>
 
       {/* Stats */}
       {isLoading ? (
@@ -190,5 +203,6 @@ export default function AdminDashboard() {
         ))}
       </div>
     </div>
+  </>
   );
 }

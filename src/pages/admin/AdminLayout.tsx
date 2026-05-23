@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { walletService, type WithdrawalRequestResponse } from '../../services/wallet.service';
+import { useNotifications, type AppNotification } from '../../hooks/useNotifications';
 import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard, Store, Users, Bell, MessageCircle,
-  LogOut, Menu, ChevronRight, Shield, Sparkles, Wallet
+  LogOut, Menu, ChevronRight, Shield, Sparkles, Wallet,
+  Scan, X, Building2, CreditCard, Loader2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -20,7 +25,432 @@ export default function AdminLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Pending refund modal state
+  const [showPendingRefundModal, setShowPendingRefundModal] = useState(false);
+
+  const { notifications = [], isLoading: loadingRefundNotifications, markRead } = useNotifications(user?.role === 'ADMIN');
+  const refundNotifications = notifications.filter(n =>
+    !n.isRead && /(yêu cầu hoàn tiền|hoàn tiền khách hàng)/i.test(`${n.title} ${n.content}`)
+  );
+  const refundNotification = refundNotifications.length > 0 ? refundNotifications[0] : null;
+
+  const confirmManualMutation = useMutation({
+    mutationFn: (id: number) => walletService.confirmWithdrawal(id),
+    onSuccess: () => {
+      toast.success('Đã xác nhận chuyển khoản thủ công.');
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-refunds-global'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-withdrawals'] });
+      setShowPendingRefundModal(false);
+    },
+    onError: () => {
+      toast.error('Xác nhận thất bại. Vui lòng thử lại.');
+    },
+  });
+
+  const confirmRefundMutation = useMutation({
+    mutationFn: (bookingId: number) => walletService.confirmRefundForBooking(bookingId),
+    onSuccess: () => {
+      toast.success('Đã hoàn tiền cho khách và cập nhật ví shop.');
+      queryClient.invalidateQueries({ queryKey: ['my-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-refunds-global'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-withdrawals'] });
+      setShowPendingRefundModal(false);
+    },
+    onError: () => {
+      toast.error('Hoàn tiền thất bại. Kiểm tra số dư shop hoặc thử lại.');
+    }
+  });
+
+  // Fetch pending withdrawals (refund requests) so admin sees modal on login
+  const { data: pendingRefunds = [], isLoading: loadingPendingRefunds } = useQuery({
+    queryKey: ['admin-pending-refunds-global'],
+    queryFn: () => walletService.getAllWithdrawals('PENDING'),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    retry: false,
+  });
+
+  const pendingRequest = pendingRefunds.length > 0 ? pendingRefunds[0] : null;
+
+  useEffect(() => {
+    if (!loadingPendingRefunds && pendingRefunds.length > 0) {
+      setShowPendingRefundModal(true);
+    } else if (!loadingRefundNotifications && refundNotifications.length > 0) {
+      setShowPendingRefundModal(true);
+    }
+  }, [loadingPendingRefunds, pendingRefunds, loadingRefundNotifications, refundNotifications.length]);
+
+  function buildQRPattern(seed: number) {
+    let value = seed;
+    const rand = () => {
+      value = (value * 9301 + 49297) % 233280;
+      return value / 233280;
+    };
+    return Array.from({ length: 12 }, () => Array.from({ length: 12 }, () => rand() > 0.45));
+  }
+
+  function fmt(n: number) {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  }
+
+  function RefundAlertModal({ request, onClose }: { request: WithdrawalRequestResponse; onClose: () => void }) {
+    const qrPattern = useMemo(() => buildQRPattern(request.id + request.amount), [request.id, request.amount]);
+    const qrText = `Ngân hàng:${request.bankName}|TK:${request.bankAccount}|Chủ:${request.accountHolder}`;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-white dark:bg-slate-950 w-full max-w-6xl rounded-[32px] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-6 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-emerald-100 font-black mb-2">Yêu cầu hoàn tiền mới</p>
+              <h2 className="text-2xl font-black text-white">Có yêu cầu hoàn tiền chờ xử lý</h2>
+              <p className="mt-2 text-sm text-emerald-100/85 max-w-2xl">Bên trái là thông tin chi tiết, bên phải là QR giả. Quét hoặc nhấn hoàn thành để cập nhật ví shop.</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 p-8">
+            <div className="space-y-5">
+              <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-6">
+                <div className="flex flex-wrap gap-4 items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-1">Shop / Khách hàng</p>
+                    <p className="text-xl font-black text-slate-900 dark:text-white">{request.shopName || request.accountHolder}</p>
+                  </div>
+                  <div className="rounded-3xl bg-emerald-100 dark:bg-emerald-700/20 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">Số tiền</p>
+                    <p className="text-2xl font-black text-emerald-800 dark:text-emerald-100">{fmt(request.amount)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Ngân hàng', value: request.bankName },
+                  { label: 'Số tài khoản', value: request.bankAccount },
+                  { label: 'Chủ tài khoản', value: request.accountHolder },
+                  { label: 'Ngày tạo', value: request.createdAt },
+                ].map(item => (
+                  <div key={item.label} className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">{item.label}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white break-words">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {request.note && (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-900/10 p-5">
+                  <p className="text-xs uppercase tracking-[0.2em] text-amber-700 mb-2">Ghi chú</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200">{request.note}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-6 flex flex-col items-center gap-5">
+              <div className="w-full rounded-3xl bg-slate-950/95 p-5 flex flex-col items-center gap-3">
+                <div className="grid grid-cols-12 gap-1">
+                  {qrPattern.flatMap((row, rowIndex) =>
+                    row.map((active, colIndex) => (
+                      <div
+                        key={`${rowIndex}-${colIndex}`}
+                        className={`w-2 h-2 sm:w-3 sm:h-3 ${active ? 'bg-white' : 'bg-slate-800'} rounded-sm`}
+                      />
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 text-center">QR code giả để demo thao tác quét thành công.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => request && confirmManualMutation.mutate(request.id)}
+                className={`w-full rounded-3xl px-4 py-3 text-sm font-semibold transition ${confirmManualMutation.isPending ? 'bg-slate-200 text-slate-800 cursor-wait' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                disabled={confirmManualMutation.isPending}
+              >
+                {confirmManualMutation.isPending ? 'Đang xử lý...' : 'Quét QR giả'}
+              </button>
+
+              <div className="w-full rounded-3xl bg-white/90 dark:bg-slate-950/90 p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3">Nội dung QR</p>
+                <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 break-words leading-5">{qrText}</div>
+              </div>
+
+              <div className="w-full rounded-3xl bg-slate-100 dark:bg-slate-950/70 p-4 border border-slate-200 dark:border-slate-800">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">Thông tin chuyển khoản</p>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Ngân hàng: {request.bankName}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">STK: {request.bankAccount}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Tên người nhận: {request.accountHolder}</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center">Nhấn Quét QR giả để xử lý chuyển tiền và trừ tiền shop theo đơn.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-800">
+            <button
+              onClick={onClose}
+              className="px-5 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={() => request && confirmManualMutation.mutate(request.id)}
+              disabled={confirmManualMutation.isPending || !qrScanned}
+              className="px-5 py-3 rounded-2xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition disabled:opacity-60"
+            >
+              {confirmManualMutation.isPending ? 'Đang xác nhận...' : qrScanned ? 'Hoàn thành và cập nhật ví' : 'Quét QR trước khi hoàn thành'}
+            </button>
+            <Link
+              to="/admin/withdrawals"
+              onClick={onClose}
+              className="px-5 py-3 rounded-2xl bg-[#1a2b4c] text-white font-bold hover:bg-slate-800 transition"
+            >
+              Xem chi tiết yêu cầu
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function parseRefundNotification(content: string) {
+    const result = {
+      orderId: '',
+      bankName: '',
+      accountHolder: '',
+      accountNumber: '',
+      customer: '',
+      amount: '',
+    };
+
+    const orderMatch = content.match(/Đơn hủy.*#(\d+)/i);
+    if (orderMatch) result.orderId = orderMatch[1];
+
+    const customerMatch = content.match(/khách hàng\s+([^|]+?)\s+về:/i);
+    if (customerMatch) result.customer = customerMatch[1].trim();
+
+    const bankMatch = content.match(/về:\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([0-9]+)/i);
+    if (bankMatch) {
+      result.bankName = bankMatch[1].trim();
+      result.accountHolder = bankMatch[2].trim();
+      result.accountNumber = bankMatch[3].trim();
+    }
+
+    const amountMatch = content.match(/Số tiền:\s*([^\.]+)/i);
+    if (amountMatch) result.amount = amountMatch[1].trim();
+
+    return result;
+  }
+
+  function RefundNotificationModal({ notifications, onClose }: { notifications: AppNotification[]; onClose: () => void }) {
+    const [selectedNotifId, setSelectedNotifId] = useState<number | null>(notifications.length === 1 ? notifications[0].id : null);
+    const [isScanning, setIsScanning] = useState(false);
+    
+    const notification = notifications.find(n => n.id === selectedNotifId) || null;
+    const parsed = notification ? parseRefundNotification(notification.content) : null;
+    const qrPattern = useMemo(() => buildQRPattern(notification?.id || 0), [notification?.id]);
+
+    const handleSimulateQRScan = async () => {
+      if (!notification || !parsed) return;
+      setIsScanning(true);
+      
+      // Simulate scan delay for visual feedback
+      setTimeout(async () => {
+        setIsScanning(false);
+        const bookingId = parsed.orderId ? Number(parsed.orderId) : NaN;
+        
+        try {
+          if (!isNaN(bookingId)) {
+            await confirmRefundMutation.mutateAsync(bookingId);
+          }
+          markRead(notification.id);
+          toast.success('Đã hoàn thành yêu cầu hoàn tiền.');
+          onClose();
+        } catch (error) {
+           // error already handled by mutation onError
+        }
+      }, 1500);
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[28px] shadow-2xl overflow-hidden border border-white/20 dark:border-slate-700/50 relative flex flex-col max-h-[90vh]">
+          
+          {/* Decorative background blur */}
+          <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-pink-500/20 to-rose-500/20 blur-3xl rounded-full -translate-y-1/2 pointer-events-none" />
+
+          {/* Header */}
+          <div className="relative shrink-0 px-8 py-6 flex items-start justify-between gap-4 border-b border-slate-100 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/30 text-white">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400 font-black mb-1">Xác nhận hoàn tiền</p>
+                {notifications.length > 1 ? (
+                  <div className="flex items-center gap-3 mt-1">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Yêu cầu đang chờ</h2>
+                    <div className="flex items-center gap-1.5 bg-rose-500 text-white px-3 py-1 rounded-full shadow-lg shadow-rose-500/30 border border-rose-400/50 animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                      <span className="font-black text-sm">{notifications.length}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Yêu cầu hoàn tiền khách hàng</h2>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-all duration-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="overflow-y-auto p-8 relative z-10">
+            {notifications.length > 1 && (
+              <div className="mb-8 p-5 rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30 border border-rose-200 dark:border-rose-800/50 relative overflow-hidden shadow-sm">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+                <label className="block text-[11px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-3 relative z-10">
+                  Vui lòng chọn 1 trong {notifications.length} yêu cầu để xử lý
+                </label>
+                <select 
+                  className="w-full relative z-10 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 dark:text-white focus:ring-4 focus:ring-rose-500/20 outline-none transition shadow-sm"
+                  value={selectedNotifId || ''}
+                  onChange={e => setSelectedNotifId(Number(e.target.value))}
+                >
+                  <option value="" disabled>-- Vui lòng chọn 1 yêu cầu --</option>
+                  {notifications.map(n => {
+                    const p = parseRefundNotification(n.content);
+                    return (
+                      <option key={n.id} value={n.id}>
+                        Đơn #{p.orderId || '?'} - Khách: {p.customer || '?'} - Số tiền: {p.amount || '?'}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+
+            {notification && parsed ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Left Column: Order Details */}
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3 font-semibold">Thông tin đơn hủy</p>
+                    <p className="text-lg font-black text-slate-900 dark:text-white mb-2 leading-tight">{notification.title}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 whitespace-pre-line leading-relaxed">{notification.content}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: 'Mã đơn hủy', value: parsed.orderId || 'Chưa có', icon: <LayoutDashboard className="w-4 h-4 text-slate-400" /> },
+                      { label: 'Khách hàng', value: parsed.customer || 'Chưa có', icon: <Users className="w-4 h-4 text-slate-400" /> },
+                      { label: 'Ngân hàng', value: parsed.bankName || 'Chưa có', icon: <Building2 className="w-4 h-4 text-slate-400" /> },
+                      { label: 'Số tài khoản', value: parsed.accountNumber || 'Chưa có', icon: <CreditCard className="w-4 h-4 text-slate-400" /> },
+                    ].map((item, i) => (
+                      <div key={i} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm hover:border-rose-200 dark:hover:border-rose-900/50 transition-colors">
+                        <div className="flex items-center gap-2 mb-2">
+                          {item.icon}
+                          <p className="text-[10px] uppercase tracking-[0.1em] text-slate-400 font-semibold">{item.label}</p>
+                        </div>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white break-words">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Column: QR Scanner Simulator */}
+                <div className="flex flex-col items-center justify-center relative">
+                  <div className={`w-full max-w-[280px] aspect-square rounded-3xl p-6 bg-white dark:bg-slate-950 shadow-2xl shadow-rose-500/10 border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 ${isScanning ? 'scale-[1.02] ring-4 ring-rose-500/30' : ''}`}>
+                    
+                    {/* Scanner Animation Overlay */}
+                    {isScanning && (
+                      <div className="absolute inset-0 bg-rose-500/10 z-20 flex flex-col items-center justify-center">
+                        <div className="w-full h-1 bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.8)] animate-[scan_1.5s_ease-in-out_infinite]" />
+                        <Loader2 className="w-8 h-8 text-rose-500 animate-spin absolute" />
+                      </div>
+                    )}
+
+                    {/* Simulated QR Code */}
+                    <div className="w-full h-full grid grid-cols-12 gap-1 opacity-80">
+                      {qrPattern.flatMap((row, rowIndex) =>
+                        row.map((active, colIndex) => (
+                          <div
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`w-full h-full rounded-sm ${active ? 'bg-slate-800 dark:bg-white' : 'bg-transparent'}`}
+                          />
+                        ))
+                      )}
+                    </div>
+
+                    <div className="absolute bottom-4 left-0 w-full text-center z-10">
+                      <span className="bg-white/90 dark:bg-slate-900/90 text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm text-slate-600 dark:text-slate-300 backdrop-blur-md">
+                        {parsed.amount || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 w-full max-w-[280px]">
+                    <button
+                      type="button"
+                      onClick={handleSimulateQRScan}
+                      disabled={isScanning || confirmRefundMutation.isPending}
+                      className="w-full relative group overflow-hidden rounded-2xl p-[1px]"
+                    >
+                      <span className="absolute inset-0 bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 rounded-2xl opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="relative bg-white dark:bg-slate-900 px-6 py-4 rounded-[15px] flex items-center justify-center gap-2 transition-all duration-300 group-hover:bg-opacity-0">
+                        {confirmRefundMutation.isPending || isScanning ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-rose-500 group-hover:text-white" />
+                        ) : (
+                          <Scan className="w-5 h-5 text-rose-500 group-hover:text-white transition-colors" />
+                        )}
+                        <span className="font-bold text-slate-900 dark:text-white group-hover:text-white transition-colors">
+                          {isScanning ? 'Đang quét...' : confirmRefundMutation.isPending ? 'Đang xử lý...' : 'Quét QR & Hoàn tiền'}
+                        </span>
+                      </div>
+                    </button>
+                    <p className="text-[11px] text-center text-slate-400 mt-4 leading-relaxed px-4">
+                      Hệ thống sẽ tự động hoàn tất và trừ tiền từ ví Shop tương ứng.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm mb-4">
+                  <Scan className="w-8 h-8 text-slate-300" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">Chưa chọn yêu cầu</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center max-w-md">
+                  Vui lòng chọn một yêu cầu hoàn tiền từ danh sách phía trên để xem chi tiết thông tin chuyển khoản và quét mã QR.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Custom Keyframes for Scanner */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes scan {
+            0%, 100% { transform: translateY(-100px); }
+            50% { transform: translateY(100px); }
+          }
+        `}} />
+      </div>
+    );
+  }
 
   if (user?.role !== 'ADMIN') return <Navigate to="/home" />;
 
@@ -90,7 +520,19 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
+    <>
+      {showPendingRefundModal && pendingRequest && (
+        <RefundAlertModal request={pendingRequest} onClose={() => setShowPendingRefundModal(false)} />
+      )}
+      {showPendingRefundModal && !pendingRequest && refundNotifications.length > 0 && (
+        <RefundNotificationModal
+          notifications={refundNotifications}
+          onClose={() => {
+            setShowPendingRefundModal(false);
+          }}
+        />
+      )}
+      <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col bg-[#0f172a] shrink-0 w-[220px]">
         <SidebarContent />
@@ -119,10 +561,25 @@ export default function AdminLayout() {
           </div>
         </div>
 
+        {/* Top banner for pending refunds (visible to ADMIN on all admin pages) */}
+        {pendingRefunds && pendingRefunds.length > 0 && (
+          <div className="bg-rose-50 border-l-4 border-rose-500 p-3 m-4 rounded-md flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-black text-rose-700">Có {pendingRefunds.length} yêu cầu rút tiền chờ xử lý</p>
+              <p className="text-xs text-rose-600">Yêu cầu mới nhất từ: <span className="font-semibold text-rose-800">{pendingRequest?.shopName || pendingRequest?.accountHolder}</span></p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowPendingRefundModal(true)} className="px-3 py-2 rounded-xl bg-rose-600 text-white font-bold">Xem</button>
+              <Link to="/admin/withdrawals" className="px-3 py-2 rounded-xl border border-rose-200 text-rose-700">Quản lý</Link>
+            </div>
+          </div>
+        )}
+
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>
     </div>
+    </>
   );
 }

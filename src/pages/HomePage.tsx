@@ -133,6 +133,7 @@ export default function HomePage() {
             case 'CONFIRMED': return { text: 'Đã xác nhận', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' };
             case 'PAID': return { text: 'Đã thanh toán', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-blue-500' };
             case 'COMPLETED': return { text: 'Hoàn thành', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500' };
+            case 'WAITING_REFUND': return { text: 'Đợi hoàn tiền', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400', dot: 'bg-pink-500' };
             case 'CANCELLED': return { text: 'Đã hủy', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', dot: 'bg-red-500' };
             default: return { text: status, color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-500' };
         }

@@ -15,11 +15,16 @@ export interface TaskResponse {
   customerPhone?: string;
   serviceId: number;
   serviceName: string;
+  servicePrice: number;
   staffId: number | null;
   staffName: string | null;
   appointmentDatetime: string;
-  status: 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING_PAYMENT';
+  status: 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING_PAYMENT' | 'CANCEL_REQUESTED' | 'WAITING_REFUND';
   note: string | null;
+  cancellationReason?: string;
+  bankName?: string;
+  bankAccount?: string;
+  accountHolder?: string;
   createdAt: string;
 }
 
