@@ -487,13 +487,36 @@ export default function ProfilePets() {
                                                                 onChange={e => setFormData({...formData, weight: e.target.value})}
                                                             />
                                                         </div>
+
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Giới tính</label>
+                                                            <select
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold appearance-none cursor-pointer"
+                                                                value={formData.gender}
+                                                                onChange={e => setFormData({...formData, gender: e.target.value})}
+                                                            >
+                                                                <option value="Đực">Đực</option>
+                                                                <option value="Cái">Cái</option>
+                                                                <option value="Chưa rõ">Chưa rõ</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Màu lông</label>
+                                                            <input
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none transition-all font-bold"
+                                                                placeholder="Vd: Vàng, Đen..."
+                                                                value={formData.color}
+                                                                onChange={e => setFormData({...formData, color: e.target.value})}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </>
                                             )}
 
                                             {step === 2 && (
                                                 <>
-                                                    <div className="flex items-center justify-between">
+                                                    <div className="flex items-center justify-between pr-8">
                                                         <h3 className="text-lg font-black text-[#1a2b4c] dark:text-white">Dinh dưỡng hàng ngày</h3>
                                                         <button 
                                                             onClick={() => setFormData({...formData, nutritionPlan: [...formData.nutritionPlan, { mealName: 'Bữa mới', foodType: '', amount: '' }]})}
@@ -542,28 +565,66 @@ export default function ProfilePets() {
                                                             <input className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-red-600/30 rounded-2xl text-slate-900 dark:text-white outline-none font-bold" placeholder="Sữa, gà..." value={formData.allergies} onChange={e => setFormData({...formData, allergies: e.target.value})} />
                                                         </div>
                                                     </div>
+
+                                                    <div className="grid grid-cols-2 gap-6 mt-6">
+                                                        <div className="col-span-2 sm:col-span-1">
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Tình trạng sinh sản</label>
+                                                            <select
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none font-bold appearance-none cursor-pointer"
+                                                                value={formData.sterilized ? 'true' : 'false'}
+                                                                onChange={e => setFormData({...formData, sterilized: e.target.value === 'true'})}
+                                                            >
+                                                                <option value="false">Chưa triệt sản</option>
+                                                                <option value="true">Đã triệt sản</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-span-2 sm:col-span-1">
+                                                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Ghi chú sức khỏe chung</label>
+                                                            <input 
+                                                                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border-2 border-transparent focus:border-blue-600/30 rounded-2xl text-slate-900 dark:text-white outline-none font-bold" 
+                                                                placeholder="Vd: Yếu đường ruột..." 
+                                                                value={formData.healthNote} 
+                                                                onChange={e => setFormData({...formData, healthNote: e.target.value})} 
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </>
                                             )}
 
                                             {step === 3 && (
                                                 <>
                                                     <div className="space-y-8">
+
                                                         <div className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-[2rem] border border-blue-100 dark:border-blue-800/50">
                                                             <div className="flex items-center justify-between mb-4">
                                                                 <h3 className="text-sm font-black text-blue-900 dark:text-blue-300 uppercase tracking-widest flex items-center gap-2">
                                                                     <HeartPulse size={16} /> Hồ sơ y tế
                                                                 </h3>
-                                                                <button onClick={() => setFormData({...formData, medicalRecords: [...formData.medicalRecords, { diagnosis: '', treatment: '', visitDate: new Date().toISOString() }]})} className="text-[10px] font-black text-blue-600 hover:underline">THÊM MỚI</button>
+                                                                <button onClick={() => setFormData({...formData, medicalRecords: [...formData.medicalRecords, { diagnosis: '', treatment: '', prescription: '', visitDate: new Date().toISOString(), veterinarianNote: '' }]})} className="text-[10px] font-black text-blue-600 hover:underline">THÊM MỚI</button>
                                                             </div>
                                                             <div className="space-y-4">
                                                                 {formData.medicalRecords.map((m, i) => (
-                                                                    <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm space-y-3">
-                                                                        <input className="w-full bg-transparent text-sm font-bold outline-none border-b border-slate-100 dark:border-slate-700 pb-2" placeholder="Chẩn đoán bệnh..." value={m.diagnosis} onChange={e => {
+                                                                    <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm space-y-3 relative">
+                                                                        <button onClick={() => setFormData({...formData, medicalRecords: formData.medicalRecords.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 text-slate-300 hover:text-red-500"><X size={16} /></button>
+                                                                        <input className="w-full bg-transparent text-sm font-bold outline-none border-b border-slate-100 dark:border-slate-700 pb-2 pr-6" placeholder="Chẩn đoán bệnh..." value={m.diagnosis} onChange={e => {
                                                                             const copy = [...formData.medicalRecords]; copy[i].diagnosis = e.target.value; setFormData({...formData, medicalRecords: copy});
                                                                         }} />
-                                                                        <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Phương pháp điều trị..." value={m.treatment} onChange={e => {
-                                                                            const copy = [...formData.medicalRecords]; copy[i].treatment = e.target.value; setFormData({...formData, medicalRecords: copy});
-                                                                        }} />
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Phương pháp điều trị..." value={m.treatment} onChange={e => {
+                                                                                const copy = [...formData.medicalRecords]; copy[i].treatment = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                            }} />
+                                                                            <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Đơn thuốc..." value={m.prescription} onChange={e => {
+                                                                                const copy = [...formData.medicalRecords]; copy[i].prescription = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                            }} />
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <input type="date" className="w-full bg-transparent text-xs text-slate-500 outline-none" value={m.visitDate?.split('T')[0] || ''} onChange={e => {
+                                                                                const copy = [...formData.medicalRecords]; copy[i].visitDate = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                            }} />
+                                                                            <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Ghi chú của bác sĩ..." value={m.veterinarianNote} onChange={e => {
+                                                                                const copy = [...formData.medicalRecords]; copy[i].veterinarianNote = e.target.value; setFormData({...formData, medicalRecords: copy});
+                                                                            }} />
+                                                                        </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -574,17 +635,71 @@ export default function ProfilePets() {
                                                                 <h3 className="text-sm font-black text-amber-900 dark:text-amber-300 uppercase tracking-widest flex items-center gap-2">
                                                                     <ShieldCheck size={16} /> Tiêm chủng
                                                                 </h3>
-                                                                <button onClick={() => setFormData({...formData, vaccinations: [...formData.vaccinations, { name: '', date: new Date().toISOString(), status: 'done' }]})} className="text-[10px] font-black text-amber-600 hover:underline">THÊM MŨI TIÊM</button>
+                                                                <button onClick={() => setFormData({...formData, vaccinations: [...formData.vaccinations, { name: '', drug: '', clinic: '', date: new Date().toISOString(), status: 'done' }]})} className="text-[10px] font-black text-amber-600 hover:underline">THÊM MŨI TIÊM</button>
                                                             </div>
-                                                            <div className="space-y-3">
+                                                            <div className="space-y-4">
                                                                 {formData.vaccinations.map((v, i) => (
-                                                                    <div key={i} className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-2xl shadow-sm">
-                                                                        <input className="flex-1 bg-transparent text-sm font-bold outline-none" placeholder="Tên vaccine..." value={v.name} onChange={e => {
+                                                                    <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm space-y-3 relative">
+                                                                        <button onClick={() => setFormData({...formData, vaccinations: formData.vaccinations.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 text-slate-300 hover:text-red-500"><X size={16} /></button>
+                                                                        <input className="w-full bg-transparent text-sm font-bold outline-none border-b border-slate-100 dark:border-slate-700 pb-2 pr-6" placeholder="Tên loại bệnh phòng ngừa (Vd: Dại, 4 bệnh...)" value={v.name} onChange={e => {
                                                                             const copy = [...formData.vaccinations]; copy[i].name = e.target.value; setFormData({...formData, vaccinations: copy});
                                                                         }} />
-                                                                        <input type="date" className="text-xs font-bold text-slate-400 bg-transparent outline-none" value={v.date?.split('T')[0]} onChange={e => {
-                                                                            const copy = [...formData.vaccinations]; copy[i].date = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Tên thuốc/vaccine..." value={v.drug} onChange={e => {
+                                                                                const copy = [...formData.vaccinations]; copy[i].drug = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                            }} />
+                                                                            <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Phòng khám..." value={v.clinic} onChange={e => {
+                                                                                const copy = [...formData.vaccinations]; copy[i].clinic = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                            }} />
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <input type="date" className="w-full text-xs font-bold text-slate-400 bg-transparent outline-none" value={v.date?.split('T')[0] || ''} onChange={e => {
+                                                                                const copy = [...formData.vaccinations]; copy[i].date = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                            }} />
+                                                                            <select className="w-full text-xs font-bold text-slate-400 bg-transparent outline-none" value={v.status} onChange={e => {
+                                                                                const copy = [...formData.vaccinations]; copy[i].status = e.target.value; setFormData({...formData, vaccinations: copy});
+                                                                            }}>
+                                                                                <option value="done">Đã tiêm</option>
+                                                                                <option value="upcoming">Sắp tới</option>
+                                                                                <option value="missed">Bỏ lỡ</option>
+                                                                            </select>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="bg-purple-50/50 dark:bg-purple-900/10 p-6 rounded-[2rem] border border-purple-100 dark:border-purple-800/50">
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h3 className="text-sm font-black text-purple-900 dark:text-purple-300 uppercase tracking-widest flex items-center gap-2">
+                                                                    <Calendar size={16} /> Lịch nhắc chăm sóc
+                                                                </h3>
+                                                                <button onClick={() => setFormData({...formData, reminders: [...(formData.reminders || []), { title: '', description: '', date: new Date().toISOString(), type: 'general', status: 'pending' }]})} className="text-[10px] font-black text-purple-600 hover:underline">TẠO LỜI NHẮC</button>
+                                                            </div>
+                                                            <div className="space-y-4">
+                                                                {(formData.reminders || []).map((r, i) => (
+                                                                    <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm space-y-3 relative">
+                                                                        <button onClick={() => setFormData({...formData, reminders: formData.reminders.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 text-slate-300 hover:text-red-500"><X size={16} /></button>
+                                                                        <input className="w-full bg-transparent text-sm font-bold outline-none border-b border-slate-100 dark:border-slate-700 pb-2 pr-6" placeholder="Tiêu đề nhắc nhở (Vd: Tẩy giun)..." value={r.title} onChange={e => {
+                                                                            const copy = [...formData.reminders]; copy[i].title = e.target.value; setFormData({...formData, reminders: copy});
                                                                         }} />
+                                                                        <input className="w-full bg-transparent text-xs text-slate-500 outline-none" placeholder="Mô tả chi tiết..." value={r.description} onChange={e => {
+                                                                            const copy = [...formData.reminders]; copy[i].description = e.target.value; setFormData({...formData, reminders: copy});
+                                                                        }} />
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <input type="datetime-local" className="w-full text-xs font-bold text-slate-400 bg-transparent outline-none" value={r.date?.slice(0,16) || ''} onChange={e => {
+                                                                                const copy = [...formData.reminders]; copy[i].date = e.target.value ? new Date(e.target.value).toISOString() : ''; setFormData({...formData, reminders: copy});
+                                                                            }} />
+                                                                            <select className="w-full text-xs font-bold text-slate-400 bg-transparent outline-none" value={r.type} onChange={e => {
+                                                                                const copy = [...formData.reminders]; copy[i].type = e.target.value; setFormData({...formData, reminders: copy});
+                                                                            }}>
+                                                                                <option value="vaccination">Tiêm phòng</option>
+                                                                                <option value="deworming">Tẩy giun</option>
+                                                                                <option value="checkup">Khám sức khỏe</option>
+                                                                                <option value="grooming">Spa & Grooming</option>
+                                                                                <option value="general">Khác</option>
+                                                                            </select>
+                                                                        </div>
                                                                     </div>
                                                                 ))}
                                                             </div>

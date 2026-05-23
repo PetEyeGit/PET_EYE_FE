@@ -171,27 +171,27 @@ export default function ShopStaff() {
             <div className="max-w-7xl mx-auto">
 
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-14 h-14 bg-primary text-white rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-primary/20">
-                                <Users size={30} />
-                            </div>
-                            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Nhân sự</h1>
-                        </div>
-                        <p className="text-slate-500 font-bold uppercase text-[11px] tracking-[0.2em] ml-2">Đội ngũ & Cơ chế hoạt động</p>
-                    </motion.div>
+                <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                            <Users className="w-8 h-8 text-blue-600" />
+                            Quản lý nhân sự
+                        </h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+                            Đội ngũ nhân viên & cơ chế hoạt động của cửa hàng
+                        </p>
+                    </div>
                     
                     <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-[2rem] shadow-xl border border-slate-100 dark:border-slate-800">
                         {(['list', 'settings'] as const).map(tab => (
                             <button key={tab} onClick={() => setActiveTab(tab)}
-                                className={`px-8 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2.5 ${activeTab === tab ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}>
+                                className={`px-8 py-3 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2.5 ${activeTab === tab ? 'bg-[#1a2b4c] text-white shadow-lg shadow-indigo-900/20' : 'text-slate-400 hover:text-slate-600'}`}>
                                 {tab === 'list' ? <LayoutDashboard size={18} /> : <Settings size={18} />}
                                 {tab === 'list' ? 'Danh sách' : 'Thiết lập'}
                             </button>
                         ))}
                     </div>
-                </div>
+                </header>
 
                 {activeTab === 'list' ? (
                     <div className="space-y-8">

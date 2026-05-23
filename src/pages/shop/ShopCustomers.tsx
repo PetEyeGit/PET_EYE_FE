@@ -113,15 +113,17 @@ export default function ShopCustomers() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header with Image */}
-        <div className="mb-8 relative">
-          <div className="absolute right-0 top-0 w-64 h-64 opacity-10 pointer-events-none hidden lg:block">
-
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <User className="w-8 h-8 text-blue-600" />
+              Quản lý khách hàng
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Danh sách khách hàng và lịch sử giao dịch
+            </p>
           </div>
-          <div className="relative z-10">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Quản lý khách hàng</h1>
-            <p className="text-slate-600 dark:text-slate-400">Danh sách khách hàng và lịch sử giao dịch</p>
-          </div>
-        </div>
+        </header>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

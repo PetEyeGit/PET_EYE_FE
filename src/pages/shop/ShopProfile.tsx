@@ -187,10 +187,17 @@ export default function ShopProfile() {
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Thông tin cửa hàng</h1>
-          <p className="text-slate-600">Quản lý thông tin và cài đặt cửa hàng của bạn</p>
-        </div>
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <Store className="w-8 h-8 text-blue-600" />
+              Thông tin cửa hàng
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+              Quản lý thông tin và cài đặt cửa hàng của bạn
+            </p>
+          </div>
+        </header>
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700 mb-6">

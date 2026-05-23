@@ -133,7 +133,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 md:p-8 font-display relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
       {/* ─── DYNAMIC AMBIENT BACKGROUND ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Soft floating blurred lights */}
@@ -246,7 +246,7 @@ export default function Login() {
 
           {/* Bottom texts */}
           <div className="relative z-10 space-y-3">
-            <h3 className="text-2xl font-black text-white leading-tight">
+            <h3 className="text-3xl font-bold text-white leading-tight">
               Nơi thú cưng của bạn được chăm sóc như gia đình.
             </h3>
             <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
@@ -298,10 +298,10 @@ export default function Login() {
                     setActiveRole(role.key as any);
                     setErrorMessage('');
                   }}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-colors duration-200 ${
+                  className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors duration-200 ${
                     activeRole === role.key
                       ? 'text-[#1a2b4c] dark:text-white'
-                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
                   {role.icon}
@@ -338,7 +338,7 @@ export default function Login() {
                     className="space-y-5"
                   >
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-1.5">
+                      <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
                         Chào mừng trở lại 👋
                       </h2>
                       <p className="text-slate-400 dark:text-slate-500 text-xs font-medium">
@@ -348,11 +348,11 @@ export default function Login() {
 
                     <form className="space-y-4" onSubmit={(e) => handleSubmit(e, 'customer')}>
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Địa chỉ Email</label>
+                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Địa chỉ Email</label>
                         <div className="relative group">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                           <input
-                            className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all font-medium text-xs"
+                            className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all text-sm"
                             placeholder="customer@example.com"
                             type="email"
                             value={customerEmail}
@@ -364,15 +364,15 @@ export default function Login() {
 
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Mật khẩu</label>
-                          <a href="/forgot-password" className="text-[11px] font-bold text-indigo-650 dark:text-indigo-400 hover:underline">
+                          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mật khẩu</label>
+                          <a href="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
                             Quên mật khẩu?
                           </a>
                         </div>
                         <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                           <input
-                            className="w-full pl-11 pr-11 py-3 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all font-medium text-xs"
+                            className="w-full pl-11 pr-11 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all text-sm"
                             placeholder="••••••••"
                             type={showCustomerPassword ? 'text' : 'password'}
                             value={customerPassword}
@@ -392,7 +392,7 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3.5 bg-[#1a2b4c] hover:bg-[#243d6b] text-white font-black rounded-2xl shadow-lg shadow-indigo-900/10 hover:shadow-indigo-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-xs tracking-wider"
+                        className="w-full py-4 bg-[#1a2b4c] hover:bg-[#243d6b] text-white font-bold rounded-2xl shadow-lg shadow-indigo-900/10 hover:shadow-indigo-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-sm tracking-wide"
                       >
                         {loading ? (
                           <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -410,7 +410,7 @@ export default function Login() {
 
                     <div className="flex items-center gap-4 py-1">
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
-                      <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Hoặc đăng nhập bằng</span>
+                      <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Hoặc đăng nhập bằng</span>
                       <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
                     </div>
 
@@ -460,7 +460,7 @@ export default function Login() {
                     className="space-y-5"
                   >
                     <div>
-                      <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-1.5">
+                      <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
                         Đối tác Peteye 🏪
                       </h2>
                       <p className="text-slate-400 dark:text-slate-500 text-xs font-medium">
@@ -470,11 +470,11 @@ export default function Login() {
 
                     <form className="space-y-4" onSubmit={(e) => handleSubmit(e, 'shop')}>
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Email cửa hàng</label>
+                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email cửa hàng</label>
                         <div className="relative group">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                           <input
-                            className="w-full pl-11 pr-4 py-3 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all font-medium text-xs"
+                            className="w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all text-sm"
                             placeholder="shop@example.com"
                             type="email"
                             value={shopEmail}
@@ -486,15 +486,15 @@ export default function Login() {
 
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Mật khẩu</label>
-                          <a href="/forgot-password" className="text-[11px] font-bold text-indigo-650 dark:text-indigo-400 hover:underline">
+                          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mật khẩu</label>
+                          <a href="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
                             Quên mật khẩu?
                           </a>
                         </div>
                         <div className="relative group">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={16} />
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
                           <input
-                            className="w-full pl-11 pr-11 py-3 rounded-2xl border-2 border-slate-50 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all font-medium text-xs"
+                            className="w-full pl-11 pr-11 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/40 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none transition-all text-sm"
                             placeholder="••••••••"
                             type={showShopPassword ? 'text' : 'password'}
                             value={shopPassword}
@@ -514,7 +514,7 @@ export default function Login() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3.5 bg-[#1a2b4c] hover:bg-[#243d6b] text-white font-black rounded-2xl shadow-lg shadow-indigo-900/10 hover:shadow-indigo-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-xs tracking-wider"
+                        className="w-full py-4 bg-[#1a2b4c] hover:bg-[#243d6b] text-white font-bold rounded-2xl shadow-lg shadow-indigo-900/10 hover:shadow-indigo-900/20 hover:-translate-y-0.5 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 text-sm tracking-wide"
                       >
                         {loading ? (
                           <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">

@@ -426,8 +426,11 @@ export default function ShopBookings() {
                 {/* Header with View Toggle */}
                 <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 shrink-0">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Quản lý đặt lịch</h1>
-                        <p className="text-slate-500 dark:text-slate-400 font-medium text-xs mt-0.5">Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>
+                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                            <CalendarIcon className="w-8 h-8 text-blue-600" />
+                            Quản lý đặt lịch
+                        </h1>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>
                     </div>
 
                     <div className="flex items-center gap-3">

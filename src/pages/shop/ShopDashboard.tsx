@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-    Calendar, DollarSign, Users, TrendingUp, Bell,
+    Calendar, DollarSign, Users, TrendingUp, Bell, LayoutDashboard,
     ArrowUpRight, Video, ChevronRight, MessageCircle, Settings,
     Camera, Package, Activity, Loader2
 } from 'lucide-react';
@@ -91,7 +91,10 @@ export default function ShopDashboard() {
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Tổng quan kinh doanh</h1>
+           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+             <LayoutDashboard className="w-8 h-8 text-blue-600" />
+             Tổng quan kinh doanh
+           </h1>
            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
              Xin chào {user?.fullName || 'Chủ Shop'}. Chúc bạn một ngày kinh doanh hồng phát!
            </p>

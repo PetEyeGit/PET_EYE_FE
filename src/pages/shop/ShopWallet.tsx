@@ -224,11 +224,11 @@ export default function ShopWallet() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-teal-500" />
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <Wallet className="w-8 h-8 text-blue-600" />
             Ví của tôi
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Quản lý doanh thu và yêu cầu rút tiền</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Quản lý doanh thu và yêu cầu rút tiền</p>
         </div>
         <div className="flex items-center gap-2">
           <button

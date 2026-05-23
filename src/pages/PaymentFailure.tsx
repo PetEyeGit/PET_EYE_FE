@@ -45,13 +45,12 @@ export default function PaymentFailure() {
               </div>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="text-2xl font-black text-slate-800 dark:text-white mb-2"
             >
-              Thanh toán không thành công
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 10 }}

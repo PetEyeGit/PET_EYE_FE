@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleLeft, ToggleRight, Loader2, Package } from 'lucide-react';
 import { serviceService } from '../../services/service.service';
 import type { ServiceResponse, ServiceCreationRequest, ServiceUpdateRequest } from '../../types/api';
 
@@ -289,10 +289,13 @@ export default function ShopServices() {
       <div className="max-w-6xl mx-auto px-6 py-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Quản lý dịch vụ</h1>
-            <p className="text-slate-600">Thêm, chỉnh sửa và quản lý các dịch vụ của cửa hàng</p>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+              <Package className="w-8 h-8 text-blue-600" />
+              Quản lý dịch vụ
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Thêm, chỉnh sửa và quản lý các dịch vụ của cửa hàng</p>
           </div>
           <button
             onClick={openAddModal}

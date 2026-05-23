@@ -49,15 +49,16 @@ export default function ShopReviews() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <Star className="w-8 h-8 text-blue-600" />
             Quản lý Đánh giá
             <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
               {reviews.length} Phản hồi
             </div>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Xem và phản hồi lại những đánh giá từ khách hàng của bạn.</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Xem và phản hồi lại những đánh giá từ khách hàng của bạn.</p>
         </div>
 
         {/* Rating Summary Card */}
@@ -88,7 +89,7 @@ export default function ShopReviews() {
             })}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap items-center gap-2 mb-8">
