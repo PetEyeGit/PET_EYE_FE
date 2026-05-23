@@ -76,12 +76,12 @@ function GuestNavbar() {
 
         <div className="hidden sm:flex items-center gap-4">
           <Link to="/login"
-            className="text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-all hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 active:scale-95">
             Đăng nhập
           </Link>
           <Link to="/register"
-            className="h-11 px-8 bg-primary hover:bg-primary-dark text-white rounded-2xl text-[14px] font-black transition-all shadow-xl shadow-primary/20 hover:-translate-y-1 hover:shadow-primary/40 active:scale-95 flex items-center justify-center">
-            Khám phá ngay
+          className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-all hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 active:scale-95">
+            Đăng ký
           </Link>
         </div>
 

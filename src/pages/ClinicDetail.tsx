@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { shopService } from '../services/shop.service';
@@ -840,16 +840,6 @@ export default function ClinicDetail() {
                             </div>
                           </div>
                         </div>
-
-                        {isSelected && svc.description && (
-                          <div className="mt-2 px-4 pb-4 text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center justify-between mb-2 pt-3">
-                              <span className="font-semibold text-slate-900 dark:text-slate-100">Chi tiết dịch vụ</span>
-                              <span className="text-xs text-slate-500 dark:text-slate-400">Nhấn để ẩn</span>
-                            </div>
-                            <p>{svc.description}</p>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -1196,41 +1186,44 @@ export default function ClinicDetail() {
                         </span>
                       </div>
 
-                      {slotsLoading ? (
-                        <div className="flex items-center justify-center gap-2 py-4">
-                          <span className="w-4 h-4 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin" />
-                          <span className="text-xs text-slate-400">Đang tải khung giờ...</span>
-                        </div>
-                      ) : allTimeSlots.length === 0 ? (
-                        <div className="py-4 text-center">
-                          <span className="material-symbols-outlined text-slate-300 text-3xl block mb-1">schedule</span>
-                          <p className="text-xs text-slate-400 font-medium">Chọn dịch vụ để xem khung giờ</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {allTimeSlots.map((time) => {
-                            const isAvailable = availableSlots.includes(time);
-                            const isSelected  = selectedTime === time;
-                            return (
-                              <button
-                                key={time}
-                                disabled={!isAvailable}
-                                onClick={() => isAvailable && setSelectedTime(time)}
-                                title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
-                                className={`py-2 text-xs font-semibold rounded border transition-all relative ${
-                                  isSelected
-                                    ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
-                                    : isAvailable
-                                      ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
-                                      : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
-                                }`}
-                              >
-                                {time}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <div className="relative min-h-[180px]">
+                        {slotsLoading && (
+                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-50/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-lg">
+                            <span className="w-5 h-5 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin" />
+                            <span className="text-[10px] text-slate-500 font-semibold">Đang cập nhật...</span>
+                          </div>
+                        )}
+                        {allTimeSlots.length === 0 ? (
+                          <div className="py-8 text-center flex flex-col items-center justify-center h-full">
+                            <span className="material-symbols-outlined text-slate-300 text-3xl block mb-2">schedule</span>
+                            <p className="text-xs text-slate-400 font-medium">Chọn dịch vụ để xem khung giờ</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {allTimeSlots.map((time) => {
+                              const isAvailable = availableSlots.includes(time);
+                              const isSelected  = selectedTime === time;
+                              return (
+                                <button
+                                  key={time}
+                                  disabled={!isAvailable}
+                                  onClick={() => isAvailable && setSelectedTime(time)}
+                                  title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
+                                  className={`py-2 text-xs font-semibold rounded border transition-all relative ${
+                                    isSelected
+                                      ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
+                                      : isAvailable
+                                        ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
+                                        : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Chú thích */}
                       {!slotsLoading && allTimeSlots.length > 0 && (
