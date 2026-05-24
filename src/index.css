@@ -40,6 +40,15 @@
 }
 
 @layer utilities {
+  .text-fluid-xs { font-size: clamp(0.625rem, 0.5vw + 0.5rem, 0.75rem); line-height: 1.5; }
+  .text-fluid-sm { font-size: clamp(0.75rem, 0.6vw + 0.6rem, 0.875rem); line-height: 1.5; }
+  .text-fluid-base { font-size: clamp(0.875rem, 0.7vw + 0.7rem, 1rem); line-height: 1.5; }
+  .text-fluid-lg { font-size: clamp(1rem, 0.8vw + 0.8rem, 1.125rem); line-height: 1.5; }
+  .text-fluid-xl { font-size: clamp(1.125rem, 1vw + 1rem, 1.25rem); line-height: 1.5; }
+  .text-fluid-2xl { font-size: clamp(1.25rem, 1.2vw + 1.1rem, 1.5rem); line-height: 1.5; }
+  .text-fluid-3xl { font-size: clamp(1.5rem, 1.5vw + 1.2rem, 1.875rem); line-height: 1.2; }
+  .text-fluid-4xl { font-size: clamp(1.875rem, 2vw + 1.5rem, 2.25rem); line-height: 1.2; }
+
   .material-symbols-outlined {
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
@@ -58,6 +67,7 @@
     z-index: 0;
     filter: blur(80px);
     opacity: 0.6;
+    pointer-events: none;
   }
 
   .scrollbar-hide::-webkit-scrollbar {
@@ -95,5 +105,22 @@
       radial-gradient(at 0% 0%, hsla(220,100%,15%,1) 0, transparent 60%), 
       radial-gradient(at 50% 0%, hsla(240,100%,20%,1) 0, transparent 60%), 
       radial-gradient(at 100% 0%, hsla(260,100%,15%,1) 0, transparent 60%);
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-receipt, .print-receipt * {
+    visibility: visible;
+  }
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
   }
 }

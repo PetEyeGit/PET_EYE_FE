@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-    Calendar, DollarSign, Users, TrendingUp, Bell, LayoutDashboard,
+    Calendar, DollarSign, Users, TrendingUp, TrendingDown, Bell, LayoutDashboard,
     ArrowUpRight, Video, ChevronRight, MessageCircle, Settings,
     Camera, Package, Activity, Loader2
 } from 'lucide-react';
@@ -127,7 +127,7 @@ export default function ShopDashboard() {
                         <s.icon size={22} />
                     </div>
                 </div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
+                <p className="text-fluid-sm font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{s.value}</h3>
                 <p className="text-[10px] text-slate-400 mt-2 font-medium">{s.desc}</p>
             </Link>
@@ -141,7 +141,7 @@ export default function ShopDashboard() {
                 <div className="flex justify-between items-center mb-10">
                     <div>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">Biểu đồ doanh thu</h3>
-                        <p className="text-xs text-slate-500 font-medium">Theo dõi biến động dòng tiền 7 ngày gần nhất</p>
+                        <p className="text-fluid-sm text-slate-500 font-medium">Theo dõi biến động dòng tiền 7 ngày gần nhất</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-700 rounded-xl">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -220,13 +220,21 @@ export default function ShopDashboard() {
                 <div className="bg-gradient-to-br from-slate-900 to-[#1a2b4c] p-8 rounded-[2.5rem] shadow-xl text-white relative overflow-hidden flex flex-col justify-center">
                     <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-white/5 rounded-full blur-3xl" />
                     <div className="relative z-10">
-                        <TrendingUp size={40} className="mb-6 text-emerald-400" />
+                        {dashboardData?.monthlyGrowthPercentage !== undefined && dashboardData.monthlyGrowthPercentage < 0 ? (
+                            <TrendingDown size={40} className="mb-6 text-red-400" />
+                        ) : (
+                            <TrendingUp size={40} className="mb-6 text-emerald-400" />
+                        )}
                         <h3 className="text-xl font-black mb-2">Tăng trưởng tháng</h3>
-                        <p className="text-4xl font-black mb-4 tracking-tight">+24.8%</p>
-                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                          Hệ thống ghi nhận sự tăng trưởng ổn định nhờ vào dịch vụ Spa và Grooming.
+                        <p className="text-4xl font-black mb-4 tracking-tight">
+                            {dashboardData?.monthlyGrowthPercentage !== undefined 
+                                ? (dashboardData.monthlyGrowthPercentage > 0 ? '+' : '') + dashboardData.monthlyGrowthPercentage.toFixed(1) + '%'
+                                : '0.0%'}
                         </p>
-                        <button className="mt-6 w-full py-3 bg-white text-[#1a2b4c] rounded-xl text-xs font-black shadow-lg">Xem chi tiết</button>
+                        <p className="text-fluid-sm text-slate-300 font-medium leading-relaxed">
+                          {dashboardData?.monthlyGrowthDescription || "Chưa có đủ dữ liệu để đánh giá."}
+                        </p>
+                        <button className="mt-6 w-full py-3 bg-white text-[#1a2b4c] rounded-xl text-fluid-sm font-black shadow-lg">Xem chi tiết</button>
                     </div>
                 </div>
             </div>
@@ -263,14 +271,35 @@ export default function ShopDashboard() {
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Mẹo kinh doanh</h3>
                 </div>
                 <div className="space-y-4">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                        <p className="text-xs font-bold text-[#1a2b4c] dark:text-indigo-400 mb-1">Tối ưu hóa nhân sự</p>
-                        <p className="text-[10px] text-slate-500 leading-relaxed">Bạn có nhiều đơn hàng vào sáng Thứ 7. Hãy đảm bảo đủ nhân viên Spa vào khung giờ này.</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                        <p className="text-xs font-bold text-emerald-600 mb-1">Chương trình khách hàng</p>
-                        <p className="text-[10px] text-slate-500 leading-relaxed">Tặng voucher giảm giá 10% cho khách hàng chưa quay lại trong 2 tháng qua.</p>
-                    </div>
+                    {dashboardData?.pendingBookings && dashboardData.pendingBookings > 0 ? (
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl border border-orange-100 dark:border-orange-900/40">
+                            <p className="text-fluid-sm font-bold text-orange-600 dark:text-orange-400 mb-1">Xử lý đơn chờ</p>
+                            <p className="text-[10px] text-orange-600/80 dark:text-orange-400/80 leading-relaxed">Bạn đang có {dashboardData.pendingBookings} đơn chờ xử lý. Khách hàng sẽ rất vui nếu bạn phản hồi nhanh chóng!</p>
+                        </div>
+                    ) : null}
+                    
+                    {dashboardData?.monthlyGrowthPercentage !== undefined ? (
+                        dashboardData.monthlyGrowthPercentage >= 0 ? (
+                            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                                <p className="text-fluid-sm font-bold text-emerald-600 dark:text-emerald-400 mb-1">Duy trì phong độ</p>
+                                <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 leading-relaxed">
+                                    Doanh thu tháng này đang tăng. Dịch vụ {dashboardData.topServices?.[0]?.name || 'nổi bật nhất'} đang làm rất tốt, hãy tiếp tục duy trì!
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/40">
+                                <p className="text-fluid-sm font-bold text-blue-600 dark:text-blue-400 mb-1">Kích cầu dịch vụ</p>
+                                <p className="text-[10px] text-blue-600/80 dark:text-blue-400/80 leading-relaxed">
+                                    Tháng này hơi vắng khách. Bạn có thể cân nhắc gửi voucher giảm giá 10% để kéo khách quay lại.
+                                </p>
+                            </div>
+                        )
+                    ) : (
+                        <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                            <p className="text-fluid-sm font-bold text-[#1a2b4c] dark:text-indigo-400 mb-1">Khởi đầu suôn sẻ</p>
+                            <p className="text-[10px] text-slate-500 leading-relaxed">Hệ thống đang thu thập dữ liệu kinh doanh của bạn. Các phân tích thông minh sẽ sớm xuất hiện tại đây.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

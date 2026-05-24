@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { icon: 'person', label: 'Thông tin cá nhân', path: '/profile' },
   { icon: 'pets', label: 'Thú cưng của tôi', path: '/profile/pets' },
   { icon: 'calendar_month', label: 'Lịch sử đặt lịch', path: '/profile/bookings' },
+  { icon: 'receipt_long', label: 'Lịch sử giao dịch', path: '/profile/transactions' },
   { icon: 'shield_person', label: 'Bảo mật & Mật khẩu', path: '/profile/security' },
   { icon: 'notifications', label: 'Thông báo', path: '/profile/notifications' },
 ];

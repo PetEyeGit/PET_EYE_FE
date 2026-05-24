@@ -469,10 +469,6 @@ export default function ShopBookings() {
                                 Lịch hẹn
                             </button>
                         </div>
-                        <button className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-[#1a2b4c] text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 hover:scale-[1.02] active:scale-95 transition-all text-xs">
-                            <Plus size={16} />
-                            Tạo đơn mới
-                        </button>
                     </div>
                 </header>
 

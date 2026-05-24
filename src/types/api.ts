@@ -141,6 +141,21 @@ export interface BookingResponse {
   paymentMethod?: string;
 }
 
+export interface TransactionResponse {
+    id: number;
+    type: string;
+    amount: number;
+    paymentMethod: string;
+    status: string;
+    payosOrderCode?: number;
+    gatewayTransactionId?: string;
+    description: string;
+    createdAt: string;
+    bookingId?: number;
+    shopName?: string;
+    serviceName?: string;
+}
+
 export interface CustomerItemResponse {
   id: number;
   name: string;

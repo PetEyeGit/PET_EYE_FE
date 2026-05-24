@@ -31,6 +31,7 @@ import StaffMessages from './pages/staff/StaffMessages';
 import Profile, { ProfileLayout } from './pages/Profile';
 import OrderHistory from './pages/OrderHistory';
 import BookingHistory from './pages/BookingHistory';
+import TransactionHistory from './pages/TransactionHistory';
 import ClinicDetail from './pages/ClinicDetail';
 import PetProfile from './pages/PetProfile';
 import Messaging from './pages/Messaging';
@@ -159,6 +160,7 @@ function AppLayout() {
             <Route index element={<Profile />} />
             <Route path="pets" element={<ProfilePets />} />
             <Route path="bookings" element={<BookingHistory />} />
+            <Route path="transactions" element={<TransactionHistory />} />
             <Route path="orders" element={<OrderHistory />} />
             <Route path="security" element={<ProfileSecurity />} />
             <Route path="notifications" element={<ProfileNotifications />} />
