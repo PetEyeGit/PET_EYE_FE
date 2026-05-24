@@ -138,6 +138,7 @@ export interface BookingResponse {
   createdAt: string;
   checkoutUrl?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 export interface CustomerItemResponse {

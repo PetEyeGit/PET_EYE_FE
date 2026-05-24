@@ -396,14 +396,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                                 <AlertCircle size={14} /> Đang chờ shop duyệt hủy
                             </div>
                         )}
-                        {isOld && (
-                            <button
-                                onClick={() => setIsExpanded(false)}
-                                className="px-5 py-2.5 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition-all flex items-center gap-2"
-                            >
-                                Thu gọn
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setIsExpanded(false)}
+                            className="px-5 py-2.5 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition-all flex items-center gap-2"
+                        >
+                            Thu gọn
+                        </button>
                         <Link to={`/clinic/${booking.shopId}`} className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary transition-all">
                             <ChevronRight size={20} />
                         </Link>
@@ -429,6 +427,7 @@ export default function BookingHistory() {
     const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
     const [cancelReasonOption, setCancelReasonOption] = useState<string>('');
     const [cancelReasonOther, setCancelReasonOther] = useState('');
+    const [cancelBankOption, setCancelBankOption] = useState('Vietcombank');
     const [cancelBankName, setCancelBankName] = useState('');
     const [cancelBankAccount, setCancelBankAccount] = useState('');
     const [cancelAccountHolder, setCancelAccountHolder] = useState('');
@@ -458,6 +457,17 @@ export default function BookingHistory() {
         onSettled: () => setCancellingId(null),
     });
 
+    const directCancelMutation = useMutation({
+        mutationFn: (id: number) => bookingService.cancel(id),
+        onMutate: () => setCancellingId(selectedBooking?.id || null),
+        onSuccess: () => {
+            toast.success('Hủy lịch thành công');
+            qc.invalidateQueries({ queryKey: ['my-bookings'] });
+        },
+        onError: () => toast.error('Không thể hủy lịch. Vui lòng thử lại.'),
+        onSettled: () => setCancellingId(null),
+    });
+
     const handleOpenReview = (booking: BookingResponse) => {
         setSelectedBooking(booking);
         setRating(5);
@@ -469,6 +479,7 @@ export default function BookingHistory() {
         setSelectedBooking(booking);
         setCancelReasonOption('');
         setCancelReasonOther('');
+        setCancelBankOption('Vietcombank');
         setCancelBankName('');
         setCancelBankAccount('');
         setCancelAccountHolder('');
@@ -478,19 +489,33 @@ export default function BookingHistory() {
     const handleSubmitCancelRequest = async () => {
         if (!selectedBooking) return;
         const reason = cancelReasonOption === 'OTHER' ? cancelReasonOther.trim() : cancelReasonOption;
+        
         if (!reason) {
             toast.error('Vui lòng chọn hoặc nhập lý do hủy');
             return;
         }
-        if (!cancelBankName.trim() || !cancelBankAccount.trim() || !cancelAccountHolder.trim()) {
+
+        if (selectedBooking.paymentMethod === 'CASH_DEPOSIT') {
+            try {
+                await directCancelMutation.mutateAsync(selectedBooking.id);
+                setShowCancelModal(false);
+            } catch {
+                setShowCancelModal(false);
+            }
+            return;
+        }
+
+        const finalBankName = cancelBankOption === 'OTHER' ? cancelBankName.trim() : cancelBankOption;
+
+        if (!finalBankName || !cancelBankAccount.trim() || !cancelAccountHolder.trim()) {
             toast.error('Vui lòng cung cấp đầy đủ thông tin ngân hàng để nhận hoàn tiền');
             return;
         }
         try {
-            cancelMutation.mutate({
+            await cancelMutation.mutateAsync({
                 id: selectedBooking.id,
                 reason,
-                bankName: cancelBankName.trim(),
+                bankName: finalBankName,
                 bankAccount: cancelBankAccount.trim(),
                 accountHolder: cancelAccountHolder.trim(),
             });
@@ -789,9 +814,9 @@ export default function BookingHistory() {
                             initial={{ opacity: 0, scale: 0.94, y: 28 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.94, y: 28 }}
-                            className="relative w-full max-w-2xl bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
+                            className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
                         >
-                            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 p-8 text-white">
+                            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 p-8 text-white shrink-0">
                                 <div className="flex items-start gap-4">
                                     <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-rose-500/20">
                                         <XCircle size={32} className="text-white" />
@@ -803,7 +828,7 @@ export default function BookingHistory() {
                                 </div>
                             </div>
 
-                            <div className="p-8 space-y-6">
+                            <div className="p-8 space-y-6 overflow-y-auto">
                                 <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-center rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5">
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Đơn hàng</p>
@@ -857,40 +882,70 @@ export default function BookingHistory() {
                                     </div>
                                 )}
 
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Ngân hàng</label>
-                                        <input
-                                            value={cancelBankName}
-                                            onChange={e => setCancelBankName(e.target.value)}
-                                            placeholder="Ví dụ: Vietcombank"
-                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
+                                {selectedBooking.paymentMethod === 'CASH_DEPOSIT' ? (
+                                    <div className="rounded-[2rem] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-5 text-sm text-orange-700 dark:text-orange-400">
+                                        <p className="font-bold">Lưu ý về đơn đặt cọc:</p>
+                                        <p className="mt-2 leading-6">Đây là đơn chỉ đặt cọc (10%). Theo chính sách, bạn sẽ không được hoàn lại phí cọc khi tự hủy lịch. Đơn sẽ được chuyển sang trạng thái ĐÃ HỦY ngay lập tức.</p>
                                     </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Số tài khoản</label>
-                                        <input
-                                            value={cancelBankAccount}
-                                            onChange={e => setCancelBankAccount(e.target.value)}
-                                            placeholder="Nhập số tài khoản"
-                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên người hưởng thụ</label>
-                                    <input
-                                        value={cancelAccountHolder}
-                                        onChange={e => setCancelAccountHolder(e.target.value)}
-                                        placeholder="Nhập tên chủ tài khoản"
-                                        className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                    />
-                                </div>
-
-                                <div className="rounded-[2rem] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 text-sm text-slate-500 dark:text-slate-400">
-                                    <p className="font-bold text-slate-700 dark:text-slate-200">Lưu ý:</p>
-                                    <p className="mt-2 leading-6">Shop sẽ xem xét yêu cầu hủy và phản hồi trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi yêu cầu được duyệt hoặc từ chối.</p>
-                                </div>
+                                ) : (
+                                    <>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Ngân hàng</label>
+                                                <select
+                                                    value={cancelBankOption}
+                                                    onChange={e => setCancelBankOption(e.target.value)}
+                                                    className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 appearance-none"
+                                                >
+                                                    <option value="Vietcombank">Vietcombank</option>
+                                                    <option value="Techcombank">Techcombank</option>
+                                                    <option value="MBBank">MBBank</option>
+                                                    <option value="VietinBank">VietinBank</option>
+                                                    <option value="BIDV">BIDV</option>
+                                                    <option value="Agribank">Agribank</option>
+                                                    <option value="ACB">ACB</option>
+                                                    <option value="TPBank">TPBank</option>
+                                                    <option value="VPBank">VPBank</option>
+                                                    <option value="Sacombank">Sacombank</option>
+                                                    <option value="OTHER">Khác</option>
+                                                </select>
+                                            </div>
+                                            {cancelBankOption === 'OTHER' && (
+                                                <div className="space-y-3 sm:col-span-2">
+                                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên ngân hàng thụ hưởng</label>
+                                                    <input
+                                                        value={cancelBankName}
+                                                        onChange={e => setCancelBankName(e.target.value)}
+                                                        placeholder="Ví dụ: VIB, OCB, Bản Việt..."
+                                                        className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="space-y-3">
+                                                <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Số tài khoản</label>
+                                                <input
+                                                    value={cancelBankAccount}
+                                                    onChange={e => setCancelBankAccount(e.target.value)}
+                                                    placeholder="Nhập số tài khoản"
+                                                    className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên người hưởng thụ</label>
+                                            <input
+                                                value={cancelAccountHolder}
+                                                onChange={e => setCancelAccountHolder(e.target.value)}
+                                                placeholder="Nhập tên chủ tài khoản"
+                                                className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                            />
+                                        </div>
+                                        <div className="rounded-[2rem] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 text-sm text-slate-500 dark:text-slate-400">
+                                            <p className="font-bold text-slate-700 dark:text-slate-200">Lưu ý:</p>
+                                            <p className="mt-2 leading-6">Shop sẽ xem xét yêu cầu hủy và phản hồi trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi yêu cầu được duyệt hoặc từ chối.</p>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <button
@@ -904,7 +959,7 @@ export default function BookingHistory() {
                                         disabled={cancelMutation.isLoading}
                                         className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
-                                        {cancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
+                                        {cancelMutation.isLoading || directCancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
                                     </button>
                                 </div>
                             </div>
