@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -17,8 +17,8 @@
   --color-card-light: #ffffff;
   --color-card-dark: #1e293b;
 
-  --font-display: "Outfit", "Inter", sans-serif;
-  --font-sans: "Inter", "Outfit", sans-serif;
+  --font-display: "Roboto", sans-serif;
+  --font-sans: "Roboto", sans-serif;
 
   --radius-DEFAULT: 0.5rem;
   --radius-lg: 1rem;
@@ -35,7 +35,7 @@
 @layer base {
   body {
     @apply antialiased bg-background-light text-slate-900 selection:bg-primary/30;
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: 'Roboto', sans-serif;
   }
 }
 
@@ -88,7 +88,7 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-secondary;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-secondary;
   }
 
   .animate-float {

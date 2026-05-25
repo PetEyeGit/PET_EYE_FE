@@ -212,8 +212,10 @@ export default function Home() {
       <section id="co-so" className="py-32 px-6 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-20">
-            <div className="max-w-2xl space-y-4">
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-xs">Gợi ý tốt nhất</span>
+            <div className="max-w-2xl space-y-6">
+              <span className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider w-fit">
+                Gợi ý tốt nhất
+              </span>
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white leading-[1.1]">
                 Khám phá dịch vụ <br />
                 <span className="text-gradient">Được yêu thích</span>
@@ -311,8 +313,8 @@ export default function Home() {
                   Tính năng độc quyền
                 </span>
                 <h2 className="text-5xl md:text-7xl font-black text-white leading-[1.1]">
-                  An tâm tuyệt đối với <br />
-                  <span className="text-gradient">Live Camera</span>
+                  An tâm tuyệt đối <br />
+                  với <span className="text-gradient">Live Camera</span>
                 </h2>
                 <p className="text-lg text-slate-400 leading-relaxed font-medium">
                   Theo dõi trực tiếp mọi khoảnh khắc của bé yêu 24/7 từ điện thoại. Bạn sẽ luôn cảm thấy gần gũi dù đang ở bất cứ đâu.
@@ -359,19 +361,19 @@ export default function Home() {
                 <div className="relative aspect-video rounded-[40px] overflow-hidden bg-black">
                   <img src={cameraPreview} alt="Live feed" className="w-full h-full object-cover opacity-80" />
                   <div className="absolute top-6 left-6 flex items-center gap-3">
-                    <div className="px-4 py-2 rounded-full glass text-[10px] font-black text-white flex items-center gap-2">
+                    <div className="px-4 py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-black text-white flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                       LIVE FEED
                     </div>
-                    <span className="text-[10px] font-bold text-white/60 tracking-widest uppercase">REC 00:42:15</span>
+                    <span className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/5 text-[10px] font-bold text-white/80 tracking-widest uppercase">REC 00:42:15</span>
                   </div>
                   <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
-                    <div className="glass p-3 rounded-2xl">
+                    <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-2xl">
                       <p className="text-xs font-black text-white">Lucky - Golden Retriever</p>
-                      <p className="text-[10px] font-medium text-white/60">Deluxe Room 102</p>
+                      <p className="text-[10px] font-medium text-white/70">Deluxe Room 102</p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="w-10 h-10 rounded-xl glass flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white cursor-pointer hover:bg-white/20 transition-colors">
                         <Video size={16} />
                       </div>
                       <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform">
@@ -391,8 +393,12 @@ export default function Home() {
       </section>
 
       {/* How it Works - Timeline */}
-      <section id="quy-trinh" className="py-32 px-6 bg-white dark:bg-slate-900">
-        <div className="max-w-7xl mx-auto">
+      <section id="quy-trinh" className="py-32 px-6 bg-slate-50/50 dark:bg-slate-950/40 relative overflow-hidden">
+        {/* Background glow spots */}
+        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24 space-y-6">
             <span className="text-primary font-black uppercase tracking-[0.3em] text-xs">Quy trình thông minh</span>
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -401,37 +407,68 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12 relative">
-            {/* Connector Line */}
-            <div className="absolute top-24 left-[15%] right-[15%] h-1 border-t-4 border-dashed border-slate-100 dark:border-slate-800 hidden md:block" />
-            
+          <div className="grid md:grid-cols-3 gap-8 relative">
             {[
-              { t: "Tìm & So sánh", d: "Dễ dàng tìm thấy các cơ sở quanh bạn với đầy đủ thông tin giá cả và đánh giá.", n: "01", icon: <Search size={32} /> },
-              { t: "Đặt lịch 24/7", d: "Chọn khung giờ phù hợp và đặt lịch ngay lập tức mà không cần gọi điện.", n: "02", icon: <Sparkles size={32} /> },
-              { t: "Trải nghiệm & Review", d: "Theo dõi qua Camera, nhận thú cưng và chia sẻ đánh giá của bạn.", n: "03", icon: <Heart size={32} /> }
+              { 
+                t: "Tìm & So sánh", 
+                d: "Dễ dàng tìm thấy các cơ sở quanh bạn với đầy đủ thông tin giá cả và đánh giá.", 
+                n: "01", 
+                icon: <Search size={28} />,
+                colorClass: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-100 dark:border-blue-900/30",
+                gradClass: "from-blue-500 to-indigo-600"
+              },
+              { 
+                t: "Đặt lịch 24/7", 
+                d: "Chọn khung giờ phù hợp và đặt lịch ngay lập tức mà không cần gọi điện.", 
+                n: "02", 
+                icon: <Sparkles size={28} />,
+                colorClass: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 border-purple-100 dark:border-purple-900/30",
+                gradClass: "from-purple-500 to-pink-600"
+              },
+              { 
+                t: "Trải nghiệm & Review", 
+                d: "Theo dõi qua Camera, nhận thú cưng và chia sẻ đánh giá của bạn.", 
+                n: "03", 
+                icon: <Heart size={28} />,
+                colorClass: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border-rose-100 dark:border-rose-900/30",
+                gradClass: "from-rose-500 to-orange-500"
+              }
             ].map((step, i) => (
               <motion.div 
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="relative flex flex-col items-center text-center gap-8 group"
+                transition={{ delay: i * 0.2, duration: 0.6, ease: "easeOut" }}
+                className="relative flex flex-col items-start gap-6 group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-[36px] p-8 md:p-10 shadow-soft hover:shadow-hover transition-all duration-500 hover:-translate-y-2 overflow-hidden"
               >
-                <div className="w-48 h-48 rounded-[40px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center relative group-hover:bg-primary/5 transition-all group-hover:-translate-y-4 duration-500">
-                  <div className="text-primary group-hover:scale-110 transition-transform duration-500">
+                {/* Big decorative step number */}
+                <div className="absolute -bottom-6 -right-4 text-9xl font-black text-slate-100 dark:text-slate-800/35 select-none opacity-40 group-hover:scale-110 group-hover:opacity-60 transition-all duration-500 pointer-events-none font-display">
+                  {step.n}
+                </div>
+
+                {/* Top Row: Icon Container and Small Badge */}
+                <div className="flex items-center justify-between w-full relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-sm ${step.colorClass}`}>
                     {step.icon}
                   </div>
-                  <div className="absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center font-black text-primary border border-slate-100 dark:border-slate-800">
-                    {step.n}
-                  </div>
+                  <span className="text-[11px] font-black tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+                    Bước {step.n}
+                  </span>
                 </div>
-                <div className="space-y-3 px-4">
-                  <h4 className="text-2xl font-black text-slate-900 dark:text-white">{step.t}</h4>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+
+                {/* Text Content */}
+                <div className="space-y-3 relative z-10 mt-4">
+                  <h4 className="text-2xl font-black text-slate-900 dark:text-white group-hover:text-primary dark:group-hover:text-indigo-400 transition-colors duration-300">
+                    {step.t}
+                  </h4>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed text-sm max-w-[90%]">
                     {step.d}
                   </p>
                 </div>
+
+                {/* Bottom line hover effect */}
+                <div className={`absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r ${step.gradClass} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left`} />
               </motion.div>
             ))}
           </div>

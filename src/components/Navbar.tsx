@@ -66,7 +66,7 @@ function GuestNavbar() {
             { label: 'Quy trình', id: 'quy-trinh' },
           ].map(item => (
             <button key={item.id} onClick={() => goto(item.id)}
-              className="h-10 px-5 rounded-xl text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:bg-primary/5 transition-all">
+              className="h-10 px-5 rounded-xl text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-secondary dark:hover:text-secondary hover:bg-secondary/5 transition-all">
               {item.label}
             </button>
           ))}
@@ -183,18 +183,21 @@ function AuthNavbar() {
         <nav className="hidden md:flex items-center gap-1 ml-4">
           {NAV.map(item => (
             <Link key={item.to} to={item.to}
-              className={`relative h-10 px-5 rounded-xl font-black text-[13.5px] transition-all flex items-center group
-                ${active(item.to)
-                  ? 'text-primary'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
-              <span className="relative z-10">{item.label}</span>
+              className="relative h-10 px-5 rounded-xl font-black text-[13.5px] transition-all flex items-center group">
+              <span className={`relative z-10 ${
+                active(item.to)
+                  ? 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent dark:from-white dark:to-secondary'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}>
+                {item.label}
+              </span>
               {active(item.to) && (
                 <motion.div
                   layoutId="nav-pill"
-                  className="absolute inset-0 bg-primary/5 rounded-xl"
+                  className="absolute inset-0 bg-primary/[0.03] dark:bg-white/[0.03] rounded-xl animate-fade-in"
                 />
               )}
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0" />
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0" />
             </Link>
           ))}
         </nav>

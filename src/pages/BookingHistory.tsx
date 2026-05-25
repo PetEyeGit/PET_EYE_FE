@@ -102,7 +102,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
     const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED' || booking.status === 'WAITING_REFUND';
-    const [isExpanded, setIsExpanded] = useState(!isOld);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
         queryKey: ['staffChangeRequest', booking.id],

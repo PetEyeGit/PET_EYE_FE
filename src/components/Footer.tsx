@@ -34,9 +34,9 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Cột 3: Về Peteye */}
+                    {/* Cột 3: Về PetEye */}
                     <div>
-                        <h5 className="font-bold mb-6 text-base tracking-wide">Về Peteye</h5>
+                        <h5 className="font-bold mb-6 text-base tracking-wide">Về PetEye</h5>
                         <ul className="space-y-3.5 text-sm text-slate-300">
                             <li><a className="hover:text-white transition-colors" href="#">Câu chuyện thương hiệu</a></li>
                             <li><a className="hover:text-white transition-colors" href="#">Tuyển dụng</a></li>
@@ -59,7 +59,7 @@ export default function Footer() {
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-[20px] shrink-0">mail</span>
-                                <span>hotro@Peteye.vn</span>
+                                <span>hotro@peteye.vn</span>
                             </li>
                         </ul>
                     </div>
@@ -67,7 +67,7 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="border-t border-slate-800/80 mt-16 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[13px] text-slate-400">
-                    <p>© 2026 Peteye Platform. All rights reserved.</p>
+                    <p>© 2026 PetEye Platform. All rights reserved.</p>
                     <div className="flex gap-6">
                         <a className="hover:text-white transition-colors" href="#">Điều khoản sử dụng</a>
                         <a className="hover:text-white transition-colors" href="#">Chính sách bảo mật</a>
