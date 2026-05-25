@@ -132,22 +132,33 @@ export default function ShopHeader() {
           {userMenuOpen && (
             <div className="absolute top-full right-0 mt-4 w-60 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 py-3 overflow-hidden">
                {[
-                { to: '/shop/profile', icon: Store, label: 'Thông tin cửa hàng' },
-                { to: '/shop/messages', icon: MessageCircle, label: 'Tin nhắn' },
-                { to: '/shop/dashboard', icon: BarChart3, label: 'Dashboard' },
-                { to: '/shop/settings', icon: Settings, label: 'Cài đặt' },
-              ].map(item => (
+                { action: 'link', to: '/shop/profile', icon: Store, label: 'Thông tin cửa hàng' },
+                { action: 'link', to: '/shop/messages', icon: MessageCircle, label: 'Tin nhắn' },
+                { action: 'link', to: '/shop/dashboard', icon: BarChart3, label: 'Dashboard' },
+                { action: 'link', to: '/shop/notifications', icon: Bell, label: 'Thông báo' },
+              ].map((item, index) => (
+                item.action === 'link' ? (
                 <Link 
                   key={item.to} 
-                  to={item.to}
+                  to={item.to!}
                   onClick={() => setUserMenuOpen(false)}
                   className={`flex items-center gap-3 px-5 py-2.5 text-[13px] font-bold transition-colors ${
-                    isActive(item.to) ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                    isActive(item.to!) ? 'text-primary bg-primary/5' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <item.icon size={16} className={isActive(item.to) ? 'text-primary' : 'text-slate-400'} />
+                  <item.icon size={16} className={isActive(item.to!) ? 'text-primary' : 'text-slate-400'} />
                   {item.label}
                 </Link>
+                ) : (
+                <button
+                  key="notif"
+                  onClick={() => { setUserMenuOpen(false); setNotifOpen(true); }}
+                  className="w-full flex items-center gap-3 px-5 py-2.5 text-[13px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors text-left"
+                >
+                  <item.icon size={16} className="text-slate-400" />
+                  {item.label}
+                </button>
+                )
               ))}
               <div className="h-px bg-slate-50 dark:bg-slate-800 my-2" />
               <button 

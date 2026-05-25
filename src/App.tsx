@@ -20,6 +20,7 @@ import ShopCamera from './pages/shop/ShopCamera';
 import ShopMessages from './pages/shop/ShopMessages';
 import ShopStaff from './pages/shop/ShopStaff';
 import ShopReviews from './pages/shop/ShopReviews';
+import ShopNotifications from './pages/shop/ShopNotifications';
 import ShopAIAssistant from './pages/shop/ShopAIAssistant';
 
 import StaffLayout from './pages/staff/StaffLayout';
@@ -143,6 +144,7 @@ function AppLayout() {
             <Route path="reviews" element={<ShopReviews />} />
             <Route path="profile" element={<ShopProfile />} />
             <Route path="wallet" element={<ShopWallet />} />
+            <Route path="notifications" element={<ShopNotifications />} />
             <Route path="ai-assistant" element={<ShopAIAssistant />} />
           </Route>
 

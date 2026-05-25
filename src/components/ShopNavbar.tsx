@@ -193,15 +193,16 @@ export default function ShopNavbar() {
                   </div>
 
                   {[
-                    { to: '/shop/profile', icon: <Store className="w-3.5 h-3.5" />, label: 'Thông tin cửa hàng' },
-                    { to: '/shop/messages', icon: <MessageCircle className="w-3.5 h-3.5" />, label: 'Tin nhắn' },
-                    { to: '/shop/dashboard', icon: <BarChart3 className="w-3.5 h-3.5" />, label: 'Dashboard' },
-                    { to: '/shop/settings', icon: <Settings className="w-3.5 h-3.5" />, label: 'Cài đặt' },
-                  ].map(item => (
-                    <Link key={item.to} to={item.to}
+                    { action: 'link', to: '/shop/profile', icon: <Store className="w-3.5 h-3.5" />, label: 'Thông tin cửa hàng' },
+                    { action: 'link', to: '/shop/messages', icon: <MessageCircle className="w-3.5 h-3.5" />, label: 'Tin nhắn' },
+                    { action: 'link', to: '/shop/dashboard', icon: <BarChart3 className="w-3.5 h-3.5" />, label: 'Dashboard' },
+                    { action: 'link', to: '/shop/notifications', icon: <Bell className="w-3.5 h-3.5" />, label: 'Thông báo' },
+                  ].map((item, index) => (
+                    item.action === 'link' ? (
+                    <Link key={item.to} to={item.to!}
                       onClick={() => setUserMenuOpen(false)}
                       className={`flex items-center gap-2.5 px-3.5 py-2 text-[13px] transition-colors ${
-                        isActive(item.to) 
+                        isActive(item.to!) 
                           ? 'text-primary bg-primary/5' 
                           : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white'
                       }`}
@@ -209,6 +210,15 @@ export default function ShopNavbar() {
                       <span className="text-slate-400 dark:text-slate-500">{item.icon}</span>
                       <span className="flex-1">{item.label}</span>
                     </Link>
+                    ) : (
+                    <button key="notif"
+                      onClick={() => { setUserMenuOpen(false); setNotifOpen(true); }}
+                      className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white`}
+                    >
+                      <span className="text-slate-400 dark:text-slate-500">{item.icon}</span>
+                      <span className="flex-1 text-left">{item.label}</span>
+                    </button>
+                    )
                   ))}
 
                   <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1">

@@ -575,45 +575,45 @@ export default function ShopStaff() {
                     </div>
                 ) : (
                     /* Settings Tab (Redesigned) */
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-2 space-y-8">
-                            <div className="bg-white dark:bg-slate-900 p-12 rounded-[4rem] shadow-xl border border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center gap-5 mb-10">
-                                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-3xl flex items-center justify-center">
-                                        <Zap size={32} />
+                            <div className="bg-white dark:bg-slate-900 p-6 lg:p-8 2xl:p-10 rounded-3xl lg:rounded-[3rem] shadow-xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-5 mb-8">
+                                    <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
+                                        <Zap size={28} />
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Cơ chế vận hành</h3>
-                                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Lựa chọn cách thức phân bổ công việc</p>
+                                        <h3 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Cơ chế vận hành</h3>
+                                        <p className="text-slate-400 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-1">Lựa chọn cách thức phân bổ công việc</p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-5">
+                                <div className="grid grid-cols-1 gap-4">
                                     {[
                                         { id: 'MANUAL', title: 'Chỉ định thủ công', desc: 'Chủ shop trực tiếp gán đơn cho nhân viên phù hợp.', icon: Shield, color: 'indigo' },
                                         { id: 'OPEN_POOL', title: 'Nhân viên tự nhận', desc: 'Đơn vào kho chung, nhân viên rảnh sẽ tự nhận nhiệm vụ.', icon: Users, color: 'primary' },
                                         { id: 'AUTO', title: 'Tự động gán (AI)', desc: 'Hệ thống tự phân bổ dựa trên chuyên môn & hiệu suất.', icon: Star, color: 'amber' },
                                     ].map(mode => (
                                         <button key={mode.id} onClick={() => setAssignMode(mode.id as any)}
-                                            className={`group flex items-start gap-6 p-8 rounded-[3rem] border-2 transition-all text-left relative overflow-hidden ${assignMode === mode.id ? 'border-primary bg-primary/[0.02]' : 'border-slate-50 dark:border-slate-800 hover:border-primary/20 bg-slate-50/50 dark:bg-slate-800/50'}`}>
-                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-all ${assignMode === mode.id ? 'bg-primary text-white scale-110' : 'bg-white dark:bg-slate-900 text-slate-400 group-hover:text-primary'}`}>
-                                                <mode.icon size={28} />
+                                            className={`group flex items-start gap-4 lg:gap-6 p-5 lg:p-6 rounded-2xl lg:rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${assignMode === mode.id ? 'border-primary bg-primary/[0.02]' : 'border-slate-50 dark:border-slate-800 hover:border-primary/20 bg-slate-50/50 dark:bg-slate-800/50'}`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-lg transition-all ${assignMode === mode.id ? 'bg-primary text-white scale-110' : 'bg-white dark:bg-slate-900 text-slate-400 group-hover:text-primary'}`}>
+                                                <mode.icon size={24} />
                                             </div>
                                             <div className="flex-1">
-                                                <h4 className={`text-lg font-black mb-1 transition-colors ${assignMode === mode.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{mode.title}</h4>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{mode.desc}</p>
+                                                <h4 className={`text-base lg:text-lg font-black mb-1 transition-colors ${assignMode === mode.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>{mode.title}</h4>
+                                                <p className="text-[10px] lg:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{mode.desc}</p>
                                             </div>
-                                            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${assignMode === mode.id ? 'border-primary bg-primary scale-110' : 'border-slate-300'}`}>
-                                                {assignMode === mode.id && <div className="w-2.5 h-2.5 bg-white rounded-full shadow-inner" />}
+                                            <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full border-2 flex items-center justify-center transition-all ${assignMode === mode.id ? 'border-primary bg-primary scale-110' : 'border-slate-300'}`}>
+                                                {assignMode === mode.id && <div className="w-2 h-2 lg:w-2.5 lg:h-2.5 bg-white rounded-full shadow-inner" />}
                                             </div>
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className="mt-12 flex justify-end">
+                                <div className="mt-8 flex justify-end">
                                     <button onClick={handleSaveMode} disabled={savingMode}
-                                        className="px-12 py-5 bg-primary text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 flex items-center gap-3 hover:scale-105 active:scale-95 disabled:opacity-60 transition-all">
-                                        {savingMode ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                                        className="px-8 lg:px-10 py-4 bg-primary text-white rounded-2xl font-black uppercase text-[10px] lg:text-xs tracking-[0.15em] lg:tracking-[0.2em] shadow-xl shadow-primary/30 flex items-center gap-3 hover:scale-105 active:scale-95 disabled:opacity-60 transition-all">
+                                        {savingMode ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                                         {savingMode ? 'Đang cập nhật...' : 'Lưu cấu hình vận hành'}
                                     </button>
                                 </div>
@@ -621,22 +621,41 @@ export default function ShopStaff() {
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-                            <div className="bg-gradient-to-br from-slate-900 to-primary p-12 rounded-[4rem] shadow-2xl text-white relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                            <div className="bg-gradient-to-br from-slate-900 to-primary p-6 lg:p-8 2xl:p-10 rounded-3xl lg:rounded-[3rem] shadow-2xl text-white relative overflow-hidden lg:sticky lg:top-8">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                                 <div className="relative z-10">
-                                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center mb-8 border border-white/10 shadow-inner">
-                                        <Info size={32} className="text-white/80" />
+                                    <div className="w-12 h-12 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/10 shadow-inner">
+                                        <Info size={24} className="text-white/80" />
                                     </div>
-                                    <h3 className="text-2xl font-black mb-6 tracking-tight">Gợi ý quản trị</h3>
-                                    <p className="text-sm text-white/70 leading-relaxed font-medium mb-8">
-                                        Để tối ưu hóa trải nghiệm khách hàng, chúng tôi khuyên bạn nên sử dụng chế độ <b>"AI Tự động gán"</b>. 
-                                        Hệ thống sẽ đảm bảo thú cưng luôn được chăm sóc bởi nhân viên có chuyên môn phù hợp nhất vào thời điểm đó.
-                                    </p>
-                                    <div className="p-6 bg-white/10 rounded-3xl border border-white/10">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">Trạng thái hệ thống</p>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                            <span className="text-xs font-black uppercase">Đang tối ưu hóa (Stable)</span>
+                                    <h3 className="text-xl lg:text-2xl font-black mb-5 tracking-tight">Cẩm nang vận hành</h3>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors">
+                                            <h4 className="text-xs lg:text-sm font-black mb-1 flex items-center gap-2 text-indigo-300">
+                                                <Shield size={14} /> 1. Chỉ định thủ công
+                                            </h4>
+                                            <p className="text-[10px] lg:text-xs text-white/70 leading-relaxed font-medium">
+                                                Phù hợp mô hình nhỏ. Chủ shop kiểm soát 100% việc giao đơn cho từng nhân sự.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/15 transition-colors">
+                                            <h4 className="text-xs lg:text-sm font-black mb-1 flex items-center gap-2 text-sky-300">
+                                                <Users size={14} /> 2. Nhân viên tự nhận
+                                            </h4>
+                                            <p className="text-[10px] lg:text-xs text-white/70 leading-relaxed font-medium">
+                                                Phù hợp văn hóa chủ động. Đơn rơi vào kho chung, ai rảnh sẽ bấm nhận, giảm tải cho quản lý.
+                                            </p>
+                                        </div>
+
+                                        <div className="p-4 bg-white/10 rounded-2xl border border-amber-500/30 backdrop-blur-sm hover:bg-white/15 transition-colors relative overflow-hidden">
+                                            <div className="absolute -right-4 -top-4 w-12 h-12 bg-amber-500/20 blur-xl rounded-full" />
+                                            <h4 className="text-xs lg:text-sm font-black mb-1 flex items-center gap-2 text-amber-400">
+                                                <Star size={14} /> 3. Tự động gán (AI)
+                                            </h4>
+                                            <p className="text-[10px] lg:text-xs text-white/70 leading-relaxed font-medium relative z-10">
+                                                Tối ưu cho shop bận rộn. AI phân tích lịch trống & chuyên môn để chia đơn đều tay và chuẩn xác nhất.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
