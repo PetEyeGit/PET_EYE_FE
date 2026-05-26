@@ -1299,6 +1299,10 @@ export default function PetProfile() {
                                 <Syringe size={14} className="text-indigo-500 mt-0.5" />
                                 <p className="text-xs text-slate-600 dark:text-slate-400"><span className="font-bold text-slate-900 dark:text-white">Đơn thuốc:</span> {record.prescription || '—'}</p>
                               </div>
+                              <div className="flex items-start gap-2">
+                                <Stethoscope size={14} className="text-blue-500 mt-0.5" />
+                                <p className="text-xs text-slate-600 dark:text-slate-400"><span className="font-bold text-slate-900 dark:text-white">Phụ trách:</span> {record.staffName || 'Không rõ'}</p>
+                              </div>
                             </div>
                             {record.veterinarianNote && (
                               <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">

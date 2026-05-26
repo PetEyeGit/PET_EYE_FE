@@ -5,13 +5,14 @@ import {
     Calendar, Clock, Plus, Home, Stethoscope, Scissors,
     Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
     ChevronRight, MessageCircle, RefreshCw, Sparkles,
-    Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus,
-    Activity, Utensils, Syringe, BookOpen
+    Search, ArrowUpRight, Wallet, Heart, Info, X, Check, UserPlus, User,
+    Activity, Utensils, Syringe, BookOpen, Save, Bookmark
 } from 'lucide-react';
 import { bookingService } from '../services/booking.service';
 import { reviewService } from '../services/review.service';
 import { taskService } from '../services/task.service';
 import { careLogService } from '../services/care-log.service';
+import { petService } from '../services/pet.service';
 import type { BookingResponse } from '../types/api';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -69,7 +70,7 @@ const TABS: { key: TabKey; label: string }[] = [
     { key: 'all', label: 'Tất cả' },
     { key: 'upcoming', label: 'Sắp tới' },
     { key: 'active', label: 'Đang diễn ra' },
-    { key: 'completed', label: 'Lịch sử' },
+    { key: 'completed', label:'Đã hoàn tất' },
     { key: 'cancelled', label: 'Đã huỷ' },
 ];
 
@@ -103,6 +104,20 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
     const [showLogs, setShowLogs] = useState(false);
     const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED' || booking.status === 'WAITING_REFUND';
     const [isExpanded, setIsExpanded] = useState(false);
+    const [savingAlbumId, setSavingAlbumId] = useState<number | null>(null);
+
+    const handleSaveAlbum = async (logId: number) => {
+        if (!booking.petId || !logId) return;
+        setSavingAlbumId(logId);
+        try {
+            await petService.saveAlbumImageFromCareLog(booking.petId, logId);
+            toast.success('Đã lưu ảnh vào Album của bé!');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Không thể lưu ảnh');
+        } finally {
+            setSavingAlbumId(null);
+        }
+    };
 
     const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
         queryKey: ['staffChangeRequest', booking.id],
@@ -225,7 +240,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-3xl border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center text-primary shadow-sm">
                             <cat.icon size={20} />
@@ -249,6 +264,17 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                 {format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center text-primary shadow-sm">
+                            <User size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nhân viên</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">
+                                {booking.staffName || 'Chưa phân công'}
                             </p>
                         </div>
                     </div>
@@ -340,8 +366,18 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                                                     {log.note}
                                                 </p>
                                                 {log.imageUrl && (
-                                                    <div className="mt-3 max-w-sm rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+                                                    <div className="mt-3 max-w-sm rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 relative group/img">
                                                         <img src={log.imageUrl} alt="Đính kèm" className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500" />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); handleSaveAlbum(log.id); }}
+                                                                disabled={savingAlbumId === log.id}
+                                                                className="px-4 py-2 bg-white/90 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-xl hover:bg-white transition-all flex items-center gap-2 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                                                            >
+                                                                {savingAlbumId === log.id ? <Loader2 size={14} className="animate-spin" /> : <Bookmark size={14} />}
+                                                                Lưu vào Album
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -420,6 +456,7 @@ export default function BookingHistory() {
     const [selectedPet, setSelectedPet] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [visibleCount, setVisibleCount] = useState(5);
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -551,8 +588,12 @@ export default function BookingHistory() {
     };
 
     const sorted = useMemo(() => {
-        return [...bookings].sort((a, b) => new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime());
-    }, [bookings]);
+        return [...bookings].sort((a, b) => {
+            const dateA = new Date(a.appointmentDatetime).getTime();
+            const dateB = new Date(b.appointmentDatetime).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
+    }, [bookings, sortOrder]);
 
     const filtered = useMemo(() => {
         let list = sorted;
@@ -745,6 +786,34 @@ export default function BookingHistory() {
                                     {cat.label}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-850" />
+
+                    {/* Sort Order */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider shrink-0">Ngày tạo:</span>
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-1">
+                            <button
+                                onClick={() => setSortOrder('desc')}
+                                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${sortOrder === 'desc'
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Mới nhất
+                            </button>
+                            <button
+                                onClick={() => setSortOrder('asc')}
+                                className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all ${sortOrder === 'asc'
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                Cũ nhất
+                            </button>
                         </div>
                     </div>
                 </div>

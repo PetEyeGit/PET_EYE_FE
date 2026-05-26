@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     ClipboardList, CheckCircle2, Clock, PlayCircle,
     ChevronRight, Loader2, RefreshCw, XCircle, Bell, Camera, 
@@ -88,6 +89,7 @@ const formatDate = (iso: string) => format(parseISO(iso), 'dd/MM/yyyy', { locale
 /* ─── MAIN COMPONENT ──────────────────────────────────────────────────── */
 
 export default function StaffDashboard() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [myTasks, setMyTasks] = useState<TaskResponse[]>([]);
     const [poolTasks, setPoolTasks] = useState<TaskResponse[]>([]);
@@ -552,12 +554,20 @@ export default function StaffDashboard() {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Mã số: #{selectedTask.bookingId}</p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setSelectedTask(null)}
-                                    className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-500 hover:text-rose-500 transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => navigate('/staff/tasks', { state: { taskId: selectedTask.bookingId } })}
+                                        className="px-4 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary-dark rounded-xl font-black text-[10px] uppercase tracking-widest transition-all hidden sm:flex items-center gap-2"
+                                    >
+                                        Vào không gian làm việc
+                                    </button>
+                                    <button 
+                                        onClick={() => setSelectedTask(null)}
+                                        className="p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-500 hover:text-rose-500 transition-colors"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Modal Content - Scrollable */}
@@ -653,6 +663,17 @@ export default function StaffDashboard() {
                                                         </button>
                                                     </div>
                                                 </form>
+                                                
+                                                <div className="mt-8 p-6 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                                                    <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 mb-2">Cần ghi nhận Hồ sơ y tế?</h4>
+                                                    <p className="text-xs text-slate-500 mb-6">Để thêm hồ sơ y tế cho dịch vụ phòng khám, vui lòng chuyển đến Không gian làm việc.</p>
+                                                    <button 
+                                                        onClick={() => navigate('/staff/tasks', { state: { taskId: selectedTask.bookingId } })}
+                                                        className="px-6 py-3 bg-white border border-slate-200 text-primary rounded-xl font-black text-xs uppercase tracking-widest shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                                                    >
+                                                        ĐI TỚI KHÔNG GIAN LÀM VIỆC
+                                                    </button>
+                                                </div>
                                             </div>
                                         ) : selectedTask.status === 'CONFIRMED' ? (
                                             <div className="mb-12 bg-primary/5 p-10 rounded-[3rem] border border-primary/10 flex flex-col items-center text-center">

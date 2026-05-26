@@ -17,7 +17,7 @@ const SHOP_TYPE_TABS = [
   { value: 'PET_SHOP', label: 'Pet Shop', icon: <ShoppingBag size={16} /> },
 ];
 
-const SORT_OPTIONS = ['Đánh giá cao nhất', 'Mới nhất'];
+const SORT_OPTIONS = ['gần nhất', 'xa nhất'];
 
 const RATING_OPTIONS = [
   { value: 0,   label: 'Tất cả' },

@@ -53,5 +53,9 @@ export const petService = {
       return;
     }
     await apiClient.delete(`/pets/${id}`, { params: { reason } });
+  },
+
+  saveAlbumImageFromCareLog: async (petId: number, careLogId: number): Promise<void> => {
+    await apiClient.post(`/pets/${petId}/album/from-carelog/${careLogId}`);
   }
 };

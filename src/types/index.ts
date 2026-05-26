@@ -39,6 +39,7 @@ export interface PetMedicalRecord {
   prescription: string;
   visitDate: string;
   veterinarianNote: string;
+  staffName?: string;
 }
 
 export interface PetVaccination {

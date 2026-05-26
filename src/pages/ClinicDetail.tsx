@@ -438,11 +438,13 @@ export default function ClinicDetail() {
     if (shop?.galleryUrls) {
       images.push(...shop.galleryUrls.split(',').filter(Boolean));
     }
-    // Fill with placeholders if less than 5
-    while (images.length < 5) {
-      images.push(`https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80`);
+    
+    // If shop has no images at all, show 1 placeholder
+    if (images.length === 0) {
+        images.push('https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80');
     }
-    return images.slice(0, 5);
+    
+    return images;
   }, [shop?.bannerUrl, shop?.galleryUrls]);
 
   const dayName = today.toLocaleDateString('vi-VN', { weekday: 'long' });
@@ -541,33 +543,118 @@ export default function ClinicDetail() {
         </div>
 
         {/* Hero Image Grid */}
-        <div className="w-full h-[280px] md:h-[380px] lg:h-[460px] gap-2 overflow-hidden rounded-2xl grid grid-cols-4 grid-rows-2 mb-8">
-          <div
-            className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-tl-2xl rounded-bl-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${galleryImages[0]})` }}
-          >
-            <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-          </div>
-          {galleryImages.slice(1, 4).map((img, i) => (
-            <div
-              key={i}
-              className={`col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative overflow-hidden ${i === 1 ? 'rounded-tr-2xl' : ''
-                }`}
-              style={{ backgroundImage: `url(${img})` }}
-            >
-              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-            </div>
+        <div className={`w-full h-[280px] md:h-[380px] lg:h-[460px] gap-2 overflow-hidden rounded-2xl mb-8 ${
+            galleryImages.length === 1 ? 'flex' : 
+            galleryImages.length === 2 ? 'grid grid-cols-2' : 
+            galleryImages.length === 3 ? 'grid grid-cols-3' : 
+            galleryImages.length === 4 ? 'grid grid-cols-3 grid-rows-2' : 
+            'grid grid-cols-4 grid-rows-2'
+        }`}>
+          {/* Layout for 1 image */}
+          {galleryImages.length === 1 && (
+              <div
+                className="w-full h-full bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                style={{ backgroundImage: `url(${galleryImages[0]})` }}
+              >
+                  <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+              </div>
+          )}
+
+          {/* Layout for 2 images */}
+          {galleryImages.length === 2 && galleryImages.map((img, i) => (
+              <div
+                key={i}
+                className="w-full h-full bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                style={{ backgroundImage: `url(${img})` }}
+              >
+                  <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+              </div>
           ))}
-          <div
-            className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-br-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${galleryImages[4]})` }}
-          >
-            <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-            <button className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-sm">grid_view</span>
-              Xem tất cả ảnh
-            </button>
-          </div>
+
+          {/* Layout for 3 images */}
+          {galleryImages.length === 3 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  <div className="col-span-1 flex flex-col gap-2">
+                      {galleryImages.slice(1, 3).map((img, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                            style={{ backgroundImage: `url(${img})` }}
+                          >
+                              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                          </div>
+                      ))}
+                  </div>
+              </>
+          )}
+
+          {/* Layout for 4 images */}
+          {galleryImages.length === 4 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  <div className="col-span-1 row-span-2 flex flex-col gap-2">
+                      {galleryImages.slice(1, 3).map((img, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                            style={{ backgroundImage: `url(${img})` }}
+                          >
+                              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                          </div>
+                      ))}
+                  </div>
+                  <div
+                    className="col-span-1 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[3]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+              </>
+          )}
+
+          {/* Layout for 5+ images */}
+          {galleryImages.length >= 5 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  {galleryImages.slice(1, 4).map((img, i) => (
+                    <div
+                      key={i}
+                      className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                      style={{ backgroundImage: `url(${img})` }}
+                    >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                    </div>
+                  ))}
+                  <div
+                    className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[4]})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                    {galleryImages.length > 5 && (
+                        <button className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 transition-transform">
+                          <span className="material-symbols-outlined text-sm">grid_view</span>
+                          Xem tất cả ảnh
+                        </button>
+                    )}
+                  </div>
+              </>
+          )}
         </div>
 
         {/* Main 2-column layout */}

@@ -46,7 +46,6 @@ export default function StaffNavbar() {
     { label: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
     { label: 'Lịch làm việc', path: '/staff/tasks', icon: Calendar },
     { label: 'Hồ sơ chuyên môn', path: '/staff/profile', icon: Award },
-    { label: 'Tin nhắn', path: '/staff/messages', icon: MessageCircle },
   ];
 
   const isActive = (path: string) => location.pathname === path;
