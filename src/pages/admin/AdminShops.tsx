@@ -226,12 +226,27 @@ export default function AdminShops() {
       {/* Detail Modal */}
       {detailShop && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900">{detailShop.shopName}</h3>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                {detailShop.logoUrl ? (
+                  <img src={detailShop.logoUrl} className="w-10 h-10 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <Store size={18} className="text-blue-600" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-slate-900">{detailShop.shopName}</h3>
+                  <p className="text-xs text-slate-400">ID: {detailShop.id}</p>
+                </div>
+              </div>
               <button onClick={() => setDetailShop(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400"><X size={18} /></button>
             </div>
-            <div className="p-6 space-y-4">
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+              {/* Status + Type + Rating */}
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={getShopStatus(detailShop)} />
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{detailShop.shopType}</span>
@@ -239,36 +254,109 @@ export default function AdminShops() {
                   <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">⭐ {detailShop.ratingAvg.toFixed(1)}</span>
                 )}
               </div>
-              {[
-                { icon: Mail, label: detailShop.email },
-                { icon: Phone, label: detailShop.phone },
-                { icon: MapPin, label: `${detailShop.address}, ${detailShop.city}` },
-                { icon: FileText, label: `Giấy phép: ${detailShop.licenseNumber}` },
-              ].map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-3 text-sm text-slate-600">
-                  <Icon size={15} className="text-slate-400 shrink-0" />
-                  <span>{label}</span>
+
+              {/* Thông tin liên hệ */}
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Thông tin liên hệ</p>
+                <div className="bg-slate-50 rounded-xl p-4 space-y-2.5">
+                  {[
+                    { icon: Mail, label: 'Email', value: detailShop.email },
+                    { icon: Phone, label: 'Điện thoại', value: detailShop.phone },
+                    { icon: MapPin, label: 'Địa chỉ', value: `${detailShop.address}, ${detailShop.city}` },
+                  ].map(({ icon: Icon, label, value }) => (
+                    <div key={label} className="flex items-start gap-3 text-sm">
+                      <Icon size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-xs text-slate-400">{label}: </span>
+                        <span className="text-slate-700 font-medium">{value || '—'}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(detailShop.openTime || detailShop.closeTime) && (
+                    <div className="flex items-start gap-3 text-sm">
+                      <Clock size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs text-slate-400">Giờ mở cửa: </span>
+                        <span className="text-slate-700 font-medium">
+                          {detailShop.openTime} - {detailShop.closeTime}
+                          {detailShop.workingDays ? ` (${detailShop.workingDays})` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+              </div>
+
+              {/* Thông tin đăng ký */}
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Thông tin đăng ký</p>
+                <div className="bg-slate-50 rounded-xl p-4 space-y-2.5">
+                  <div className="flex items-start gap-3 text-sm">
+                    <FileText size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-xs text-slate-400">Số giấy phép: </span>
+                      <span className="text-slate-700 font-medium">{detailShop.licenseNumber || '—'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <Shield size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="text-xs text-slate-400">ID chủ sở hữu: </span>
+                      <span className="text-slate-700 font-medium">{detailShop.ownerId}</span>
+                    </div>
+                  </div>
+                  {detailShop.assignmentMode && (
+                    <div className="flex items-start gap-3 text-sm">
+                      <Users size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs text-slate-400">Chế độ phân công: </span>
+                        <span className="text-slate-700 font-medium">{detailShop.assignmentMode}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mô tả */}
               {detailShop.description && (
-                <p className="text-sm text-slate-500 bg-slate-50 rounded-xl p-3">{detailShop.description}</p>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Mô tả</p>
+                  <p className="text-sm text-slate-600 bg-slate-50 rounded-xl p-4 leading-relaxed">{detailShop.description}</p>
+                </div>
               )}
+
+              {/* Ảnh giấy phép */}
               {detailShop.licenseImageUrl && (
-                <img src={detailShop.licenseImageUrl} alt="Giấy phép" className="w-full rounded-xl object-cover max-h-48" />
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ảnh giấy phép kinh doanh</p>
+                  <a href={detailShop.licenseImageUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={detailShop.licenseImageUrl} alt="Giấy phép" className="w-full rounded-xl object-cover max-h-56 hover:opacity-90 transition-opacity cursor-zoom-in" />
+                  </a>
+                </div>
               )}
-              {getShopStatus(detailShop) === 'PENDING' && (
-                <div className="flex gap-3 pt-2">
-                  <button onClick={() => { approveMutation.mutate(detailShop.id); setDetailShop(null); }}
-                    className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <Shield size={15} /> Phê duyệt
-                  </button>
-                  <button onClick={() => { rejectMutation.mutate(detailShop.id); setDetailShop(null); }}
-                    className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <XCircle size={15} /> Từ chối
-                  </button>
+
+              {/* Banner */}
+              {detailShop.bannerUrl && (
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ảnh bìa</p>
+                  <img src={detailShop.bannerUrl} alt="Banner" className="w-full rounded-xl object-cover max-h-40" />
                 </div>
               )}
             </div>
+
+            {/* Actions */}
+            {getShopStatus(detailShop) === 'PENDING' && (
+              <div className="flex gap-3 px-6 py-4 border-t border-slate-100 shrink-0">
+                <button onClick={() => { approveMutation.mutate(detailShop.id); setDetailShop(null); }}
+                  className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                  <Shield size={15} /> Phê duyệt
+                </button>
+                <button onClick={() => { rejectMutation.mutate(detailShop.id); setDetailShop(null); }}
+                  className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors flex items-center justify-center gap-2 text-sm">
+                  <XCircle size={15} /> Từ chối
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -33,10 +33,19 @@ export interface AdminShopResponse {
   description: string;
   licenseNumber: string;
   licenseImageUrl?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  galleryUrls?: string;
+  openTime?: string;
+  closeTime?: string;
+  workingDays?: string;
   isVerified: boolean;
+  verified?: boolean;       // Jackson serialize isVerified → verified
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   ratingAvg: number;
   ownerId: number;
+  assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
+  staffs?: any[];
 }
 
 export interface AdminStaffResponse {
@@ -121,7 +130,13 @@ export const adminService = {
   // Shops
   getAllShops: async (): Promise<AdminShopResponse[]> => {
     const res = await apiClient.get<ApiResponse<AdminShopResponse[]>>('/shops');
-    return res.data.result ?? [];
+    const data = res.data.result ?? [];
+    // Jackson serialize boolean isVerified → "verified" (bỏ prefix "is")
+    return data.map(s => ({
+      ...s,
+      isVerified: Boolean((s as any).verified ?? s.isVerified),
+      status: s.status as AdminShopResponse['status'],
+    }));
   },
 
   getPendingShops: async (): Promise<AdminShopResponse[]> => {
