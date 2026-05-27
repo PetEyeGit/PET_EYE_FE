@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { transactionService } from '../services/transaction.service';
-import type { TransactionResponse } from '../types/api';
+import { transactionService } from '../../services/transaction.service';
+import type { TransactionResponse } from '../../types/api';
 import { format } from 'date-fns';
 
 export default function TransactionHistory() {

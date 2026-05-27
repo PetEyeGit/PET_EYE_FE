@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { authService } from '../services/auth.service';
+import { authService } from '../../services/auth.service';
 import toast from 'react-hot-toast';
 
 type Step = 'email' | 'otp' | 'newPassword';

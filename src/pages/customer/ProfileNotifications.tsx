@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, CheckCheck, Loader2, AlertCircle, RefreshCw, BellOff, Inbox, Trash2 } from 'lucide-react';
-import { useNotifications, type AppNotification } from '../hooks/useNotifications';
+import { useNotifications, type AppNotification } from '../../hooks/useNotifications';
 import { format, parseISO, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 

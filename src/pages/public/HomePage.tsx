@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
-import { petService } from '../services/pet.service';
-import { bookingService } from '../services/booking.service';
-import { shopService, ShopPublicResponse } from '../services/shop.service';
-import type { Pet } from '../types';
-import type { ServiceResponse, BookingResponse } from '../types/api';
-import { reviewService, ReviewResponse } from '../services/review.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { petService } from '../../services/pet.service';
+import { bookingService } from '../../services/booking.service';
+import { shopService, ShopPublicResponse } from '../../services/shop.service';
+import type { Pet } from '../../types';
+import type { ServiceResponse, BookingResponse } from '../../types/api';
+import { reviewService, ReviewResponse } from '../../services/review.service';
 
 // Mock reviews for homepage
 const MOCK_REVIEWS = [
@@ -56,26 +56,20 @@ export default function HomePage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user?.id) return;
             try {
-                const [petsData, bookingsData, shopsData, reviewsData] = await Promise.all([
-                    petService.getByOwner(Number(user.id)),
-                    bookingService.getMyBookings(),
+                // 1. Fetch public data (shops, reviews, services)
+                const [shopsData, reviewsData] = await Promise.all([
                     shopService.searchPublic(),
                     reviewService.getLatestReviews(3)
                 ]);
-                setPets(petsData || []);
-                setBookings(bookingsData || []);
                 setShops(shopsData || []);
                 setReviews(reviewsData || []);
 
-                // Fetch services for more shops to ensure category diversity
                 if (shopsData && shopsData.length > 0) {
                     const topShops = shopsData.slice(0, 12);
                     const servicesPromises = topShops.map(s => shopService.getShopServices(s.id));
                     const allServicesResults = await Promise.all(servicesPromises);
 
-                    // Flatten and ensure each service has the shopName from the shop object if missing
                     const flattenedServices = allServicesResults.flatMap((services, index) =>
                         (services || []).map(service => ({
                             ...service,
@@ -84,6 +78,16 @@ export default function HomePage() {
                     );
 
                     setFeaturedServices(flattenedServices);
+                }
+
+                // 2. Fetch user-specific data if logged in
+                if (user?.id) {
+                    const [petsData, bookingsData] = await Promise.all([
+                        petService.getByOwner(Number(user.id)),
+                        bookingService.getMyBookings()
+                    ]);
+                    setPets(petsData || []);
+                    setBookings(bookingsData || []);
                 }
             } catch (error) {
                 console.error("Error fetching homepage data:", error);

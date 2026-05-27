@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/auth.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { authService } from '../../services/auth.service';
 
 export default function ZaloCallback() {
   const [searchParams] = useSearchParams();

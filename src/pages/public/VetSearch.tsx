@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useClinics } from '../hooks/useClinics';
-import { ShopPublicResponse } from '../services/shop.service';
+import { useClinics } from '../../hooks/useClinics';
+import { ShopPublicResponse } from '../../services/shop.service';
 import { 
   Search, MapPin, Star, Filter, ArrowRight, Grid, List as ListIcon, 
   Map as MapIcon, ChevronRight, SlidersHorizontal, CheckCircle2, 

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { bookingService } from '../services/booking.service';
+import { bookingService } from '../../services/booking.service';
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();

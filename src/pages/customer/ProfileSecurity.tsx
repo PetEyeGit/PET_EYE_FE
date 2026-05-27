@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { userService } from '../services/user.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { userService } from '../../services/user.service';
 
 export default function ProfileSecurity() {
     const { user } = useAuth();

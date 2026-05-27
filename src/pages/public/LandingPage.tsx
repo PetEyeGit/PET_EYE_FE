@@ -2,12 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Video, Star, ArrowRight, ShieldCheck, Heart, Sparkles, Zap, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Import assets
-import heroImage from '../assets/landing/landing_hero_pet_care_1778855096349.png';
-import cameraPreview from '../assets/landing/live_camera_preview_1778855116615.png';
-import spaImage from '../assets/landing/pet_spa_grooming_1778855139420.png';
+import heroImage from '../../assets/landing/landing_hero_pet_care_1778855096349.png';
+import cameraPreview from '../../assets/landing/live_camera_preview_1778855116615.png';
+import spaImage from '../../assets/landing/pet_spa_grooming_1778855139420.png';
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },

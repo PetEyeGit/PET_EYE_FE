@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { bookingService } from '../services/booking.service';
+import { bookingService } from '../../services/booking.service';
 
 type PayMethod = 'payos' | 'cash';
 

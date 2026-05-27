@@ -2,9 +2,9 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Store, User, ArrowRight, ArrowLeft, Shield, Star, Sparkles, Video, AlertCircle, PawPrint, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
-import { authService } from '../services/auth.service';
+import { authService } from '../../services/auth.service';
 
 export default function Login() {
   const navigate = useNavigate();

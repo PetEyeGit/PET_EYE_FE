@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { shopService } from '../services/shop.service';
-import { petService } from '../services/pet.service';
-import { reviewService } from '../services/review.service';
-import { bookingService } from '../services/booking.service';
-import { useAuth } from '../contexts/AuthContext';
-import type { ServiceResponse, StaffResponse } from '../types/api';
-import type { Pet } from '../types';
+import { shopService } from '../../services/shop.service';
+import { petService } from '../../services/pet.service';
+import { reviewService } from '../../services/review.service';
+import { bookingService } from '../../services/booking.service';
+import { useAuth } from '../../contexts/AuthContext';
+import type { ServiceResponse, StaffResponse } from '../../types/api';
+import type { Pet } from '../../types';
 
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
