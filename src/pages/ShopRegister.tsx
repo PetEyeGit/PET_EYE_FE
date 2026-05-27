@@ -129,7 +129,8 @@ export default function ShopRegister() {
       return formData.address && formData.city && formData.description;
     }
     if (step === 3) {
-      return formData.password && formData.confirmPassword && formData.licenseNumber && formData.licenseImageUrl && formData.agreed;
+      const licenseValid = formData.licenseNumber.length === 10 || formData.licenseNumber.length === 13;
+      return formData.password && formData.confirmPassword && licenseValid && formData.licenseImageUrl && formData.agreed;
     }
     return false;
   };
@@ -360,19 +361,43 @@ export default function ShopRegister() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Số giấy phép kinh doanh *
+                  Mã số doanh nghiệp / Giấy phép kinh doanh *
                 </label>
                 <div className="relative">
                   <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                   <input
                     type="text"
                     value={formData.licenseNumber}
-                    onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
-                    placeholder="Ví dụ: 0123456789"
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
+                    onChange={(e) => {
+                      // Chỉ cho nhập số, tối đa 13 ký tự
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                      setFormData({ ...formData, licenseNumber: val });
+                    }}
+                    placeholder="10 hoặc 13 chữ số"
+                    maxLength={13}
+                    className={`w-full pl-12 pr-16 py-3 rounded-xl border-2 outline-none transition-colors ${
+                      formData.licenseNumber.length > 0 && formData.licenseNumber.length !== 10 && formData.licenseNumber.length !== 13
+                        ? 'border-red-300 focus:border-red-400'
+                        : formData.licenseNumber.length === 10 || formData.licenseNumber.length === 13
+                        ? 'border-green-400 focus:border-green-500'
+                        : 'border-slate-200 focus:border-[#1a2b4c]'
+                    }`}
                     required
                   />
+                  <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold ${
+                    formData.licenseNumber.length === 10 || formData.licenseNumber.length === 13
+                      ? 'text-green-500'
+                      : 'text-slate-400'
+                  }`}>
+                    {formData.licenseNumber.length}/10-13
+                  </span>
                 </div>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Mã số doanh nghiệp Việt Nam gồm <span className="font-semibold">10 chữ số</span> (doanh nghiệp) hoặc <span className="font-semibold">13 chữ số</span> (chi nhánh)
+                </p>
+                {formData.licenseNumber.length > 0 && formData.licenseNumber.length !== 10 && formData.licenseNumber.length !== 13 && (
+                  <p className="text-xs text-red-500 mt-1">Mã số phải có đúng 10 hoặc 13 chữ số</p>
+                )}
               </div>
 
               <div>
