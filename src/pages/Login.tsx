@@ -64,13 +64,28 @@ export default function Login() {
 
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState('');
+  const [isSuccess, setIsSuccess] = React.useState(false);
+  const [targetUrl, setTargetUrl] = React.useState('');
+
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
+
+  const navigateToTarget = (url: string) => {
+    setTargetUrl(url);
+    setIsSuccess(true);
+  };
+
+  const handleAnimationComplete = () => {
+    if (isSuccess && targetUrl) {
+      navigate(targetUrl);
+    }
+  };
 
   const handleSocialSuccess = (userData: any) => {
     setUserSession(userData);
-    if (userData.role === 'ADMIN') navigate('/admin/dashboard');
-    else if (userData.role === 'SHOP_OWNER') navigate('/shop/dashboard');
-    else if (userData.role === 'STAFF') navigate('/staff/dashboard');
-    else navigate('/home');
+    if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
+    else if (userData.role === 'SHOP_OWNER') navigateToTarget('/shop/dashboard');
+    else if (userData.role === 'STAFF') navigateToTarget('/staff/dashboard');
+    else navigateToTarget('/home');
   };
 
   const loginGoogle = useGoogleLogin({
@@ -112,10 +127,10 @@ export default function Login() {
 
     try {
       const userData = await login(email, password);
-      if (userData.role === 'ADMIN') navigate('/admin/dashboard');
-      else if (userData.role === 'SHOP_OWNER') navigate('/shop/dashboard');
-      else if (userData.role === 'STAFF') navigate('/staff/dashboard');
-      else navigate('/home');
+      if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
+      else if (userData.role === 'SHOP_OWNER') navigateToTarget('/shop/dashboard');
+      else if (userData.role === 'STAFF') navigateToTarget('/staff/dashboard');
+      else navigateToTarget('/home');
     } catch (error: any) {
       const code = Number(error.response?.data?.code);
       const msgs: Record<number, string> = {
@@ -133,133 +148,91 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
-      {/* ─── DYNAMIC AMBIENT BACKGROUND ─── */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Soft floating blurred lights */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 40, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-indigo-200/30 dark:bg-indigo-950/15 rounded-full blur-[130px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.15, 1],
-            x: [0, -30, 0],
-            y: [0, -40, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-[10%] -right-[10%] w-[55%] h-[55%] bg-violet-200/25 dark:bg-violet-950/10 rounded-full blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.25, 1],
-            x: [0, 20, 0],
-            y: [0, -20, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/3 w-[35%] h-[35%] bg-cyan-200/20 dark:bg-cyan-950/10 rounded-full blur-[100px]"
-        />
-
-        {/* Dynamic floating pet elements */}
-        {floatingIcons.map((item, index) => {
-          const Icon = item.Icon;
-          return (
-            <motion.div
-              key={index}
-              className="absolute bottom-[-60px] text-indigo-500/30 dark:text-indigo-400/20 pointer-events-none"
-              style={{ left: item.left }}
-              animate={{
-                y: ['0vh', '-120vh'],
-                x: [0, 20, -20, 15, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: item.duration,
-                repeat: Infinity,
-                delay: item.delay,
-                ease: 'linear',
-              }}
-            >
-              <Icon size={item.size} />
-            </motion.div>
-          );
-        })}
-      </div>
-
+    <div className="w-screen h-screen flex bg-white dark:bg-slate-950 overflow-hidden relative">
+      {/* ─── LEFT PANEL (Full Screen Image) ─── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 max-w-5xl w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] border border-white/80 dark:border-slate-800/80 overflow-hidden flex flex-col md:flex-row min-h-[680px]"
+        className="hidden md:flex w-1/2 h-full relative"
+        initial={{ x: 0 }}
+        animate={{ x: isSuccess ? '-100%' : '0%' }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
-        {/* ─── LEFT: PREMIUM DECORATIVE PANEL ─── */}
-        <div className="hidden md:flex md:w-1/2 relative bg-gradient-to-br from-slate-900 to-[#1a2b4c] p-10 flex-col justify-between overflow-hidden">
-          {/* Animated background blobs */}
-          <div className="absolute inset-0 z-0">
-            <div className="absolute top-0 left-0 w-full h-full bg-mesh opacity-10" />
-            <motion.div
-              animate={{ scale: [1, 1.2, 1], x: [0, 20, 0], y: [0, -20, 0] }}
-              transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-              className="absolute -top-[20%] -left-[20%] w-[80%] h-[80%] bg-indigo-500/25 rounded-full blur-[80px]"
-            />
-            <motion.div
-              animate={{ scale: [1, 1.3, 1], x: [0, -30, 0], y: [0, 30, 0] }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="absolute -bottom-[20%] -right-[20%] w-[90%] h-[90%] bg-cyan-500/20 rounded-full blur-[90px]"
-            />
-          </div>
-
+        <img
+          src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=1964&auto=format&fit=crop"
+          alt="Premium Pet Care"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a2b4c]/90 via-[#1a2b4c]/40 to-transparent" />
+        
+        {/* Content */}
+        <div className="absolute inset-0 p-12 flex flex-col justify-between z-10">
           {/* Logo */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
               <span className="text-white font-black text-lg">P</span>
             </div>
             <span className="text-white font-black text-xl tracking-tight">Peteye</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-[9px] font-black uppercase tracking-widest border border-white/10">Partner</span>
-          </div>
-
-          {/* Center Illustration Frame */}
-          <div className="relative z-10 my-6 flex flex-col items-center justify-center">
-            <div className="w-full aspect-[4/3] max-w-[340px] rounded-3xl overflow-hidden border-4 border-white/10 shadow-2xl relative">
-              <img
-                src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop"
-                alt="Happy pets"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-                <span className="glass px-3 py-1.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest">
-                  Live Feed 24/7
-                </span>
-                <span className="bg-emerald-500 text-white px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  Active
-                </span>
-              </div>
-            </div>
+            <span className="px-2 py-0.5 rounded-full bg-white/20 text-white/90 text-[9px] font-black uppercase tracking-widest border border-white/20">Partner</span>
           </div>
 
           {/* Bottom texts */}
-          <div className="relative z-10 space-y-3">
-            <h3 className="text-3xl font-bold text-white leading-tight">
-              Nơi thú cưng của bạn được chăm sóc như gia đình.
+          <div className="space-y-4 max-w-lg">
+            <h3 className="text-4xl md:text-5xl font-black text-white leading-[1.1] tracking-tight">
+              Nơi thú cưng được chăm sóc như gia đình.
             </h3>
-            <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
-              <span className="flex items-center gap-1"><Shield size={14} className="text-indigo-400" /> 200+ Đối tác</span>
-              <span className="flex items-center gap-1"><Star size={14} className="text-yellow-400" /> 4.9★ Review</span>
+            <p className="text-white/80 text-lg font-medium leading-relaxed">
+              Khám phá giải pháp công nghệ toàn diện giúp bạn quản lý và chăm sóc thú cưng dễ dàng hơn bao giờ hết.
+            </p>
+            <div className="flex items-center gap-4 text-xs font-bold text-white/60 pt-2">
+              <span className="flex items-center gap-1.5"><Shield size={16} className="text-indigo-300" /> 200+ Đối tác</span>
+              <span className="flex items-center gap-1.5"><Star size={16} className="text-yellow-400" /> 4.9★ Đánh giá</span>
             </div>
           </div>
         </div>
+      </motion.div>
 
-        {/* ─── RIGHT: FORM PANEL WITH ANIMATION ─── */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-between bg-transparent relative overflow-hidden">
-          {/* Header Action: Back to Home */}
-          <div className="flex items-center justify-between mb-6">
+      {/* ─── RIGHT PANEL (Form) ─── */}
+      <motion.div
+        className="w-full md:w-1/2 h-full relative flex flex-col justify-center px-6 md:px-16 lg:px-24 bg-white dark:bg-slate-950 overflow-hidden"
+        initial={{ x: 0, opacity: 1 }}
+        animate={{
+          x: isSuccess ? (isDesktop ? '100%' : '0%') : '0%',
+          opacity: isSuccess ? (isDesktop ? 1 : 0) : 1
+        }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        onAnimationComplete={handleAnimationComplete}
+      >
+        {/* Floating Icons Background (dimmed) */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-[0.03]">
+          {floatingIcons.map((item, index) => {
+            const Icon = item.Icon;
+            return (
+              <motion.div
+                key={index}
+                className="absolute bottom-[-60px] text-slate-400 dark:text-slate-300 pointer-events-none"
+                style={{ left: item.left }}
+                animate={{
+                  y: ['0vh', '-120vh'],
+                  x: [0, 20, -20, 15, 0],
+                  rotate: [0, 180, 360],
+                }}
+                transition={{
+                  duration: item.duration,
+                  repeat: Infinity,
+                  delay: item.delay,
+                  ease: 'linear',
+                }}
+              >
+                <Icon size={item.size} />
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Form Content */}
+        <div className="relative z-10 w-full max-w-md mx-auto space-y-8">
+           {/* Header Action: Back to Home */}
+           <div className="flex items-center justify-between mb-2">
             <Link
               to="/"
               className="flex items-center gap-2 text-slate-400 hover:text-[#1a2b4c] dark:hover:text-white transition-colors group"
@@ -270,7 +243,7 @@ export default function Login() {
               <span className="text-xs font-bold">Quay lại trang chủ</span>
             </Link>
             <div className="flex md:hidden items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#1a2b4c] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-[#1a2b4c] flex items-center justify-center">
                 <span className="text-white font-black text-sm">P</span>
               </div>
               <span className="text-[#1a2b4c] dark:text-white font-black text-sm">Peteye</span>
@@ -365,9 +338,9 @@ export default function Login() {
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
                           <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mật khẩu</label>
-                          <a href="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                          <Link to="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline relative z-50">
                             Quên mật khẩu?
-                          </a>
+                          </Link>
                         </div>
                         <div className="relative group">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
@@ -487,9 +460,9 @@ export default function Login() {
                       <div className="space-y-1">
                         <div className="flex justify-between items-center">
                           <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Mật khẩu</label>
-                          <a href="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                          <Link to="/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline relative z-50">
                             Quên mật khẩu?
-                          </a>
+                          </Link>
                         </div>
                         <div className="relative group">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />

@@ -124,9 +124,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 md:p-10"
       >
         {/* Back button */}
@@ -310,7 +308,7 @@ export default function ForgotPassword() {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 }

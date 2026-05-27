@@ -77,8 +77,8 @@ export default function Home() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-                <span className="text-[11px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
-                  Nền tảng B2B2C Thú y số 1 Việt Nam
+                <span className="text-[17px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
+                  HỆ SINH THÁI THÚ Y TOÀN DIỆN
                 </span>
               </motion.div>
 

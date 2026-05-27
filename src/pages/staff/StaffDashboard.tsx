@@ -304,7 +304,7 @@ export default function StaffDashboard() {
                         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.2] lg:leading-[1.1] mb-6">
                             Chào buổi sáng, <br />
                             <span className="bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
-                                {user?.fullName || 'Bác sĩ'}! ✨
+                                {user?.name || 'Bác sĩ'}! ✨
                             </span>
                         </h2>
                         <p className="text-slate-500 font-medium text-lg lg:max-w-lg leading-relaxed">

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import {
   Bell, ChevronDown, LogOut, User, Settings,
-  PawPrint, Menu, X, Video, Calendar, MessageCircle
+  PawPrint, Menu, X, Video, Calendar, MessageCircle, ReceiptText
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -324,7 +324,7 @@ function AuthNavbar() {
                     { to: '/profile/pets', icon: <PawPrint size={16} />, label: 'Thú cưng của tôi' },
                     { to: '/profile/bookings', icon: <Calendar size={16} />, label: 'Lịch đặt hẹn' },
                     { to: '/camera', icon: <Video size={16} />, label: 'Theo dõi Camera', badge: 'LIVE' },
-                    { to: '/profile/security', icon: <Settings size={16} />, label: 'Cài đặt bảo mật' },
+                    { to: '/profile/transactions', icon: <ReceiptText size={16} />, label: 'Lịch sử giao dịch' },
                   ].map(item => (
                     <Link key={item.to} to={item.to} onClick={() => setUserOpen(false)}
                       className={`flex items-center gap-3.5 px-6 py-3 text-[13.5px] font-bold transition-all

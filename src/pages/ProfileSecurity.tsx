@@ -166,40 +166,6 @@ export default function ProfileSecurity() {
                         </div>
                     </div>
                 </div>
-
-                {/* Active Sessions */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-                        <h2 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400">devices</span>
-                            Phiên đăng nhập đang hoạt động
-                        </h2>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {[
-                            { device: 'Chrome trên Windows 11', location: 'TP. Hồ Chí Minh', time: 'Hiện tại', icon: 'computer', current: true },
-                            { device: 'Safari trên iPhone 14', location: 'TP. Hồ Chí Minh', time: '2 giờ trước', icon: 'phone_iphone', current: false },
-                        ].map(s => (
-                            <div key={s.device} className="flex items-center justify-between p-5">
-                                <div className="flex items-center gap-4">
-                                    <span className={`material-symbols-outlined text-2xl ${s.current ? 'text-[#1a2b4c] dark:text-teal-400' : 'text-slate-400'}`}>{s.icon}</span>
-                                    <div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
-                                            {s.device}
-                                            {s.current && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-bold">Hiện tại</span>}
-                                        </p>
-                                        <p className="text-xs text-slate-400">{s.location} • {s.time}</p>
-                                    </div>
-                                </div>
-                                {!s.current && (
-                                    <button className="text-xs font-semibold text-red-500 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                        Đăng xuất
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </main>
     );
 }

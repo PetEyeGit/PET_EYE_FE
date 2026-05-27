@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { bookingService } from '../services/booking.service';
@@ -477,13 +477,15 @@ export default function Chatbot() {
       <button onClick={() => setOpen(v => !v)} className="fixed bottom-5 right-5 z-50 group" aria-label="Mo chatbot">
         <div className="relative">
           <div className="absolute inset-0 rounded-full bg-indigo-500 blur-lg opacity-40 group-hover:opacity-70 transition duration-300"></div>
-          <div className="relative w-15 h-15 rounded-full bg-gradient-to-br from-[#1a2b4c] via-indigo-600 to-purple-600 text-white shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+          {/* NOTE: Bạn có thể đổi w-16 h-16 thành w-14 h-14 (nhỏ hơn) hoặc w-20 h-20 (lớn hơn) ở class bên dưới để tùy chỉnh kích thước */}
+          <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#1a2b4c] via-indigo-600 to-purple-600 text-white shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
             {open ? (
               <span className="material-symbols-outlined text-2xl">close</span>
             ) : (
               <>
                 <div className="absolute inset-0 rounded-full border border-white/20 animate-ping"></div>
-                <span className="material-symbols-outlined text-[26px] drop-shadow-lg">support_agent</span>
+                {/* Tùy chỉnh kích thước icon bên trong ở text-[...] */}
+                <span className="material-symbols-outlined text-[36px] drop-shadow-lg">support_agent</span>
                 {hasUnread && (
                   <span className="absolute top-0.5 right-0.5 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
