@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { bookingService } from '../services/booking.service';
 import { useAIChat } from '../hooks/useAIChat';
@@ -386,6 +386,12 @@ const WELCOME_MSG_FN = (name?: string) =>
 
 export default function Chatbot() {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Hide chatbot on messaging pages to prevent overlapping the send button
+  if (location.pathname.includes('/messages')) {
+    return null;
+  }
 
   const welcomeMsg = WELCOME_MSG_FN(user?.name);
   const { messages, isLoading: aiLoading, sendMessage, clearHistory } = useAIChat({
