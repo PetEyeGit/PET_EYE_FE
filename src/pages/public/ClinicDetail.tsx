@@ -5,9 +5,13 @@ import { shopService } from '../../services/shop.service';
 import { petService } from '../../services/pet.service';
 import { reviewService } from '../../services/review.service';
 import { bookingService } from '../../services/booking.service';
+import { clinicService } from '../../services/clinic.service';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ServiceResponse, StaffResponse } from '../../types/api';
 import type { Pet } from '../../types';
+import type { NearbyShopResponse, DirectionsResponse } from '../../services/clinic.service';
+import ShopMap from '../../components/ShopMap';
+import NearbyShops from '../../components/NearbyShops';
 
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
@@ -85,6 +89,131 @@ export default function ClinicDetail() {
       .sort((a, b) => b.ratingAvg - a.ratingAvg)
       .slice(0, 4),
   });
+
+  // ── Map & Directions state ──────────────────────────────────────────────────
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyShopsFromAPI, setNearbyShopsFromAPI] = useState<NearbyShopResponse[]>([]);
+  const [loadingNearbyShops, setLoadingNearbyShops] = useState(false);
+  const [directions, setDirections] = useState<DirectionsResponse | null>(null);
+  const [showMap, setShowMap] = useState(false);
+
+  // Get user location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          console.log('✅ Got user location:', location);
+          setUserLocation(location);
+        },
+        (error) => {
+          console.warn('⚠️ Geolocation error:', error.message);
+          // Fallback: Dùng tọa độ TP.HCM
+          const fallbackLocation = { lat: 10.7769, lng: 106.7009 };
+          console.log('Using fallback location (TP.HCM):', fallbackLocation);
+          setUserLocation(fallbackLocation);
+          
+          // Thông báo cho user
+          import('react-hot-toast').then(({ toast }) => {
+            toast('Không lấy được vị trí của bạn. Đang dùng vị trí mặc định (TP.HCM)', {
+              icon: '📍',
+              duration: 3000,
+            });
+          });
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      console.warn('⚠️ Geolocation not supported');
+      // Fallback: TP.HCM
+      const fallbackLocation = { lat: 10.7769, lng: 106.7009 };
+      console.log('Using fallback location (TP.HCM):', fallbackLocation);
+      setUserLocation(fallbackLocation);
+    }
+  }, []);
+
+  // Fetch nearby shops when user location is available
+  useEffect(() => {
+    if (!userLocation) return;
+    
+    console.log('Fetching nearby shops with location:', userLocation);
+    
+    setLoadingNearbyShops(true);
+    clinicService
+      .getNearbyShops(userLocation.lat, userLocation.lng, 10)
+      .then((shops) => {
+        // Lọc 3 shop gần nhất, loại trừ shop hiện tại
+        const filtered = shops
+          .filter(s => s.id !== shopId)
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, 3);
+        console.log('Nearby shops:', filtered);
+        setNearbyShopsFromAPI(filtered);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch nearby shops:', error);
+      })
+      .finally(() => {
+        setLoadingNearbyShops(false);
+      });
+  }, [userLocation, shopId]);
+
+  // Debug: Log shop coordinates
+  useEffect(() => {
+    if (shop) {
+      console.log('Shop data:', {
+        id: shop.id,
+        name: shop.shopName,
+        latitude: shop.latitude,
+        longitude: shop.longitude,
+        hasCoordinates: !!(shop.latitude && shop.longitude)
+      });
+    }
+  }, [shop]);
+
+  // Get directions to a shop
+  const handleGetDirections = async (targetShopId: number) => {
+    if (!userLocation) {
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('Vui lòng bật định vị để xem chỉ đường');
+      });
+      return;
+    }
+
+    try {
+      const result = await clinicService.getDirectionsToShop(
+        targetShopId,
+        userLocation.lat,
+        userLocation.lng
+      );
+      setDirections(result);
+      setShowMap(true);
+      
+      // Scroll to map section
+      setTimeout(() => {
+        document.getElementById('shop-map-section')?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+      
+      import('react-hot-toast').then(({ toast }) => {
+        toast.success('Đã tìm thấy đường đi!');
+      });
+    } catch (error) {
+      console.error('Failed to get directions:', error);
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('Không thể lấy chỉ đường. Vui lòng thử lại.');
+      });
+    }
+  };
 
   const { data: myPets = [] } = useQuery({
     queryKey: ['my-pets', user?.id],
@@ -656,6 +785,86 @@ export default function ClinicDetail() {
               </>
           )}
         </div>
+
+        {/* Map & Directions Section - Chỉ hiển thị khi click "Mở bản đồ" */}
+        {showMap && userLocation && shop && shop.latitude && shop.longitude && (
+          <div className="mb-8" id="shop-map-section">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">map</span>
+                    Vị trí & Chỉ đường
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Xem vị trí và lấy chỉ đường đến shop</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleGetDirections(shopId)}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                  >
+                    <span className="material-symbols-outlined text-base">directions</span>
+                    Chỉ đường đến đây
+                  </button>
+                  <button
+                    onClick={() => setShowMap(false)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold"
+                  >
+                    <span className="material-symbols-outlined text-base">close</span>
+                    Đóng
+                  </button>
+                </div>
+              </div>
+
+              {/* Map */}
+              <div>
+                <ShopMap
+                  userLocation={userLocation}
+                  nearbyShops={[]}
+                  currentShop={{
+                    id: shop.id,
+                    latitude: shop.latitude,
+                    longitude: shop.longitude,
+                    shopName: shop.shopName,
+                  }}
+                  directions={directions}
+                  onShopClick={(id) => navigate(`/clinic/${id}`)}
+                />
+              </div>
+
+              {/* Directions summary - chỉ hiển thị khoảng cách và thời gian */}
+              {directions && directions.routes && directions.routes.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center gap-6 p-4 bg-gradient-to-r from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-xl border border-teal-200 dark:border-teal-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-teal-500 flex items-center justify-center text-white">
+                        <span className="material-symbols-outlined text-2xl">straighten</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Khoảng cách</p>
+                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                          {directions.routes[0].legs[0].distance.text}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-px h-12 bg-slate-300 dark:bg-slate-600" />
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white">
+                        <span className="material-symbols-outlined text-2xl">schedule</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Thời gian</p>
+                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                          {directions.routes[0].legs[0].duration.text}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Main 2-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
@@ -1538,22 +1747,54 @@ export default function ClinicDetail() {
               {/* Map Card */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 flex flex-col gap-3">
                 <div
-                  className="w-full h-44 rounded-xl overflow-hidden relative bg-cover bg-center"
+                  className="w-full h-44 rounded-xl overflow-hidden relative bg-cover bg-center cursor-pointer group"
                   style={{
                     backgroundImage:
                       'url(https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600&auto=format&fit=crop)',
                   }}
+                  onClick={() => {
+                    if (userLocation && shop && shop.latitude && shop.longitude) {
+                      console.log('Map card clicked!');
+                      setShowMap(true);
+                      setTimeout(() => {
+                        document.getElementById('shop-map-section')?.scrollIntoView({ 
+                          behavior: 'smooth',
+                          block: 'center'
+                        });
+                      }, 100);
+                    }
+                  }}
                 >
-                  <div className="absolute inset-0 bg-[#1a2b4c]/20" />
+                  <div className="absolute inset-0 bg-[#1a2b4c]/20 group-hover:bg-[#1a2b4c]/30 transition-colors" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-red-500 text-5xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    <span className="material-symbols-outlined text-red-500 text-5xl drop-shadow-lg group-hover:scale-110 transition-transform" style={{ fontVariationSettings: "'FILL' 1" }}>
                       location_on
                     </span>
                   </div>
-                  <button className="absolute bottom-3 right-3 bg-white text-[#1a2b4c] px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:bg-slate-100 transition-colors flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">open_in_new</span>
-                    Mở bản đồ
-                  </button>
+                  {userLocation && shop && shop.latitude && shop.longitude ? (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Map button clicked!');
+                        setShowMap(true);
+                        setTimeout(() => {
+                          document.getElementById('shop-map-section')?.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'center'
+                          });
+                        }, 100);
+                      }}
+                      className="absolute bottom-3 right-3 bg-white text-[#1a2b4c] px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:bg-slate-100 hover:scale-105 transition-all flex items-center gap-1 z-10"
+                    >
+                      <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      Mở bản đồ
+                    </button>
+                  ) : (
+                    <div className="absolute bottom-3 right-3 bg-slate-100 text-slate-400 px-3 py-1.5 rounded-lg text-xs font-bold shadow-md flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">location_off</span>
+                      Chưa có vị trí
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-start gap-3 px-1">
                   <span className="material-symbols-outlined text-slate-400 mt-0.5 text-xl">map</span>
@@ -1585,40 +1826,16 @@ export default function ClinicDetail() {
                 </div>
               </div>
 
-              {/* Nearby Clinics */}
+              {/* Nearby Clinics - Sử dụng API mới */}
               <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-3 flex items-center gap-2">
                   <span className="material-symbols-outlined text-teal-500 text-base">near_me</span>
-                  Cơ sở gần đây
+                  Shop gần bạn
                 </h3>
-                <div className="flex flex-col gap-3">
-                  {nearbyShops.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic px-1">
-                      {shop?.city ? 'Không có cơ sở nào khác tại ' + shop.city : 'Chưa có dữ liệu'}
-                    </p>
-                  ) : nearbyShops.map((c) => (
-                    <Link
-                      key={c.id}
-                      to={`/clinic/${c.id}`}
-                      className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 transition-colors"
-                    >
-                      <div>
-                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-                          {c.shopName}
-                        </p>
-                        <p className="text-xs text-slate-400">{c.city}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-amber-400">
-                        <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
-                          star
-                        </span>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                          {c.ratingAvg > 0 ? c.ratingAvg.toFixed(1) : 'Mới'}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                <NearbyShops 
+                  shops={nearbyShopsFromAPI}
+                  loading={loadingNearbyShops}
+                />
               </div>
             </div>
           </div>

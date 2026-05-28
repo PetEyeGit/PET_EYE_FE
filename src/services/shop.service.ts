@@ -22,6 +22,8 @@ export interface ShopPublicResponse {
   workingDays?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
   staffs?: any[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface ShopRegistrationRequest {
