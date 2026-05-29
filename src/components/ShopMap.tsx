@@ -72,6 +72,10 @@ export default function ShopMap({
 
     map.current.on('load', () => {
       setMapLoaded(true);
+      // Ensure map resizes correctly
+      setTimeout(() => {
+        if (map.current) map.current.resize();
+      }, 500);
     });
 
     return () => {
@@ -81,6 +85,29 @@ export default function ShopMap({
       }
     };
   }, [scriptLoaded, userLocation]);
+
+  // Handle ResizeObserver and forced resizes
+  useEffect(() => {
+    if (!mapLoaded || !map.current || !mapContainer.current) return;
+    
+    const resizeMap = () => {
+      if (map.current) {
+        map.current.resize();
+      }
+    };
+    
+    // Force resize immediately and a few times after to catch layout shifts
+    resizeMap();
+    const timers = [100, 300, 500, 1000].map(t => setTimeout(resizeMap, t));
+
+    const resizeObserver = new ResizeObserver(resizeMap);
+    resizeObserver.observe(mapContainer.current);
+    
+    return () => {
+      resizeObserver.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, [mapLoaded, directions]);
 
   // Update markers when shops change
   useEffect(() => {
@@ -230,7 +257,6 @@ export default function ShopMap({
     <div 
       ref={mapContainer} 
       className="w-full h-full rounded-2xl overflow-hidden shadow-lg"
-      style={{ minHeight: '400px' }}
     />
   );
 }

@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useClinics } from '../../hooks/useClinics';
 import { ShopPublicResponse } from '../../services/shop.service';
-import { 
-  Search, MapPin, Star, Filter, ArrowRight, Grid, List as ListIcon, 
-  Map as MapIcon, ChevronRight, SlidersHorizontal, CheckCircle2, 
-  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home, ShoppingBag
+import {
+  Search, MapPin, Star, Filter, ArrowRight, Grid, List as ListIcon,
+  Map as MapIcon, ChevronRight, SlidersHorizontal, CheckCircle2,
+  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -14,15 +14,14 @@ const SHOP_TYPE_TABS = [
   { value: 'CLINIC', label: 'Khám thú y', icon: <Stethoscope size={16} /> },
   { value: 'SPA', label: 'Spa & Grooming', icon: <Scissors size={16} /> },
   { value: 'BOARDING', label: 'Lưu trú', icon: <Home size={16} /> },
-  { value: 'PET_SHOP', label: 'Pet Shop', icon: <ShoppingBag size={16} /> },
 ];
 
 const SORT_OPTIONS = ['gần nhất', 'xa nhất'];
 
 const RATING_OPTIONS = [
-  { value: 0,   label: 'Tất cả' },
-  { value: 3,   label: '3★ trở lên' },
-  { value: 4,   label: '4★ trở lên' },
+  { value: 0, label: 'Tất cả' },
+  { value: 3, label: '3★ trở lên' },
+  { value: 4, label: '4★ trở lên' },
   { value: 4.5, label: '4.5★ trở lên' },
 ];
 
@@ -100,7 +99,7 @@ export default function VetSearch() {
         </div>
 
         <div className="max-w-5xl mx-auto relative z-10 text-center space-y-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
@@ -116,7 +115,7 @@ export default function VetSearch() {
           </motion.div>
 
           {/* Premium Search Bar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="glass dark:glass-dark p-2 rounded-[32px] shadow-3xl max-w-4xl mx-auto group focus-within:ring-8 ring-primary/10 transition-all"
@@ -155,7 +154,7 @@ export default function VetSearch() {
 
       <div className="max-w-7xl mx-auto px-6 -mt-12 relative z-20 pb-24">
         {/* ── Category Tabs ── */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative inline-flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[24px] mb-10 overflow-hidden"
@@ -166,11 +165,10 @@ export default function VetSearch() {
               <button
                 key={tab.value}
                 onClick={() => setActiveService(tab.value)}
-                className={`relative flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all z-10 ${
-                  isActive
+                className={`relative flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-black whitespace-nowrap transition-all z-10 ${isActive
                     ? 'text-white'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 {isActive && (
                   <motion.div
@@ -198,7 +196,7 @@ export default function VetSearch() {
                   Bộ lọc
                 </h3>
                 {(minRating > 0 || distanceKm !== 10) && (
-                  <button 
+                  <button
                     onClick={() => { setMinRating(0); setDistanceKm(10); }}
                     className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
                   >
@@ -215,11 +213,10 @@ export default function VetSearch() {
                     <button
                       key={opt.value}
                       onClick={() => setMinRating(opt.value)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 ${
-                        minRating === opt.value
+                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 ${minRating === opt.value
                           ? 'bg-primary/5 border-primary text-primary'
                           : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
+                        }`}
                     >
                       <span className="text-sm font-bold">{opt.label}</span>
                       {opt.value > 0 && <StarRow rating={opt.value} />}
@@ -268,7 +265,7 @@ export default function VetSearch() {
                 </h2>
                 <p className="text-sm font-medium text-slate-500">Dựa trên tiêu chí lựa chọn của bạn</p>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <div className="relative glass rounded-2xl p-1 flex">
                   <button
@@ -295,7 +292,7 @@ export default function VetSearch() {
             </div>
 
             {/* Cards Grid/List */}
-            <motion.div 
+            <motion.div
               key={`${isLoading}-${activeService}-${minRating}`}
               variants={staggerContainer}
               initial="initial"
@@ -325,7 +322,7 @@ export default function VetSearch() {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-                        
+
                         {/* Badges */}
                         <div className="absolute top-4 left-4 flex flex-col gap-2">
                           <span className="bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 rounded-xl text-[9px] font-black text-white uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
@@ -333,7 +330,7 @@ export default function VetSearch() {
                             ĐỐI TÁC
                           </span>
                         </div>
-                        
+
                         {shop.shopType && (
                           <span className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-primary text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest">
                             {SHOP_TYPE_TABS.find(t => t.value === shop.shopType)?.label ?? shop.shopType}
@@ -389,7 +386,7 @@ export default function VetSearch() {
 
             {/* Empty state */}
             {!isLoading && sortedClinics.length === 0 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-32 glass rounded-[40px] space-y-6"

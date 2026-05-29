@@ -42,10 +42,10 @@ export default function Footer() {
                     <div>
                         <h5 className="font-bold mb-6 text-base tracking-wide">Về PetEye</h5>
                         <ul className="space-y-3.5 text-sm text-slate-300">
-                            <li><a className="hover:text-white transition-colors" href="#">Câu chuyện thương hiệu</a></li>
-                            <li><a className="hover:text-white transition-colors" href="#">Tuyển dụng</a></li>
-                            <li><a className="hover:text-white transition-colors" href="#">Trở thành đối tác</a></li>
-                            <li><a className="hover:text-white transition-colors" href="#">Tin tức &amp; Sự kiện</a></li>
+                            <li><Link className="hover:text-white transition-colors" to="/about#story">Câu chuyện thương hiệu</Link></li>
+                            <li><Link className="hover:text-white transition-colors" to="/about#careers">Tuyển dụng</Link></li>
+                            <li><Link className="hover:text-white transition-colors" to="/about#partner">Trở thành đối tác</Link></li>
+                            <li><Link className="hover:text-white transition-colors" to="/about#news">Tin tức &amp; Sự kiện</Link></li>
                         </ul>
                     </div>
 

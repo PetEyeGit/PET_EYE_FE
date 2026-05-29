@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { shopService, ShopPublicResponse } from '../services/shop.service';
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 /** Debounce a value by `delay` ms — prevents API spam while typing */
 function useDebounce<T>(value: T, delay = 400): T {
@@ -13,10 +14,13 @@ function useDebounce<T>(value: T, delay = 400): T {
 }
 
 export function useClinics() {
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get('type') || 'Tất cả';
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [cityQuery, setCityQuery] = useState('');
   // activeService stores the BE shopType value ('Tất cả' | 'CLINIC' | 'SPA' | ...)
-  const [activeService, setActiveService] = useState('Tất cả');
+  const [activeService, setActiveService] = useState(initialType);
   const [minRating, setMinRating] = useState(0);
 
   // Debounce text inputs so API is only called after user stops typing
