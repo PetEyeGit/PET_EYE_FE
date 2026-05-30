@@ -155,6 +155,7 @@ function AppLayout() {
             <Route path="tasks" element={<StaffTasks />} />
             <Route path="profile" element={<StaffProfile />} />
             <Route path="messages" element={<StaffMessages />} />
+            <Route path="camera" element={<ShopCamera />} />
           </Route>
 
           {/* profile area with persistent sidebar */}

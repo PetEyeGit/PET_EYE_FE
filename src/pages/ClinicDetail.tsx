@@ -106,6 +106,8 @@ export default function ClinicDetail() {
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([]);
   const [isHotelSelected, setIsHotelSelected] = useState(false);
   const [selectedCameraTier, setSelectedCameraTier] = useState<string>('BASIC');
+  const [selectedCageSize, setSelectedCageSize] = useState<string>('');
+  const [selectedRoomType, setSelectedRoomType] = useState<string>('');
 
   // Derive the boarding service from API data
   const boardingService = apiServices.find((s: ServiceResponse) => s.category === 'BOARDING' && s.active);
@@ -113,6 +115,17 @@ export default function ClinicDetail() {
   const supportedCameraTiers = boardingService?.cameraTiers ?? [];
   // Non-boarding services for "Dịch vụ nổi bật"
   const nonBoardingServices = apiServices.filter((s: ServiceResponse) => s.category !== 'BOARDING');
+
+  useEffect(() => {
+    if (boardingService) {
+      if (boardingService.cageSize?.length && !selectedCageSize) {
+        setSelectedCageSize(boardingService.cageSize[0]);
+      }
+      if (boardingService.roomType?.length && !selectedRoomType) {
+        setSelectedRoomType(boardingService.roomType[0]);
+      }
+    }
+  }, [boardingService, selectedCageSize, selectedRoomType]);
 
   // Number of boarding days
   const boardingDays = isHotelSelected
@@ -407,6 +420,8 @@ export default function ClinicDetail() {
           ? staffWithAvailability.find(s => s.id === selectedStaffId)?.fullName
           : undefined,
         appointmentDatetime,
+        checkIn: isHotelSelected ? `${checkInDate}T12:00:00` : undefined,
+        checkOut: isHotelSelected ? `${checkOutDate}T12:00:00` : undefined,
         date: (() => {
           const parts: string[] = [];
           if (hasNormalServices && selectedDate && selectedTime) {
@@ -427,6 +442,8 @@ export default function ClinicDetail() {
         normalServiceNames: hasNormalServices
           ? selectedServiceIds.map(id => apiServices.find((s: ServiceResponse) => s.id === id)?.serviceName).filter(Boolean).join(', ')
           : undefined,
+        cageSize: isHotelSelected ? selectedCageSize : undefined,
+        roomType: isHotelSelected ? selectedRoomType : undefined,
       }
     });
   }
@@ -699,6 +716,48 @@ export default function ClinicDetail() {
                           </div>
                         ) : null;
                       })()}
+
+                      {/* Additional Boarding info (Cage, Room) */}
+                      {(boardingService.roomType?.length > 0 || boardingService.cageSize?.length > 0) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 border-t border-slate-100 dark:border-slate-700/50 pt-4">
+                          {boardingService.roomType?.length > 0 && (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase text-slate-400 mb-1">Loại phòng</span>
+                              {boardingService.roomType.length > 1 ? (
+                                <select
+                                  value={selectedRoomType}
+                                  onChange={(e) => setSelectedRoomType(e.target.value)}
+                                  className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-[#1a2b4c] outline-none"
+                                >
+                                  {boardingService.roomType.map((r: string) => (
+                                    <option key={r} value={r}>{r}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{boardingService.roomType[0]}</span>
+                              )}
+                            </div>
+                          )}
+                          {boardingService.cageSize?.length > 0 && (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black uppercase text-slate-400 mb-1">Kích thước chuồng</span>
+                              {boardingService.cageSize.length > 1 ? (
+                                <select
+                                  value={selectedCageSize}
+                                  onChange={(e) => setSelectedCageSize(e.target.value)}
+                                  className="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-[#1a2b4c] outline-none"
+                                >
+                                  {boardingService.cageSize.map((c: string) => (
+                                    <option key={c} value={c}>{c}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{boardingService.cageSize[0]}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 

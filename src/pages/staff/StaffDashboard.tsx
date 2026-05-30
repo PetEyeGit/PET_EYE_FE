@@ -11,6 +11,8 @@ import {
 import { taskService, type TaskResponse, type TaskStatus } from '../../services/task.service';
 import { careLogService, type CareLogResponse } from '../../services/care-log.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { bookingService } from '../../services/booking.service';
+import type { BookingResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { format, parseISO } from 'date-fns';
@@ -95,10 +97,14 @@ export default function StaffDashboard() {
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState<number | null>(null);
     const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
+    const [configuringTask, setConfiguringTask] = useState<TaskResponse | null>(null);
     const [careLogs, setCareLogs] = useState<CareLogResponse[]>([]);
     const [careLogNote, setCareLogNote] = useState('');
     const [careLogType, setCareLogType] = useState('FEEDING');
     const [submittingLog, setSubmittingLog] = useState(false);
+    const [fullBooking, setFullBooking] = useState<BookingResponse | null>(null);
+    const [rtspUrl, setRtspUrl] = useState('');
+    const [configuringCamera, setConfiguringCamera] = useState(false);
 
     const loadData = async () => {
         setLoading(true);
@@ -128,10 +134,18 @@ export default function StaffDashboard() {
     useEffect(() => { loadData(); }, []);
 
     useEffect(() => {
-        if (selectedTask) {
-            fetchLogs(selectedTask.bookingId);
+        const activeTask = selectedTask || configuringTask;
+        if (activeTask) {
+            fetchLogs(activeTask.bookingId);
+            bookingService.getById(activeTask.bookingId).then(b => {
+                setFullBooking(b);
+                setRtspUrl(b.cameraRtspUrl || '');
+            }).catch(console.error);
+        } else {
+            setFullBooking(null);
+            setRtspUrl('');
         }
-    }, [selectedTask]);
+    }, [selectedTask, configuringTask]);
 
     const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus) => {
         setUpdating(bookingId);
@@ -144,6 +158,41 @@ export default function StaffDashboard() {
             toast.error(err?.response?.data?.message || 'Thao tác thất bại');
         } finally { 
             setUpdating(null); 
+        }
+    };
+
+    const handleConfigureCamera = async () => {
+        const targetTask = selectedTask || configuringTask;
+        if (!targetTask || !rtspUrl.trim()) {
+            toast.error('Vui lòng nhập đường dẫn RTSP');
+            return;
+        }
+        setConfiguringCamera(true);
+        try {
+            const updated = await bookingService.configureCamera(targetTask.bookingId, rtspUrl);
+            setFullBooking(updated);
+            toast.success('Cấu hình camera thành công!');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Cấu hình thất bại');
+        } finally {
+            setConfiguringCamera(false);
+        }
+    };
+
+    const handleDeleteCamera = async () => {
+        const targetTask = selectedTask || configuringTask;
+        if (!targetTask) return;
+        if (!window.confirm('Bạn có chắc muốn tắt camera?')) return;
+        setConfiguringCamera(true);
+        try {
+            const updated = await bookingService.deleteCamera(targetTask.bookingId);
+            setFullBooking(updated);
+            setRtspUrl('');
+            toast.success('Đã tắt camera');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Tắt camera thất bại');
+        } finally {
+            setConfiguringCamera(false);
         }
     };
 
@@ -241,24 +290,49 @@ export default function StaffDashboard() {
                         <span className="text-base font-black text-slate-800 dark:text-slate-200 ml-1">{task.serviceName}</span>
                     </div>
                     
-                    <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700 shadow-sm">
-                        <div className="flex items-center gap-2.5">
-                            <Clock size={16} className="text-indigo-500" />
-                            <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatTime(task.appointmentDatetime)}</span>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700 shadow-sm">
+                            <div className="flex items-center gap-2.5">
+                                <Clock size={16} className="text-indigo-500" />
+                                <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatTime(task.appointmentDatetime)}</span>
+                            </div>
+                            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+                            <div className="flex items-center gap-2.5">
+                                <Calendar size={16} className="text-rose-500" />
+                                <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatDate(task.appointmentDatetime)}</span>
+                            </div>
                         </div>
-                        <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
-                        <div className="flex items-center gap-2.5">
-                            <Calendar size={16} className="text-rose-500" />
-                            <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatDate(task.appointmentDatetime)}</span>
-                        </div>
+                        {task.checkOut && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100/50 dark:border-slate-700 shadow-sm">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-lg">Đến</span>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <Clock size={16} className="text-indigo-500" />
+                                    <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatTime(task.checkOut)}</span>
+                                </div>
+                                <div className="w-px h-4 bg-slate-200 dark:bg-slate-700" />
+                                <div className="flex items-center gap-2.5">
+                                    <Calendar size={16} className="text-rose-500" />
+                                    <span className="text-sm font-black text-slate-700 dark:text-slate-300">{formatDate(task.checkOut)}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {!isPool ? (
-                    next && (
+                    next && (!task.checkOut || task.status !== 'IN_PROGRESS' || new Date() >= new Date(task.checkOut)) && (
                         <button
                             disabled={busy}
-                            onClick={(e) => { e.stopPropagation(); handleUpdateStatus(task.bookingId, next); }}
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (task.checkOut && task.status === 'CONFIRMED') {
+                                    setConfiguringTask(task);
+                                } else {
+                                    handleUpdateStatus(task.bookingId, next); 
+                                }
+                            }}
                             className={`w-full py-4 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl ${cfg.shadow} ${
                                 next === 'IN_PROGRESS' 
                                 ? 'bg-primary text-white hover:bg-primary-dark' 
@@ -266,7 +340,7 @@ export default function StaffDashboard() {
                             } disabled:opacity-50`}
                         >
                             {busy ? <Loader2 size={18} className="animate-spin" /> : <PlayCircle size={18} />}
-                            {busy ? 'Đang xử lý...' : NEXT_LABEL[task.status]}
+                            {busy ? 'Đang xử lý...' : (task.checkOut && task.status === 'CONFIRMED' ? 'Bắt đầu cấu hình' : (task.checkOut && task.status === 'IN_PROGRESS' ? 'Kết thúc lưu trú' : NEXT_LABEL[task.status]))}
                         </button>
                     )
                 ) : (
@@ -582,7 +656,8 @@ export default function StaffDashboard() {
                                                 {[
                                                     { label: 'Chủ nuôi', value: selectedTask.customerName, icon: User, color: 'text-primary bg-primary/5' },
                                                     { label: 'Dịch vụ', value: selectedTask.serviceName, icon: ClipboardList, color: 'text-amber-600 bg-amber-50' },
-                                                    { label: 'Lịch hẹn', value: `${formatTime(selectedTask.appointmentDatetime)} - ${formatDate(selectedTask.appointmentDatetime)}`, icon: Clock, color: 'text-indigo-600 bg-indigo-50' }
+                                                    { label: selectedTask.checkOut ? 'Bắt đầu' : 'Lịch hẹn', value: `${formatTime(selectedTask.appointmentDatetime)} - ${formatDate(selectedTask.appointmentDatetime)}`, icon: Clock, color: 'text-indigo-600 bg-indigo-50' },
+                                                    ...(selectedTask.checkOut ? [{ label: 'Kết thúc', value: `${formatTime(selectedTask.checkOut)} - ${formatDate(selectedTask.checkOut)}`, icon: Calendar, color: 'text-rose-600 bg-rose-50' }] : [])
                                                 ].map((item, i) => (
                                                     <div key={i} className="flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm text-left">
                                                         <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
@@ -595,6 +670,76 @@ export default function StaffDashboard() {
                                                     </div>
                                                 ))}
                                             </div>
+
+                                            {/* Camera Configuration for Boarding */}
+                                            {fullBooking && selectedTask.checkOut && (
+                                                <div className="w-full mt-6 p-6 bg-slate-900 dark:bg-slate-950 border border-slate-800 rounded-3xl text-left text-white shadow-xl">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                                                            <Camera size={14} /> Cấu hình Camera - Phòng P-{(fullBooking.id % 20) + 101}
+                                                        </p>
+                                                        {fullBooking.cameraStreamUrl && (
+                                                            <span className="flex h-2.5 w-2.5 relative">
+                                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
+                                                        <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800/50">
+                                                            <p className="text-slate-500 mb-1 text-[9px] font-black uppercase tracking-widest">Kích thước chuồng</p>
+                                                            <p className="font-bold">{fullBooking.cageSize || 'Tiêu chuẩn'}</p>
+                                                        </div>
+                                                        <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800/50">
+                                                            <p className="text-slate-500 mb-1 text-[9px] font-black uppercase tracking-widest">Loại phòng</p>
+                                                            <p className="font-bold text-amber-400">{fullBooking.roomType || 'Thường'}</p>
+                                                        </div>
+
+                                                        <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-800/50">
+                                                            <p className="text-slate-500 mb-1 text-[9px] font-black uppercase tracking-widest">Trạng thái kết nối</p>
+                                                            <p className="font-bold text-emerald-400">Sẵn sàng ({fullBooking.cameraEnabled ? 'Đã kích hoạt' : 'Chưa kích hoạt'})</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 block">RTSP Stream URL</label>
+                                                            <div className="flex gap-2">
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={rtspUrl}
+                                                                    onChange={e => setRtspUrl(e.target.value)}
+                                                                    placeholder="rtsp://admin:pass@ip:port/stream"
+                                                                    className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                                                                />
+                                                                <button 
+                                                                    onClick={handleConfigureCamera}
+                                                                    disabled={configuringCamera || !rtspUrl.trim()}
+                                                                    className="px-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold disabled:opacity-50 transition-all flex items-center justify-center min-w-[70px]"
+                                                                >
+                                                                    {configuringCamera ? <Loader2 size={14} className="animate-spin" /> : 'Lưu'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {fullBooking.cameraStreamUrl && (
+                                                            <div className="bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                                                <p className="text-[10px] text-slate-400 mb-1 flex items-center justify-between">
+                                                                    <span>TRẠNG THÁI</span>
+                                                                    <button onClick={handleDeleteCamera} className="text-rose-400 hover:text-rose-300">Tắt Camera</button>
+                                                                </p>
+                                                                <p className="text-xs text-emerald-400 font-mono break-all">Đang phát</p>
+                                                                {fullBooking.cameraConfiguredAt && (
+                                                                    <p className="text-[9px] text-slate-400 mt-2 italic">
+                                                                        Bắt đầu: {format(parseISO(fullBooking.cameraConfiguredAt), 'HH:mm dd/MM/yyyy')}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {selectedTask.note && (
                                                 <div className="w-full mt-6 p-6 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-3xl text-left">
@@ -610,14 +755,24 @@ export default function StaffDashboard() {
                                     </div>
 
                                     {/* Right Panel: Operations & Logs */}
-                                    <div className="flex-1 p-8 sm:p-10 lg:p-12">
+                                    <div className="flex-1 p-8 sm:p-10 lg:p-12 flex flex-col h-full">
                                         
+                                        {/* Tabs for Logging / Chat */}
+                                        <div className="flex items-center justify-center gap-4 mb-8">
+                                            <button className="flex-1 py-3 px-6 bg-white dark:bg-slate-800 text-primary font-black text-sm rounded-full shadow-sm border border-slate-100 dark:border-slate-700 transition-all text-center">
+                                                Nhật ký
+                                            </button>
+                                            <button className="flex-1 py-3 px-6 bg-slate-50 dark:bg-slate-900 text-slate-400 font-bold text-sm rounded-full transition-all text-center hover:bg-slate-100">
+                                                Trò chuyện
+                                            </button>
+                                        </div>
+
                                         {/* Activity Logging Section */}
                                         {selectedTask.status === 'IN_PROGRESS' ? (
                                             <div className="mb-12">
                                                 <div className="flex items-center gap-3 mb-6">
                                                     <Plus size={18} className="text-primary" />
-                                                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Ghi nhận hoạt động mới</p>
+                                                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Cập nhật sức khỏe hoạt động của Pet</p>
                                                 </div>
                                                 <form onSubmit={handleAddCareLog} className="space-y-6">
                                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -665,7 +820,7 @@ export default function StaffDashboard() {
                                                     onClick={() => handleUpdateStatus(selectedTask.bookingId, 'IN_PROGRESS')}
                                                     className="px-10 py-4 bg-primary text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all"
                                                 >
-                                                    Bắt đầu ngay
+                                                    Bắt đầu {selectedTask.checkOut ? 'cấu hình' : 'ngay'}
                                                 </button>
                                             </div>
                                         ) : null}
@@ -725,14 +880,14 @@ export default function StaffDashboard() {
                             {/* Modal Footer (Always Visible) */}
                             <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
                                 <div className="flex flex-col sm:flex-row gap-4 max-w-4xl mx-auto">
-                                    {NEXT_STATUS[selectedTask.status] && (
+                                    {NEXT_STATUS[selectedTask.status] && (!selectedTask.checkOut || selectedTask.status !== 'IN_PROGRESS' || new Date() >= new Date(selectedTask.checkOut)) && (
                                         <button 
                                             disabled={updating === selectedTask.bookingId}
                                             onClick={() => handleUpdateStatus(selectedTask.bookingId, NEXT_STATUS[selectedTask.status]!)}
                                             className="flex-[2] py-4.5 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-3"
                                         >
                                             {updating === selectedTask.bookingId ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-                                            {updating === selectedTask.bookingId ? 'Đang cập nhật...' : NEXT_LABEL[selectedTask.status]}
+                                            {updating === selectedTask.bookingId ? 'Đang cập nhật...' : (selectedTask.checkOut && selectedTask.status === 'CONFIRMED' ? 'Bắt đầu cấu hình' : (selectedTask.checkOut && selectedTask.status === 'IN_PROGRESS' ? 'Kết thúc lưu trú' : NEXT_LABEL[selectedTask.status]))}
                                         </button>
                                     )}
                                     <button 
@@ -743,6 +898,98 @@ export default function StaffDashboard() {
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* CONFIGURATION POPUP */}
+            <AnimatePresence>
+                {configuringTask && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setConfiguringTask(null)}
+                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-lg bg-slate-900 dark:bg-slate-950 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-2xl overflow-hidden"
+                        >
+                            <button 
+                                onClick={() => setConfiguringTask(null)}
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors rounded-xl bg-slate-800/50"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="w-14 h-14 rounded-[1.2rem] bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                                    <Camera size={28} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black tracking-tight">Cấu hình Camera</h3>
+                                    {fullBooking ? (
+                                        <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                                            Phòng P-{(fullBooking.id % 20) + 101}
+                                            {fullBooking.cameraStreamUrl && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />}
+                                        </p>
+                                    ) : (
+                                        <div className="w-20 h-4 bg-slate-800 rounded animate-pulse mt-2" />
+                                    )}
+                                </div>
+                            </div>
+
+                            {fullBooking ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-3 text-xs">
+                                        <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Kích thước chuồng</p>
+                                            <p className="font-bold text-slate-200">{fullBooking.cageSize || 'Tiêu chuẩn'}</p>
+                                        </div>
+                                        <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Loại phòng</p>
+                                            <p className="font-bold text-amber-400">{fullBooking.roomType || 'Thường'}</p>
+                                        </div>
+
+                                        <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Trạng thái kết nối</p>
+                                            <p className="font-bold text-emerald-400">Sẵn sàng</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Đường dẫn RTSP</label>
+                                        <input 
+                                            type="text" 
+                                            value={rtspUrl}
+                                            onChange={e => setRtspUrl(e.target.value)}
+                                            placeholder="rtsp://admin:pass@ip:port/stream"
+                                            className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner mb-6"
+                                        />
+
+                                        <button 
+                                            onClick={async () => {
+                                                await handleConfigureCamera();
+                                                setConfiguringTask(null);
+                                                handleUpdateStatus(configuringTask.bookingId, 'IN_PROGRESS');
+                                            }}
+                                            disabled={configuringCamera || !rtspUrl.trim()}
+                                            className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-[1.5rem] font-black text-sm uppercase tracking-widest disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-900/20"
+                                        >
+                                            {configuringCamera ? <Loader2 size={18} className="animate-spin" /> : <PlayCircle size={18} />}
+                                            {configuringCamera ? 'Đang lưu...' : 'Lưu & Bắt đầu ca trực'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="py-16 flex flex-col items-center justify-center gap-4">
+                                    <Loader2 size={32} className="animate-spin text-blue-500" />
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Đang tải thông tin phòng...</p>
+                                </div>
+                            )}
                         </motion.div>
                     </div>
                 )}

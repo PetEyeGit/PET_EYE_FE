@@ -18,7 +18,11 @@ export const bookingService = {
     petId: number;
     staffId?: number;
     appointmentDatetime: string;
+    checkIn?: string;
+    checkOut?: string;
     note?: string;
+    cageSize?: string;
+    roomType?: string;
   }): Promise<InitiatePaymentResponse> => {
     const response = await apiClient.post<ApiResponse<InitiatePaymentResponse>>(
       '/bookings/initiate-payment', data
@@ -65,6 +69,18 @@ export const bookingService = {
   /** Cancel a booking */
   cancel: async (id: number): Promise<BookingResponse> => {
     const response = await apiClient.post<ApiResponse<BookingResponse>>(`/bookings/${id}/cancel`);
+    return response.data.result!;
+  },
+
+
+
+  mockConfirmPayment: async (orderCode: number): Promise<any> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/bookings/mock-confirm?orderCode=${orderCode}`);
+    return response.data.result!;
+  },
+
+  mockConfirmCashDeposit: async (orderCode: number): Promise<any> => {
+    const response = await apiClient.post<ApiResponse<any>>(`/bookings/cash/mock-confirm?orderCode=${orderCode}`);
     return response.data.result!;
   },
 
@@ -141,5 +157,28 @@ export const bookingService = {
       { params: { date, durationMinutes } }
     );
     return response.data.result ?? [];
+  },
+
+  /** Get active camera streams for current user */
+  getActiveCameras: async (): Promise<BookingResponse[]> => {
+    const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/v1/camera/active');
+    return response.data.result ?? [];
+  },
+
+  /** Configure camera RTSP url for a booking (Shop Owner) */
+  configureCamera: async (bookingId: number, rtspUrl: string): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(
+      `/v1/camera/booking/${bookingId}`,
+      { rtspUrl }
+    );
+    return response.data.result!;
+  },
+
+  /** Stop/Delete camera configuration for a booking (Shop Owner) */
+  deleteCamera: async (bookingId: number): Promise<BookingResponse> => {
+    const response = await apiClient.delete<ApiResponse<BookingResponse>>(
+      `/v1/camera/booking/${bookingId}`
+    );
+    return response.data.result!;
   },
 };

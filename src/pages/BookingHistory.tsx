@@ -97,7 +97,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
     const category = guessCategory(booking.serviceName);
     const cat = CATEGORY_META[category];
     const status = STATUS_META[booking.status] || STATUS_META.CONFIRMED;
-    const isLive = booking.status === 'IN_PROGRESS';
+    const isLive = !!booking.cameraStreamUrl;
 
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
@@ -156,9 +156,13 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
 
                 <div className="flex items-center gap-4 shrink-0">
                     <div className="hidden sm:block text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {category === 'boarding' ? 'Thời hạn lưu trú' : 'Thời gian'}
+                        </p>
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
+                            {category === 'boarding' && booking.checkIn && booking.checkOut
+                                ? `${format(parseISO(booking.checkIn), 'dd/MM/yyyy')} → ${format(parseISO(booking.checkOut), 'dd/MM/yyyy')}`
+                                : format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
                         </p>
                     </div>
 
@@ -246,9 +250,13 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                {category === 'boarding' ? 'Thời hạn lưu trú' : 'Thời gian'}
+                            </p>
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                                {format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
+                                {category === 'boarding' && booking.checkIn && booking.checkOut
+                                    ? `${format(parseISO(booking.checkIn), 'dd/MM/yyyy')} → ${format(parseISO(booking.checkOut), 'dd/MM/yyyy')}`
+                                    : format(parseISO(booking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
                             </p>
                         </div>
                     </div>
@@ -357,7 +365,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                 <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-3">
                         {isLive && (
-                            <Link to="/camera" className="px-5 py-2.5 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all">
+                            <Link to={`/camera?bookingId=${booking.id}`} className="px-5 py-2.5 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all">
                                 <Video size={14} /> Xem Camera
                             </Link>
                         )}
@@ -834,7 +842,11 @@ export default function BookingHistory() {
                                         <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Đơn hàng</p>
                                         <p className="mt-2 text-base font-black text-slate-900 dark:text-white">{selectedBooking.serviceName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedBooking.shopName} • Bé: {selectedBooking.petName}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{format(parseISO(selectedBooking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            {guessCategory(selectedBooking.serviceName) === 'boarding' && selectedBooking.checkIn && selectedBooking.checkOut
+                                                ? `Lưu trú: ${format(parseISO(selectedBooking.checkIn), 'dd/MM/yyyy')} → ${format(parseISO(selectedBooking.checkOut), 'dd/MM/yyyy')}`
+                                                : format(parseISO(selectedBooking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
+                                        </p>
                                     </div>
                                     <div className="rounded-3xl bg-white dark:bg-slate-950 shadow-sm border border-slate-200 dark:border-slate-800 px-4 py-3 text-right">
                                         <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400">Tổng tiền</p>
@@ -956,7 +968,7 @@ export default function BookingHistory() {
                                     </button>
                                     <button
                                         onClick={handleSubmitCancelRequest}
-                                        disabled={cancelMutation.isLoading}
+                                        disabled={cancelMutation.isPending}
                                         className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
                                         {cancelMutation.isLoading || directCancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}

@@ -43,6 +43,8 @@ interface ServiceForm {
   cameraTierPrices: Record<string, number>;   // custom price per tier
   cameraTierLabels: Record<string, string>;   // custom label per tier
   cameraDescription: string;
+  cageSize: string;
+  roomType: string;
 }
 
 const EMPTY_FORM: ServiceForm = {
@@ -59,6 +61,8 @@ const EMPTY_FORM: ServiceForm = {
   cameraTierPrices: {},
   cameraTierLabels: {},
   cameraDescription: '',
+  cageSize: '',
+  roomType: '',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -155,6 +159,8 @@ export default function ShopServices() {
       cameraTierPrices: service.cameraTierPrices ?? {},
       cameraTierLabels: service.cameraTierLabels ?? {},
       cameraDescription: service.cameraDescription ?? '',
+      cageSize: service.cageSize?.join(', ') ?? '',
+      roomType: service.roomType?.join(', ') ?? '',
     });
     setImagePreview(service.imageUrl ?? '');
     setShowModal(true);
@@ -221,6 +227,8 @@ export default function ShopServices() {
             cameraTierPrices: form.cameraEnabled ? form.cameraTierPrices : {},
             cameraTierLabels: form.cameraEnabled ? form.cameraTierLabels : {},
             cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
+            cageSize: form.cageSize ? form.cageSize.split(',').map(s=>s.trim()).filter(Boolean) : undefined,
+            roomType: form.roomType ? form.roomType.split(',').map(s=>s.trim()).filter(Boolean) : undefined,
           }),
         };
         const created = await serviceService.createService(payload);
@@ -242,6 +250,8 @@ export default function ShopServices() {
             cameraTierPrices: form.cameraEnabled ? form.cameraTierPrices : {},
             cameraTierLabels: form.cameraEnabled ? form.cameraTierLabels : {},
             cameraDescription: form.cameraEnabled ? form.cameraDescription : undefined,
+            cageSize: form.cageSize ? form.cageSize.split(',').map(s=>s.trim()).filter(Boolean) : undefined,
+            roomType: form.roomType ? form.roomType.split(',').map(s=>s.trim()).filter(Boolean) : undefined,
           }),
         };
         const updated = await serviceService.updateService(editingId, payload);
@@ -611,6 +621,36 @@ export default function ShopServices() {
                   placeholder="Mô tả chi tiết về dịch vụ..."
                 />
               </div>
+
+              {/* ── BOARDING: Room config ─────────────────────────────────── */}
+              {form.category === 'BOARDING' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Kích thước chuồng <span className="font-normal text-xs text-slate-400">(ngăn cách bởi dấu phẩy nếu có nhiều lựa chọn)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.cageSize}
+                      onChange={(e) => setForm((prev) => ({ ...prev, cageSize: e.target.value }))}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                      placeholder="VD: Nhỏ, Vừa, Lớn"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Loại phòng <span className="font-normal text-xs text-slate-400">(ngăn cách bởi dấu phẩy nếu có nhiều lựa chọn)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.roomType}
+                      onChange={(e) => setForm((prev) => ({ ...prev, roomType: e.target.value }))}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                      placeholder="VD: Tiêu chuẩn, VIP"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* ── BOARDING: Camera config ─────────────────────────────────── */}
               {form.category === 'BOARDING' && (

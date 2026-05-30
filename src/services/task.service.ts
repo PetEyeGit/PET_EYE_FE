@@ -19,6 +19,7 @@ export interface TaskResponse {
   staffId: number | null;
   staffName: string | null;
   appointmentDatetime: string;
+  checkOut?: string;
   status: 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING_PAYMENT' | 'CANCEL_REQUESTED' | 'WAITING_REFUND';
   note: string | null;
   cancellationReason?: string;

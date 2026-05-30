@@ -3,7 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Store, Bell, LogOut, Menu, X, ChevronDown, 
   Calendar, MessageCircle, Award, 
-  LayoutDashboard, UserCircle, Settings, Check, Clock, AlertCircle
+  LayoutDashboard, UserCircle, Settings, Check, Clock, AlertCircle,
+  Video
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -46,6 +47,7 @@ export default function StaffNavbar() {
     { label: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
     { label: 'Lịch làm việc', path: '/staff/tasks', icon: Calendar },
     { label: 'Hồ sơ chuyên môn', path: '/staff/profile', icon: Award },
+    { label: 'Cấu hình Cam', path: '/staff/camera', icon: Video },
     { label: 'Tin nhắn', path: '/staff/messages', icon: MessageCircle },
   ];
 

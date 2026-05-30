@@ -47,6 +47,8 @@ export interface ServiceResponse {
   /** Custom display labels per tier, e.g. {"BASIC":"Tiêu chuẩn","HD":"Nét cao"} */
   cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
+  cageSize?: string[];
+  roomType?: string[];
 }
 
 export interface ServiceCreationRequest {
@@ -62,6 +64,8 @@ export interface ServiceCreationRequest {
   cameraTierPrices?: Record<string, number>;
   cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
+  cageSize?: string[];
+  roomType?: string[];
 }
 
 export interface ServiceUpdateRequest {
@@ -78,6 +82,8 @@ export interface ServiceUpdateRequest {
   cameraTierPrices?: Record<string, number>;
   cameraTierLabels?: Record<string, string>;
   cameraDescription?: string;
+  cageSize?: string[];
+  roomType?: string[];
 }
 
 export interface StaffResponse {
@@ -107,8 +113,12 @@ export interface BookingRequest {
   petId: number;
   staffId?: number;
   appointmentDatetime: string;
+  checkIn?: string;
+  checkOut?: string;
   note?: string;
   paymentMethod?: 'PAYOS' | 'CASH';
+  cageSize?: string;
+  roomType?: string;
 }
 
 export interface BookingResponse {
@@ -128,6 +138,8 @@ export interface BookingResponse {
   staffId?: number;
   staffName?: string;
   appointmentDatetime: string;
+  checkIn?: string;
+  checkOut?: string;
   status: string;
   note?: string;
   cancellationReason?: string;
@@ -139,6 +151,13 @@ export interface BookingResponse {
   checkoutUrl?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  cameraRtspUrl?: string;
+  cameraStreamUrl?: string;
+  cameraEnabled?: boolean;
+  cameraConfiguredAt?: string;
+  serviceEndDatetime?: string;
+  cageSize?: string;
+  roomType?: string;
 }
 
 export interface TransactionResponse {

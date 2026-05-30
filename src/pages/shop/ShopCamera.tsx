@@ -1,41 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
 import {
-  Video, Maximize2, Volume2, VolumeX, Grid3x3, Play, Plus, Trash2, X,
-  Send, MessageCircle, Utensils, Droplets, Activity, Heart, CheckCircle,
-  ClipboardList, Wifi, AlertCircle, RefreshCw, Link, Loader2
+  Video, Maximize2, Volume2, VolumeX, Play, X,
+  Activity, Heart, CheckCircle, ClipboardList, Wifi, AlertCircle, RefreshCw, Link, Loader2, StopCircle
 } from 'lucide-react';
-import * as cameraService from '../../services/camera.service';
-import type { CameraDevice, CameraStream } from '../../services/camera.service';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ChatMessage {
-  id: string;
-  sender: 'shop' | 'customer';
-  text: string;
-  time: string;
-}
-
-interface CareLog {
-  id: string;
-  time: string;
-  action: string;
-  desc: string;
-  icon: string;
-  color: string;
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function LogIcon({ type, color }: { type: string; color: string }) {
-  const cls = 'w-4 h-4';
-  const style = { color };
-  if (type === 'utensils') return <Utensils className={cls} style={style} />;
-  if (type === 'droplets') return <Droplets className={cls} style={style} />;
-  if (type === 'activity') return <Activity className={cls} style={style} />;
-  return <Heart className={cls} style={style} />;
-}
+import { bookingService } from '../../services/booking.service';
+import type { BookingResponse } from '../../types/api';
+import toast from 'react-hot-toast';
+import { resolveStreamUrl, checkStreamReady } from '../../utils/streamHelper';
 
 // ─── HLS Video Player ─────────────────────────────────────────────────────────
 
@@ -61,6 +33,8 @@ function HLSPlayer({
       hlsRef.current = null;
     }
 
+    const resolvedUrl = resolveStreamUrl(streamUrl);
+
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -68,7 +42,7 @@ function HLSPlayer({
         backBufferLength: 90,
       });
       hlsRef.current = hls;
-      hls.loadSource(streamUrl);
+      hls.loadSource(resolvedUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {});
@@ -81,7 +55,7 @@ function HLSPlayer({
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS support
-      video.src = streamUrl;
+      video.src = resolvedUrl;
       video.addEventListener('loadedmetadata', () => video.play().catch(() => {}));
     } else {
       onError();
@@ -108,222 +82,165 @@ function HLSPlayer({
   );
 }
 
-// ─── Bind Account Modal ───────────────────────────────────────────────────────
-
-function BindAccountModal({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [phone, setPhone]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
-
-  const handleBind = async () => {
-    if (!phone.trim()) { setError('Vui lòng nhập số điện thoại'); return; }
-    setLoading(true);
-    setError('');
-    try {
-      await cameraService.bindImouAccount(phone.trim());
-      onSuccess();
-      onClose();
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } }; message?: string })
-        ?.response?.data?.message || 'Liên kết thất bại. Kiểm tra lại số điện thoại.';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full shadow-2xl p-8 animate-in fade-in zoom-in duration-300">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Link size={20} className="text-white" />
-            </div>
-            <div>
-              <h2 className="font-black text-slate-900 dark:text-white">Liên kết Imou</h2>
-              <p className="text-xs text-slate-500">Kết nối camera từ app Imou Life</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center">
-            <X size={18} className="text-slate-400" />
-          </button>
-        </div>
-
-        {/* Info Box */}
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl mb-6">
-          <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-            📱 Nhập số điện thoại đã đăng ký tài khoản <strong>Imou Life</strong> của bạn.
-            Camera đang được chia sẻ trên app sẽ tự động xuất hiện trên hệ thống Pet Eye.
-          </p>
-        </div>
-
-        {/* Input */}
-        <div className="space-y-2 mb-4">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Số điện thoại Imou Life *
-          </label>
-          <div className="relative">
-            <Wifi size={16} className="absolute left-3 top-3.5 text-slate-400" />
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => { setPhone(e.target.value); setError(''); }}
-              onKeyDown={(e) => e.key === 'Enter' && handleBind()}
-              placeholder="0912 345 678"
-              className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
-            />
-          </div>
-          {error && (
-            <p className="text-xs text-red-500 flex items-center gap-1">
-              <AlertCircle size={12} /> {error}
-            </p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-            Huỷ
-          </button>
-          <button
-            onClick={handleBind}
-            disabled={loading}
-            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Link size={16} />}
-            {loading ? 'Đang liên kết...' : 'Liên kết'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ShopCamera() {
-  // Camera state
-  const [cameras, setCameras]           = useState<CameraDevice[]>([]);
-  const [selectedCamera, setSelectedCamera] = useState<CameraDevice | null>(null);
-  const [streamInfo, setStreamInfo]     = useState<CameraStream | null>(null);
-  const [loadingDevices, setLoadingDevices] = useState(true);
-  const [loadingStream, setLoadingStream]   = useState(false);
-  const [streamError, setStreamError]       = useState(false);
+  const [bookings, setBookings] = useState<BookingResponse[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [streamError, setStreamError] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  
+  // Track RTSP input values for each booking by ID
+  const [rtspInputs, setRtspInputs] = useState<Record<number, string>>({});
+  const [submittingIds, setSubmittingIds] = useState<Record<number, boolean>>({});
 
-  // UI state
-  const [isMuted, setIsMuted]           = useState(true);
-  const [viewMode, setViewMode]         = useState<'single' | 'grid'>('single');
-  const [showBindModal, setShowBindModal] = useState(false);
-  const [activeTab, setActiveTab]       = useState<'list' | 'logs' | 'chat'>('list');
-
-  // Chat & logs
-  const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
-  const [careLogs, setCareLogs]         = useState<Record<string, CareLog[]>>({});
-  const [newMessage, setNewMessage]     = useState('');
-  const [showLogModal, setShowLogModal] = useState(false);
-  const [newLog, setNewLog]             = useState({ action: '', desc: '', type: 'utensils' });
-
-  // ─── Load Devices ───────────────────────────────────────────────────────────
-
-  const fetchDevices = useCallback(async () => {
-    setLoadingDevices(true);
-    try {
-      const devices = await cameraService.getDevices();
-      setCameras(devices);
-      if (devices.length > 0 && !selectedCamera) {
-        setSelectedCamera(devices[0]);
-      }
-    } catch (err) {
-      console.error('Failed to load devices:', err);
-    } finally {
-      setLoadingDevices(false);
-    }
-  }, [selectedCamera]);
-
-  useEffect(() => { fetchDevices(); }, []);
-
-  // ─── Load Stream when camera selected ──────────────────────────────────────
-
-  const fetchStream = useCallback(async (deviceId: string) => {
-    setLoadingStream(true);
-    setStreamError(false);
-    setStreamInfo(null);
-    try {
-      const stream = await cameraService.getLiveStream(deviceId);
-      setStreamInfo(stream);
-    } catch (err) {
-      console.error('Failed to get stream:', err);
-      setStreamError(true);
-    } finally {
-      setLoadingStream(false);
-    }
-  }, []);
+  const [isCheckingStream, setIsCheckingStream] = useState(false);
+  const [isStreamReady, setIsStreamReady] = useState(false);
 
   useEffect(() => {
-    if (selectedCamera) fetchStream(selectedCamera.deviceId);
-  }, [selectedCamera?.deviceId]);
+    if (!selectedBooking || !selectedBooking.cameraStreamUrl) {
+      setIsStreamReady(false);
+      setIsCheckingStream(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsCheckingStream(true);
+    setIsStreamReady(false);
+    setStreamError(false);
+
+    const checkReady = async () => {
+      const ready = await checkStreamReady(selectedBooking.cameraStreamUrl!);
+      if (!isMounted) return;
+      
+      setIsCheckingStream(false);
+      if (ready) {
+        setIsStreamReady(true);
+      } else {
+        setStreamError(true);
+      }
+    };
+
+    checkReady();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedBooking?.cameraStreamUrl]);
+
+  const handleRetryStream = () => {
+    if (!selectedBooking?.cameraStreamUrl) return;
+    setStreamError(false);
+    setIsCheckingStream(true);
+    checkStreamReady(selectedBooking.cameraStreamUrl).then((ready) => {
+      setIsCheckingStream(false);
+      if (ready) {
+        setIsStreamReady(true);
+      } else {
+        setStreamError(true);
+      }
+    });
+  };
+
+  // ─── Load Active Lodging Bookings ──────────────────────────────────────────
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const allBookings = await bookingService.getShopBookings();
+      // Filter: must be lodging with camera enabled, and status accepted
+      const filtered = allBookings.filter(b => 
+        b.cameraEnabled === true &&
+        ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'].includes(b.status)
+      );
+      setBookings(filtered);
+      
+      // Initialize inputs with current RTSP urls
+      const inputs: Record<number, string> = {};
+      filtered.forEach(b => {
+        inputs[b.id] = b.cameraRtspUrl || '';
+      });
+      setRtspInputs(inputs);
+
+      // Keep selected booking updated if it still exists in list
+      if (selectedBooking) {
+        const updated = filtered.find(b => b.id === selectedBooking.id);
+        setSelectedBooking(updated || null);
+      }
+    } catch (err) {
+      console.error('Failed to load shop bookings:', err);
+      toast.error('Không thể tải danh sách đơn lưu trú');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBooking]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleSelectCamera = (cam: CameraDevice) => {
-    setSelectedCamera(cam);
+  const handleInputChange = (bookingId: number, val: string) => {
+    setRtspInputs(prev => ({ ...prev, [bookingId]: val }));
   };
 
-  const handleDeleteCamera = (deviceId: string) => {
-    if (!window.confirm('Bạn có chắc muốn xoá camera này khỏi danh sách?')) return;
-    setCameras(prev => prev.filter(c => c.deviceId !== deviceId));
-    if (selectedCamera?.deviceId === deviceId) {
-      const remaining = cameras.filter(c => c.deviceId !== deviceId);
-      setSelectedCamera(remaining[0] ?? null);
+  const handleConfigureCamera = async (bookingId: number) => {
+    const rtspUrl = rtspInputs[bookingId]?.trim();
+    if (!rtspUrl) {
+      toast.error('Vui lòng nhập đường dẫn RTSP');
+      return;
+    }
+
+    setSubmittingIds(prev => ({ ...prev, [bookingId]: true }));
+    try {
+      const updated = await bookingService.configureCamera(bookingId, rtspUrl);
+      toast.success('Cấu hình camera thành công! Đang khởi chạy luồng stream...');
+      
+      // Update local state
+      setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
+      if (selectedBooking?.id === bookingId) {
+        setSelectedBooking(updated);
+      } else {
+        setSelectedBooking(updated); // Auto preview upon configuring
+      }
+      setStreamError(false);
+    } catch (err: any) {
+      console.error('Configure camera failed:', err);
+      toast.error(err.response?.data?.message || 'Cấu hình camera thất bại');
+    } finally {
+      setSubmittingIds(prev => ({ ...prev, [bookingId]: false }));
     }
   };
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedCamera) return;
-    const msg: ChatMessage = {
-      id: Date.now().toString(),
-      sender: 'shop',
-      text: newMessage.trim(),
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    };
-    setChatMessages(prev => ({ ...prev, [selectedCamera.deviceId]: [...(prev[selectedCamera.deviceId] || []), msg] }));
-    setNewMessage('');
-  };
-
-  const handleAddLog = () => {
-    if (!newLog.action || !newLog.desc || !selectedCamera) return;
-    const colors: Record<string, string> = { utensils: '#f97316', droplets: '#00b4d8', activity: '#00b4d8', heart: '#ec4899' };
-    const log: CareLog = {
-      id: Date.now().toString(),
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + (new Date().getHours() < 12 ? ' SA' : ' CH'),
-      action: newLog.action,
-      desc: newLog.desc,
-      icon: newLog.type,
-      color: colors[newLog.type] || '#f97316',
-    };
-    setCareLogs(prev => ({ ...prev, [selectedCamera.deviceId]: [log, ...(prev[selectedCamera.deviceId] || [])] }));
-    setShowLogModal(false);
-    setNewLog({ action: '', desc: '', type: 'utensils' });
+  const handleDeleteCamera = async (bookingId: number) => {
+    if (!window.confirm('Bạn có chắc muốn tắt camera và dừng luồng stream cho đơn này?')) return;
+    
+    setSubmittingIds(prev => ({ ...prev, [bookingId]: true }));
+    try {
+      const updated = await bookingService.deleteCamera(bookingId);
+      toast.success('Đã tắt camera và dừng Docker container thành công');
+      
+      setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
+      if (selectedBooking?.id === bookingId) {
+        setSelectedBooking(updated);
+      }
+    } catch (err: any) {
+      console.error('Delete camera failed:', err);
+      toast.error(err.response?.data?.message || 'Tắt camera thất bại');
+    } finally {
+      setSubmittingIds(prev => ({ ...prev, [bookingId]: false }));
+    }
   };
 
   // ─── Stats ──────────────────────────────────────────────────────────────────
-
-  const totalCameras   = cameras.length;
-  const onlineCameras  = cameras.filter(c => c.online).length;
-  const offlineCameras = cameras.filter(c => !c.online).length;
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  const totalCount = bookings.length;
+  const configuredCount = bookings.filter(b => b.cameraStreamUrl).length;
+  const activeCount = bookings.filter(b => b.status === 'IN_PROGRESS').length;
+  const pendingConfigCount = totalCount - configuredCount;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
       <div className="max-w-screen-2xl mx-auto px-5 md:px-8 py-8">
 
         {/* ── Header ── */}
@@ -331,38 +248,20 @@ export default function ShopCamera() {
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
               <Video className="w-8 h-8 text-blue-600" />
-              Quản lý Camera
+              Cấu hình & Giám sát Camera Lưu Trú
             </h1>
             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
-              Theo dõi thú cưng đang lưu trú tại cơ sở
+              Quản lý luồng RTSP camera và tự động khởi chạy Docker container cho từng thú cưng
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setShowBindModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all shadow-lg"
+              onClick={fetchBookings}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm disabled:opacity-60"
             >
-              <Link size={18} />
-              <span className="hidden sm:inline">Liên kết Imou</span>
-            </button>
-            <button
-              onClick={fetchDevices}
-              disabled={loadingDevices}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              <RefreshCw size={18} className={loadingDevices ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">Tải lại</span>
-            </button>
-            <button
-              onClick={() => setViewMode(viewMode === 'single' ? 'grid' : 'single')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-[#1a2b4c] text-white shadow-lg'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              <Grid3x3 size={18} />
-              <span className="hidden sm:inline">{viewMode === 'single' ? 'Xem lưới' : 'Xem đơn'}</span>
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              Tải lại danh sách
             </button>
           </div>
         </header>
@@ -370,10 +269,10 @@ export default function ShopCamera() {
         {/* ── Stats ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Tổng camera',      value: totalCameras,  icon: '📹', color: 'from-blue-500 to-blue-600' },
-            { label: 'Đang hoạt động',   value: onlineCameras, icon: '🟢', color: 'from-green-500 to-green-600' },
-            { label: 'Thú cưng lưu trú', value: onlineCameras, icon: '🐾', color: 'from-purple-500 to-purple-600' },
-            { label: 'Offline',          value: offlineCameras,icon: '⚫', color: 'from-slate-500 to-slate-600' },
+            { label: 'Tổng đơn lưu trú có cam', value: totalCount, icon: '📹', color: 'from-blue-500 to-blue-600' },
+            { label: 'Camera đã bật', value: configuredCount, icon: '🟢', color: 'from-green-500 to-green-600' },
+            { label: 'Đang lưu trú tại shop', value: activeCount, icon: '🐾', color: 'from-purple-500 to-purple-600' },
+            { label: 'Cần cấu hình RTSP', value: pendingConfigCount, icon: '⚠️', color: 'from-amber-500 to-amber-600' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
               <div className="flex items-center justify-between mb-3">
@@ -381,384 +280,256 @@ export default function ShopCamera() {
                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${stat.color} opacity-10`} />
               </div>
               <p className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                {loadingDevices ? '—' : stat.value}
+                {loading ? '—' : stat.value}
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* ── Loading State ── */}
-        {loadingDevices ? (
+        {/* ── Content Grid ── */}
+        {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
             <Loader2 size={48} className="animate-spin mb-4 text-blue-500" />
-            <p className="font-medium">Đang tải danh sách camera từ Imou Cloud...</p>
+            <p className="font-medium">Đang tải danh sách đặt phòng và kiểm tra trạng thái Docker...</p>
           </div>
-        ) : cameras.length === 0 ? (
-          /* ── Empty State ── */
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+        ) : bookings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-sm">
             <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
               <Video size={40} className="text-blue-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Chưa có camera nào</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Chưa có đơn lưu trú nào</h3>
             <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-sm text-sm leading-relaxed">
-              Bấm <strong>"Liên kết Imou"</strong> để nhập số điện thoại Imou Life của bạn.
-              Camera đang được chia sẻ trên app sẽ tự động xuất hiện tại đây.
+              Tính năng này chỉ khả dụng khi có đơn đặt dịch vụ Khách sạn/Lưu trú (Hotel) được tích hợp camera từ trước và đã được chấp thuận.
             </p>
-            <button
-              onClick={() => setShowBindModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-            >
-              <Link size={18} /> Liên kết tài khoản Imou
-            </button>
-          </div>
-        ) : viewMode === 'single' ? (
-          /* ── Single View ── */
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-            {/* Main Camera View */}
-            <div className="space-y-4">
-              <div className="bg-slate-900 rounded-2xl overflow-hidden relative aspect-video shadow-2xl">
-                {loadingStream ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Loader2 size={40} className="animate-spin text-blue-400" />
-                  </div>
-                ) : streamError || !streamInfo ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                    <AlertCircle size={40} className="text-slate-500" />
-                    <p className="text-sm">Không thể tải luồng video</p>
-                    <button
-                      onClick={() => selectedCamera && fetchStream(selectedCamera.deviceId)}
-                      className="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-                    >
-                      Thử lại
-                    </button>
-                  </div>
-                ) : (
-                  <HLSPlayer
-                    streamUrl={streamInfo.streamUrl}
-                    isMuted={isMuted}
-                    onError={() => setStreamError(true)}
-                  />
-                )}
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
-
-                {selectedCamera?.online && (
-                  <div className="absolute top-4 left-4 flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-full text-sm font-bold">
-                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                    LIVE
-                  </div>
-                )}
-
-                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                  <div className="text-white">
-                    <p className="text-sm opacity-80">{selectedCamera?.deviceId} — {selectedCamera?.deviceModel}</p>
-                    <h3 className="text-2xl font-bold">{selectedCamera?.name}</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setIsMuted(!isMuted)}
-                      className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      {isMuted ? <VolumeX size={20} className="text-white" /> : <Volume2 size={20} className="text-white" />}
-                    </button>
-                    <button className="w-10 h-10 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-full flex items-center justify-center transition-colors">
-                      <Maximize2 size={20} className="text-white" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Device Info Card */}
-              {selectedCamera && (
-                <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { label: 'Device ID',    value: selectedCamera.deviceId },
-                      { label: 'Model',        value: selectedCamera.deviceModel || 'Imou Camera' },
-                      { label: 'Trạng thái',   value: selectedCamera.online ? '🟢 Online' : '⚫ Offline' },
-                      { label: 'Giao thức',    value: streamInfo?.protocol || 'HLS' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">{label}</p>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Panel: Camera List / Logs / Chat */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col h-fit lg:h-[700px]">
-              {/* Tabs */}
-              <div className="flex border-b border-slate-100 dark:border-slate-700">
-                {(['list', 'logs', 'chat'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-4 text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
-                      activeTab === tab
-                        ? 'text-primary border-b-2 border-primary'
-                        : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    {tab === 'list' && 'Danh sách'}
-                    {tab === 'logs' && <><ClipboardList size={14} /> Nhật ký</>}
-                    {tab === 'chat' && <><MessageCircle size={14} /> Trò chuyện</>}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Tab: Camera List */}
-                {activeTab === 'list' && (
-                  <div className="p-4 space-y-3 overflow-y-auto">
-                    {cameras.map((cam) => (
-                      <div
-                        key={cam.deviceId}
-                        className={`relative group rounded-xl transition-all ${
-                          selectedCamera?.deviceId === cam.deviceId
-                            ? 'bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white shadow-lg'
-                            : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'
-                        }`}
-                      >
-                        <button onClick={() => handleSelectCamera(cam)} className="w-full text-left p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                              {cam.coverUrl ? (
-                                <img src={cam.coverUrl} alt={cam.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <Video size={24} className="text-slate-400" />
-                              )}
-                              {cam.online && (
-                                <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-bold text-sm truncate ${selectedCamera?.deviceId === cam.deviceId ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                                {cam.name}
-                              </p>
-                              <p className={`text-xs truncate ${selectedCamera?.deviceId === cam.deviceId ? 'text-white/70' : 'text-slate-400'}`}>
-                                {cam.deviceId}
-                              </p>
-                              <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${
-                                cam.online
-                                  ? selectedCamera?.deviceId === cam.deviceId
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                                  : selectedCamera?.deviceId === cam.deviceId
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-slate-200 dark:bg-slate-600 text-slate-500'
-                              }`}>
-                                {cam.online ? 'Live' : 'Offline'}
-                              </span>
-                            </div>
-                          </div>
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteCamera(cam.deviceId); }}
-                          className="absolute top-2 right-2 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Tab: Care Logs */}
-                {activeTab === 'logs' && selectedCamera && (
-                  <div className="flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Thời gian biểu hôm nay</h4>
-                      <button onClick={() => setShowLogModal(true)} className="p-1.5 bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition-colors">
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-5 space-y-0 relative">
-                      {(careLogs[selectedCamera.deviceId] || []).map((log, i, arr) => (
-                        <div key={log.id} className="flex gap-4 py-3 relative group">
-                          <div className="flex flex-col items-center gap-1 pt-1">
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0 z-10 shadow-sm">
-                              <LogIcon type={log.icon} color={log.color} />
-                            </div>
-                            {i < arr.length - 1 && <div className="w-px flex-1 bg-slate-200 dark:bg-slate-700 absolute top-9 bottom-[-10px] left-[15px]" />}
-                          </div>
-                          <div className="flex-1 pb-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">{log.action}</span>
-                              <span className="text-[10px] text-slate-400 shrink-0 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-100 dark:border-slate-700">{log.time}</span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">{log.desc}</p>
-                          </div>
-                        </div>
-                      ))}
-                      {!(careLogs[selectedCamera.deviceId]?.length) && (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-40">
-                          <ClipboardList size={40} className="mb-3" />
-                          <p className="text-sm">Chưa có nhật ký cho hôm nay</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Tab: Chat */}
-                {activeTab === 'chat' && selectedCamera && (
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50">
-                      {(chatMessages[selectedCamera.deviceId] || []).map((msg) => (
-                        <div key={msg.id} className={`flex ${msg.sender === 'shop' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`flex gap-2 max-w-[85%] ${msg.sender === 'shop' ? 'flex-row-reverse' : ''}`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold shadow-sm ${msg.sender === 'shop' ? 'bg-[#1a2b4c] text-white' : 'bg-white text-[#1a2b4c] border border-slate-200'}`}>
-                              {msg.sender === 'shop' ? 'S' : 'K'}
-                            </div>
-                            <div className={`flex flex-col ${msg.sender === 'shop' ? 'items-end' : 'items-start'}`}>
-                              <div className={`rounded-2xl px-4 py-2 text-sm shadow-sm ${msg.sender === 'shop' ? 'bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white' : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-700'}`}>
-                                {msg.text}
-                              </div>
-                              <p className="text-[9px] text-slate-400 mt-1">{msg.time}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {!chatMessages[selectedCamera.deviceId]?.length && (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-40">
-                          <MessageCircle size={40} className="mb-3" />
-                          <p className="text-sm">Chưa có tin nhắn</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 p-1.5">
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                          placeholder="Nhắn tin cho khách hàng..."
-                          className="flex-1 bg-transparent text-sm px-2 py-1 outline-none text-slate-900 dark:text-white"
-                        />
-                        <button onClick={handleSendMessage} disabled={!newMessage.trim()} className="w-10 h-10 bg-[#1a2b4c] text-white rounded-lg flex items-center justify-center hover:bg-slate-700 transition-all disabled:opacity-50">
-                          <Send size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         ) : (
-          /* ── Grid View ── */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {cameras.map((cam) => (
-              <div key={cam.deviceId} className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-xl transition-all group relative">
-                <div
-                  className="relative aspect-video bg-slate-900 cursor-pointer flex items-center justify-center"
-                  onClick={() => { setSelectedCamera(cam); setViewMode('single'); }}
-                >
-                  {cam.coverUrl ? (
-                    <img src={cam.coverUrl} alt={cam.name} className="w-full h-full object-cover" />
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
+            
+            {/* Left: Bookings list with RTSP config inputs */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                Danh sách Đơn Lưu Trú
+                <span className="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-full">
+                  {bookings.length}
+                </span>
+              </h2>
+
+              <div className="space-y-4">
+                {bookings.map((booking) => {
+                  const isConfigured = !!booking.cameraStreamUrl;
+                  const isSubmitting = submittingIds[booking.id] || false;
+                  
+                  return (
+                    <div 
+                      key={booking.id}
+                      className={`p-6 bg-white dark:bg-slate-800 rounded-2xl border transition-all ${
+                        selectedBooking?.id === booking.id
+                          ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                          : 'border-slate-100 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                    >
+                      {/* Booking meta info */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                            <span className="text-lg">🐾</span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-900 dark:text-white text-base">Bé: {booking.petName}</h4>
+                              <span className="text-xs text-slate-400">#{booking.id.toString().padStart(5, '0')}</span>
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              Khách hàng: <strong>{booking.customerName}</strong> ({booking.customerPhone})
+                            </p>
+                            {booking.checkIn && booking.checkOut && (
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1">
+                                Lưu trú: {new Date(booking.checkIn).toLocaleDateString('vi-VN')} → {new Date(booking.checkOut).toLocaleDateString('vi-VN')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                            booking.status === 'IN_PROGRESS' 
+                              ? 'bg-emerald-100 dark:bg-emerald-900/35 text-emerald-600'
+                              : booking.status === 'CONFIRMED'
+                              ? 'bg-blue-100 dark:bg-blue-900/35 text-blue-600'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600'
+                          }`}>
+                            {booking.status}
+                          </span>
+                          
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                            isConfigured 
+                              ? 'bg-green-150 dark:bg-green-900/35 text-green-600 border border-green-200'
+                              : 'bg-amber-100 dark:bg-amber-900/35 text-amber-600 border border-amber-200'
+                          }`}>
+                            {isConfigured ? 'Stream Online' : 'Chưa cấu hình'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* RTSP input field */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-450 uppercase tracking-wider block">
+                          Địa chỉ RTSP Camera (IP Camera / RTSP Stream link)
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <input
+                            type="text"
+                            value={rtspInputs[booking.id] || ''}
+                            onChange={(e) => handleInputChange(booking.id, e.target.value)}
+                            placeholder="rtsp://admin:safetycode@192.168.1.100:554/cam/realmonitor"
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-mono"
+                          />
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={() => handleConfigureCamera(booking.id)}
+                              disabled={isSubmitting || !rtspInputs[booking.id]}
+                              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Link size={16} />}
+                              Áp dụng
+                            </button>
+                            {isConfigured && (
+                              <button
+                                onClick={() => handleDeleteCamera(booking.id)}
+                                disabled={isSubmitting}
+                                className="px-4 py-2.5 bg-rose-500 text-white rounded-xl text-sm font-semibold hover:bg-rose-600 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                              >
+                                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <StopCircle size={16} />}
+                                Tắt Cam
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action hints and HLS url preview if configured */}
+                        {isConfigured && (
+                          <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate max-w-md">
+                              HLS Stream: <span className="text-blue-500 underline">{resolveStreamUrl(booking.cameraStreamUrl)}</span>
+                            </div>
+                            <button
+                              onClick={() => setSelectedBooking(booking)}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+                            >
+                              <Play size={12} /> Xem Live Preview
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Live Preview Panel */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Xem Trực Tiếp (Preview)</h2>
+              
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 overflow-hidden shadow-sm flex flex-col h-[500px]">
+                
+                {/* Player screen */}
+                <div className="relative bg-slate-900 flex-1 flex items-center justify-center overflow-hidden min-h-[250px]">
+                  {selectedBooking && selectedBooking.cameraStreamUrl ? (
+                    isCheckingStream ? (
+                      <div className="text-center p-6 text-slate-400 space-y-3">
+                        <Loader2 size={40} className="mx-auto text-blue-500 animate-spin" />
+                        <p className="text-sm font-semibold">Đang kết nối tới camera...</p>
+                        <p className="text-[10px] text-slate-500">Khởi chạy luồng Docker MediaMTX...</p>
+                      </div>
+                    ) : streamError ? (
+                      <div className="text-center p-6 text-slate-400 space-y-3">
+                        <AlertCircle size={40} className="mx-auto text-slate-500" />
+                        <p className="text-sm">Không thể tải luồng video HLS từ Docker container.</p>
+                        <button
+                          onClick={handleRetryStream}
+                          className="px-3 py-1.5 bg-slate-700 text-white rounded-lg text-xs hover:bg-slate-600 transition-colors"
+                        >
+                          Thử lại
+                        </button>
+                      </div>
+                    ) : isStreamReady ? (
+                      <HLSPlayer
+                        streamUrl={selectedBooking.cameraStreamUrl}
+                        isMuted={isMuted}
+                        onError={() => setStreamError(true)}
+                      />
+                    ) : null
                   ) : (
-                    <Video size={40} className="text-slate-600" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  {cam.online && (
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                      LIVE
+                    <div className="text-center p-6 text-slate-500 space-y-3">
+                      <Video size={40} className="mx-auto text-slate-600 animate-pulse" />
+                      <p className="text-xs max-w-[200px] leading-relaxed">
+                        Chọn một camera đã được cấu hình trong danh sách để xem trực tiếp
+                      </p>
                     </div>
                   )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteCamera(cam.deviceId); }}
-                    className="absolute top-3 right-3 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                      <Play size={24} className="text-white ml-1" />
-                    </div>
-                  </div>
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-white font-bold text-sm">{cam.name}</p>
-                    <p className="text-white/70 text-xs">{cam.deviceId}</p>
-                  </div>
+
+                  {/* Overlays */}
+                  {selectedBooking && selectedBooking.cameraStreamUrl && !streamError && !isCheckingStream && isStreamReady && (
+                    <>
+                      <div className="absolute top-4 left-4 bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        LIVE (DOCKER)
+                      </div>
+                      <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                        <button
+                          onClick={() => setIsMuted(!isMuted)}
+                          className="w-8 h-8 bg-black/40 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                        >
+                          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="p-4">
-                  <p className="text-sm text-slate-600 dark:text-slate-400">{cam.deviceModel || 'Imou Camera'}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${cam.online ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'}`}>
-                    {cam.online ? '● Online' : '● Offline'}
-                  </span>
+
+                {/* Stream Info Detail footer */}
+                <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40">
+                  {selectedBooking ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-slate-900 dark:text-white">Bé: {selectedBooking.petName}</h4>
+                        <span className="text-xs text-slate-400">Đơn #{selectedBooking.id}</span>
+                      </div>
+                      <div className="text-xs space-y-1.5 text-slate-500 dark:text-slate-450">
+                        <p>Khách hàng: <strong>{selectedBooking.customerName}</strong></p>
+                        <p className="truncate">Link RTSP: <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-[10px]">{selectedBooking.cameraRtspUrl}</code></p>
+                        <p className="truncate">Luồng Docker: <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-[10px]">{resolveStreamUrl(selectedBooking.cameraStreamUrl)}</code></p>
+                        {selectedBooking.checkIn && selectedBooking.checkOut ? (
+                          <>
+                            <p>Nhận phòng: <strong className="text-slate-700 dark:text-slate-300">{new Date(selectedBooking.checkIn).toLocaleDateString('vi-VN')}</strong></p>
+                            <p>Trả phòng: <strong className="text-slate-700 dark:text-slate-300">{new Date(selectedBooking.checkOut).toLocaleDateString('vi-VN')}</strong></p>
+                          </>
+                        ) : (
+                          selectedBooking.serviceEndDatetime && (
+                            <p>Kết thúc dịch vụ: <strong className="text-slate-700 dark:text-slate-300">{new Date(selectedBooking.serviceEndDatetime).toLocaleString('vi-VN')}</strong></p>
+                          )
+                        )}
+                        {selectedBooking.cameraConfiguredAt && (
+                          <p>Bắt đầu cấu hình: <strong className="text-slate-700 dark:text-slate-300">{new Date(selectedBooking.cameraConfiguredAt).toLocaleString('vi-VN')}</strong></p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 text-slate-400">
+                      <ClipboardList size={18} />
+                      <span className="text-xs font-semibold">Chưa chọn preview camera</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
+            </div>
+
           </div>
         )}
       </div>
-
-      {/* ── Bind Account Modal ── */}
-      {showBindModal && (
-        <BindAccountModal
-          onClose={() => setShowBindModal(false)}
-          onSuccess={fetchDevices}
-        />
-      )}
-
-      {/* ── Add Log Modal ── */}
-      {showLogModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full shadow-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900 dark:text-white">Thêm nhật ký chăm sóc</h3>
-              <button onClick={() => setShowLogModal(false)}><X size={20} className="text-slate-400" /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Hoạt động *</label>
-                <input
-                  type="text"
-                  value={newLog.action}
-                  onChange={(e) => setNewLog({ ...newLog, action: e.target.value })}
-                  placeholder="VD: Cho ăn"
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Loại</label>
-                <select
-                  value={newLog.type}
-                  onChange={(e) => setNewLog({ ...newLog, type: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-sm outline-none"
-                >
-                  <option value="utensils">🍽️ Ăn uống</option>
-                  <option value="droplets">💧 Vệ sinh</option>
-                  <option value="activity">🏃 Vận động</option>
-                  <option value="heart">❤️ Sức khoẻ</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-400 uppercase">Mô tả *</label>
-                <textarea
-                  value={newLog.desc}
-                  onChange={(e) => setNewLog({ ...newLog, desc: e.target.value })}
-                  placeholder="Ghi chú chi tiết..."
-                  rows={3}
-                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl text-sm outline-none resize-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setShowLogModal(false)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Huỷ</button>
-              <button onClick={handleAddLog} className="flex-1 py-2.5 bg-green-500 text-white rounded-xl text-sm font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
-                <CheckCircle size={16} /> Lưu lại
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

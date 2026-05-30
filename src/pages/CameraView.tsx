@@ -1,81 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    Video, Camera, Maximize2, Minimize2, Volume2, VolumeX,
-    ShieldCheck, Activity, Clock, Heart, Send, MessageCircle,
-    Download, RefreshCw, Wifi, WifiOff, Settings, ChevronRight,
-    Thermometer, Utensils, Droplets, AlertCircle, CheckCircle,
-    LayoutGrid, Monitor, ArrowLeft, Bell, BellOff, Zap
+    Video, Camera, Maximize2, Minimize2, Volume2, VolumeX, ShieldCheck, Activity, Clock, Heart, Send, MessageCircle,
+    Wifi, WifiOff, Monitor, LayoutGrid, ArrowLeft, Thermometer, Utensils, Droplets, CheckCircle, Loader2, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ReactPlayer from 'react-player';
+import apiClient from '../services/apiClient';
+import { resolveStreamUrl, checkStreamReady } from '../utils/streamHelper';
+import { useShopChat } from '../hooks/useShopChat';
+import { useAuth } from '../contexts/AuthContext';
+import { careLogService, CareLogResponse } from '../services/care-log.service';
 
-/* ─── DATA ─────────────────────────────────────────────────────────────── */
 
-const CAMERAS = [
-    {
-        id: 'cam01',
-        label: 'CAM 01 – Phòng Lưu Trú VIP',
-        pet: 'Miu Miu',
-        area: 'Khu VIP – Tầng 2',
-        img: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=2069&auto=format&fit=crop',
-        status: 'online',
-    },
-    {
-        id: 'cam02',
-        label: 'CAM 02 – Khu Vui Chơi',
-        pet: 'Miu Miu',
-        area: 'Sân Chơi – Tầng 1',
-        img: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?q=80&w=2070&auto=format&fit=crop',
-        status: 'online',
-    },
-    {
-        id: 'cam03',
-        label: 'CAM 03 – Phòng Ăn',
-        pet: 'Miu Miu',
-        area: 'Nhà Bếp – Tầng 1',
-        img: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=1974&auto=format&fit=crop',
-        status: 'online',
-    },
-    {
-        id: 'cam04',
-        label: 'CAM 04 – Khu Spa',
-        pet: 'Miu Miu',
-        area: 'Spa & Grooming',
-        img: 'https://images.unsplash.com/photo-1583512603805-3cc6b41f3edb?q=80&w=2069&auto=format&fit=crop',
-        status: 'offline',
-    },
-];
-
-const CARE_LOGS = [
-    { time: '10:30 SA', action: 'Cho ăn', desc: 'Bé đã ăn hết 50g hạt Royal Canin Indoor.', icon: 'utensils', color: '#f97316' },
-    { time: '09:15 SA', action: 'Vệ sinh', desc: 'Đã dọn dẹp khay vệ sinh và thay cát mới.', icon: 'droplets', color: '#00b4d8' },
-    { time: '08:00 SA', action: 'Kiểm tra sức khoẻ', desc: 'Nhiệt độ 38.5°C – ổn định. Bé rất lanh lợi.', icon: 'activity', color: '#00b4d8' },
-    { time: 'Hôm qua', action: 'Vận động', desc: 'Chơi đùa với cần câu mèo trong 25 phút.', icon: 'heart', color: '#ec4899' },
-    { time: 'Hôm qua', action: 'Uống nước', desc: 'Bổ sung nước đầy đủ – 200ml.', icon: 'droplets', color: '#00b4d8' },
-];
-
-const CHAT_MESSAGES: Record<string, any[]> = {
-    'cam01': [
-        { from: 'staff', name: 'Nhân viên Lan', text: 'Chào bạn! Bé Miu Miu đang rất vui và khoẻ. 🐾', time: '10:32 SA' },
-        { from: 'me', name: 'Bạn', text: 'Cảm ơn bạn! Bé có ăn đủ bữa không?', time: '10:35 SA' },
-    ],
-    'cam02': [
-        { from: 'staff', name: 'Nhân viên Lan', text: 'Chào bạn! Bé Miu Miu đang chơi ở khu vui chơi nhé.', time: '09:15 SA' },
-    ],
-};
 
 /* ─── ICON HELPER ────────────────────────────────────────────────────────── */
-function LogIcon({ type, color }: { type: string; color: string }) {
-    const cls = `w-4 h-4`;
-    const style = { color };
-    if (type === 'utensils') return <Utensils className={cls} style={style} />;
-    if (type === 'droplets') return <Droplets className={cls} style={style} />;
-    if (type === 'activity') return <Activity className={cls} style={style} />;
-    return <Heart className={cls} style={style} />;
+function getLogIconConfig(type: string) {
+    const t = type.toLowerCase();
+    
+    // Map backend enums to Vietnamese display names
+    let label = type;
+    if (t === 'feeding') label = 'Cho ăn / Uống nước';
+    else if (t === 'cleaning') label = 'Vệ sinh / Tắm';
+    else if (t === 'medical') label = 'Kiểm tra sức khoẻ';
+    else if (t === 'playing') label = 'Vận động / Chơi đùa';
+    else if (t === 'other') label = 'Khác';
+
+    const checkStr = t + ' ' + label.toLowerCase();
+
+    if (checkStr.includes('ăn') || checkStr.includes('uống') || checkStr.includes('feed')) return { label, icon: <Utensils className="w-4 h-4" />, color: '#f97316', bg: 'bg-orange-50', border: 'border-orange-100' };
+    if (checkStr.includes('vệ sinh') || checkStr.includes('tắm') || checkStr.includes('nước') || checkStr.includes('clean')) return { label, icon: <Droplets className="w-4 h-4" />, color: '#00b4d8', bg: 'bg-sky-50', border: 'border-sky-100' };
+    if (checkStr.includes('sức khoẻ') || checkStr.includes('khám') || checkStr.includes('nhiệt độ') || checkStr.includes('thuốc') || checkStr.includes('medic')) return { label, icon: <Activity className="w-4 h-4" />, color: '#10b981', bg: 'bg-emerald-50', border: 'border-emerald-100' };
+    if (checkStr.includes('vận động') || checkStr.includes('chơi') || checkStr.includes('đi dạo') || checkStr.includes('play')) return { label, icon: <Heart className="w-4 h-4" />, color: '#ec4899', bg: 'bg-pink-50', border: 'border-pink-100' };
+    return { label, icon: <CheckCircle className="w-4 h-4" />, color: '#6366f1', bg: 'bg-indigo-50', border: 'border-indigo-100' };
 }
 
 /* ─── CAMERA CELL ──────────────────────────────────────────────────────── */
 interface CamCellProps {
-    cam: typeof CAMERAS[0];
+    cam: any;
     isMain?: boolean;
     isSelected?: boolean;
     onClick?: () => void;
@@ -162,54 +123,189 @@ function CamCell({ cam, isMain, isSelected, onClick }: CamCellProps) {
 /* ─── MAIN PAGE ────────────────────────────────────────────────────────── */
 export default function CameraView() {
     const navigate = useNavigate();
-    const [activeCam, setActiveCam] = useState(CAMERAS[0]);
+    const [cameras, setCameras] = useState<any[]>([]);
+    const [activeCam, setActiveCam] = useState<any | null>(null);
+    const [loading, setLoading] = useState(true);
     const [muted, setMuted] = useState(false);
     const [fullscreen, setFullscreen] = useState(false);
     const [tab, setTab] = useState<'logs' | 'chat'>('logs');
     const [msg, setMsg] = useState('');
-    const [chatMessages, setChatMessages] = useState<Record<string, any[]>>(CHAT_MESSAGES);
     const [layout, setLayout] = useState<'split' | 'main'>('split');
     const [currentTime, setCurrentTime] = useState(new Date());
     const chatEndRef = useRef<HTMLDivElement>(null);
+    
+    const { user } = useAuth();
+    const token = localStorage.getItem('token') || undefined;
+
+    // Real data states
+    const [realLogs, setRealLogs] = useState<CareLogResponse[]>([]);
+    
+    // Chat hook
+    const { messages: chatMessages, connected, sendMessage: sendWsMessage } = useShopChat(
+        activeCam?.shopId || null,
+        token,
+        'CUSTOMER_CHAT',
+        user?.email
+    );
+
+    const [isCheckingStream, setIsCheckingStream] = useState(false);
+    const [isStreamReady, setIsStreamReady] = useState(false);
+    const [streamError, setStreamError] = useState(false);
+
+    // Auto retry stream when it drops
+    useEffect(() => {
+        let retryTimer: NodeJS.Timeout;
+        if (streamError) {
+            console.log("Stream dropped, auto-retrying in 3s...");
+            retryTimer = setTimeout(() => {
+                handleRetryStream();
+            }, 3000);
+        }
+        return () => clearTimeout(retryTimer);
+    }, [streamError, activeCam]);
+
+    useEffect(() => {
+        if (!activeCam || !activeCam.streamUrl) {
+            setIsStreamReady(false);
+            setIsCheckingStream(false);
+            setStreamError(false);
+            return;
+        }
+
+        let isMounted = true;
+        setIsCheckingStream(true);
+        setIsStreamReady(false);
+        setStreamError(false);
+
+        const checkReady = async () => {
+            const ready = await checkStreamReady(activeCam.streamUrl);
+            if (!isMounted) return;
+
+            setIsCheckingStream(false);
+            if (ready) {
+                setIsStreamReady(true);
+            } else {
+                setStreamError(true);
+            }
+        };
+
+        checkReady();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [activeCam?.id, activeCam?.streamUrl]);
+
+    const handleRetryStream = () => {
+        if (!activeCam?.streamUrl) return;
+        setStreamError(false);
+        setIsCheckingStream(true);
+        checkStreamReady(activeCam.streamUrl).then((ready) => {
+            setIsCheckingStream(false);
+            if (ready) {
+                setIsStreamReady(true);
+            } else {
+                setStreamError(true);
+            }
+        });
+    };
+
+    // ─── Fetch User's Active Cameras ───
+    useEffect(() => {
+        const fetchActiveCameras = async () => {
+            setLoading(true);
+            try {
+                const response = await apiClient.get('/v1/camera/active');
+                const list = response.data?.result || [];
+                
+                const mapped = list.map((booking: any, idx: number) => ({
+                    id: booking.id.toString(),
+                    shopId: booking.shopId,
+                    label: `CAM ${String(idx + 1).padStart(2, '0')} – ${booking.shopName}`,
+                    pet: booking.petName,
+                    area: booking.serviceName,
+                    img: `https://images.unsplash.com/photo-${booking.id % 2 === 0 ? '1548199973-03cce0bbc87b' : '1516734212186-a967f81ad0d7'}?auto=format&fit=crop&q=80&w=400`,
+                    status: 'online',
+                    streamUrl: resolveStreamUrl(booking.cameraStreamUrl),
+                    cameraConfiguredAt: booking.cameraConfiguredAt,
+                    serviceEndDatetime: booking.serviceEndDatetime,
+                    appointmentDatetime: booking.appointmentDatetime,
+                    checkIn: booking.checkIn,
+                    checkOut: booking.checkOut
+                }));
+
+                setCameras(mapped);
+
+                if (mapped.length > 0) {
+                    const queryParams = new URLSearchParams(window.location.search);
+                    const targetBookingId = queryParams.get('bookingId');
+                    const target = mapped.find((c: any) => c.id === targetBookingId);
+                    setActiveCam(target || mapped[0]);
+                } else {
+                    setActiveCam(null);
+                }
+            } catch (err) {
+                console.error('Failed to fetch active cameras:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchActiveCameras();
+    }, []);
 
     useEffect(() => {
         const id = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(id);
     }, []);
 
+    // Fetch logs when activeCam changes
+    useEffect(() => {
+        if (activeCam) {
+            careLogService.getLogs(Number(activeCam.id))
+                .then(logs => setRealLogs(logs))
+                .catch(err => console.error('Failed to fetch logs', err));
+        }
+    }, [activeCam]);
+
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [chatMessages]);
+    }, [chatMessages, tab]);
 
-    const sendMessage = () => {
-        if (!msg.trim()) return;
-        const newMsg = { 
-            from: 'me', 
-            name: 'Bạn', 
-            text: msg.trim(), 
-            time: currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + (currentTime.getHours() < 12 ? 'SA' : 'CH') 
-        };
-        
-        setChatMessages(prev => ({
-            ...prev,
-            [activeCam.id]: [...(prev[activeCam.id] || []), newMsg]
-        }));
+    const handleSendMessage = () => {
+        if (!msg.trim() || !activeCam || !connected) return;
+        sendWsMessage(msg.trim());
         setMsg('');
-
-        // Simulate staff reply after 2s
-        setTimeout(() => {
-            const reply = { 
-                from: 'staff', 
-                name: 'Nhân viên Lan', 
-                text: 'Cảm ơn bạn! Chúng tôi đã nhận được thông tin. 🐾', 
-                time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + (new Date().getHours() < 12 ? 'SA' : 'CH') 
-            };
-            setChatMessages(prev => ({
-                ...prev,
-                [activeCam.id]: [...(prev[activeCam.id] || []), reply]
-            }));
-        }, 2000);
     };
+
+    if (loading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] gap-4 bg-[#f5efe6] h-[calc(100vh-64px)]">
+                <Loader2 className="w-10 h-10 animate-spin text-secondary" />
+                <p className="text-sm font-semibold text-slate-500">Đang tải luồng camera...</p>
+            </div>
+        );
+    }
+
+    if (cameras.length === 0 || !activeCam) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-[#f5efe6] text-center p-8 text-primary">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
+                    <WifiOff className="w-10 h-10 text-slate-400" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Không có camera trực tuyến nào hoạt động</h2>
+                <p className="text-slate-500 max-w-sm text-sm leading-relaxed mb-6">
+                    Hệ thống giám sát camera chỉ khả dụng khi bạn đăng ký dịch vụ **Lưu trú** có tích hợp camera và đã được Shop phê duyệt đơn đặt.
+                </p>
+                <button
+                    onClick={() => navigate('/bookings')}
+                    className="px-6 py-3 bg-[#1a2b4c] text-white rounded-xl text-sm font-bold shadow-md hover:scale-105 active:scale-95 transition-transform"
+                >
+                    Kiểm tra Đơn đặt chỗ
+                </button>
+            </div>
+        );
+    }
+
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-[#f5efe6] overflow-hidden text-primary">
@@ -230,7 +326,7 @@ export default function CameraView() {
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-primary leading-tight">Camera Giám Sát</h1>
-                            <p className="text-xs text-slate-500 font-medium mt-0.5">Peteye PetCare · {CAMERAS.filter(c => c.status === 'online').length}/{CAMERAS.length} camera đang hoạt động</p>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">Peteye PetCare · {cameras.filter(c => c.status === 'online').length}/{cameras.length} camera đang hoạt động</p>
                         </div>
                     </div>
                 </div>
@@ -271,19 +367,68 @@ export default function CameraView() {
                 <main className={`flex flex-col gap-4 transition-all duration-500 ${fullscreen ? 'fixed inset-0 z-50 bg-primary p-6 gap-4' : 'flex-1'}`}>
 
                     {/* Main / Primary Camera */}
-                    <div className={`relative overflow-hidden rounded-3xl shadow-soft border border-black/5 bg-primary transition-all duration-500 ${layout === 'split' ? 'flex-[3]' : 'flex-1'}`}>
+                    <div className={`relative overflow-hidden rounded-3xl shadow-soft border border-black/5 bg-primary transition-all duration-500 ${(layout === 'split' && cameras.length > 1) ? 'flex-[3]' : 'flex-1'}`}>
                         {/* LIVE large camera */}
                         <div className="absolute inset-0">
                             {activeCam.status === 'online' ? (
-                                <>
-                                    <img
-                                        key={activeCam.id}
-                                        src={activeCam.img}
-                                        className="w-full h-full object-cover transition-opacity duration-700"
-                                        alt="Live feed"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-primary/20" />
-                                </>
+                                activeCam.streamUrl ? (
+                                    isCheckingStream ? (
+                                        <div className="w-full h-full bg-[#0f172a] flex flex-col items-center justify-center gap-3 text-slate-400">
+                                            <Loader2 className="w-10 h-10 animate-spin text-[#d4af37]" />
+                                            <p className="text-sm font-semibold text-white">Đang kết nối tới camera...</p>
+                                            <p className="text-xs text-slate-400">Đang khởi chạy và kiểm tra luồng phát...</p>
+                                        </div>
+                                    ) : streamError ? (
+                                        <div className="w-full h-full bg-[#0f172a] flex flex-col items-center justify-center gap-3 text-slate-400 p-6 text-center">
+                                            <AlertCircle className="w-12 h-12 text-slate-500" />
+                                            <p className="text-sm text-white">Không thể tải luồng video HLS từ Docker container.</p>
+                                            <button
+                                                onClick={handleRetryStream}
+                                                className="px-4 py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white rounded-xl text-xs transition-colors shadow-md mt-2 font-bold"
+                                            >
+                                                Thử lại
+                                            </button>
+                                        </div>
+                                    ) : isStreamReady ? (
+                                        <div className="w-full h-full bg-black">
+                                            <ReactPlayer
+                                                url={activeCam.streamUrl}
+                                                playing={true}
+                                                controls={true}
+                                                muted={muted}
+                                                width="100%"
+                                                height="100%"
+                                                onError={() => setStreamError(true)}
+                                                config={{
+                                                    file: {
+                                                        forceHLS: true,
+                                                        hlsOptions: {
+                                                            enableWorker: true,
+                                                            lowLatencyMode: true,
+                                                            maxBufferLength: 30,
+                                                            liveSyncDurationCount: 3,
+                                                            liveMaxLatencyDurationCount: 10,
+                                                            manifestLoadingMaxRetry: 5,
+                                                            manifestLoadingRetryDelay: 1000,
+                                                            levelLoadingMaxRetry: 5,
+                                                            fragLoadingMaxRetry: 5,
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    ) : null
+                                ) : (
+                                    <>
+                                        <img
+                                            key={activeCam.id}
+                                            src={activeCam.img}
+                                            className="w-full h-full object-cover transition-opacity duration-700"
+                                            alt="Live feed"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-primary/20" />
+                                    </>
+                                )
                             ) : (
                                 <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center gap-4">
                                     <WifiOff className="w-14 h-14 text-slate-300" />
@@ -293,43 +438,49 @@ export default function CameraView() {
                         </div>
 
                         {/* Overlays – top left */}
-                        <div className="absolute top-5 left-5 flex items-center gap-3 z-10">
-                            <div className="flex items-center gap-2 bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
-                                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />LIVE
+                        {activeCam.status === 'online' && !isCheckingStream && !streamError && isStreamReady && (
+                            <div className="absolute top-5 left-5 flex items-center gap-3 z-10">
+                                <div className="flex items-center gap-2 bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-red-500/20">
+                                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />LIVE
+                                </div>
+                                <div className="bg-black/20 backdrop-blur-md text-white text-xs font-semibold px-4 py-2 rounded-full border border-white/20 hidden sm:flex items-center gap-2">
+                                    <Camera className="w-4 h-4" />
+                                    {activeCam.label}
+                                </div>
                             </div>
-                            <div className="bg-black/20 backdrop-blur-md text-white text-xs font-semibold px-4 py-2 rounded-full border border-white/20 hidden sm:flex items-center gap-2">
-                                <Camera className="w-4 h-4" />
-                                {activeCam.label}
-                            </div>
-                        </div>
+                        )}
 
                         {/* Top right controls */}
-                        <div className="absolute top-5 right-5 flex gap-2 z-10">
-                            <button
-                                onClick={() => setMuted(!muted)}
-                                className="p-3 bg-black/20 backdrop-blur-md text-white rounded-full border border-white/20 hover:bg-black/40 transition-all"
-                            >
-                                {muted ? <VolumeX className="w-5 h-5 text-red-200" /> : <Volume2 className="w-5 h-5" />}
-                            </button>
-                            <button
-                                onClick={() => setFullscreen(!fullscreen)}
-                                className="p-3 bg-black/20 backdrop-blur-md text-white rounded-full border border-white/20 hover:bg-black/40 transition-all"
-                            >
-                                {fullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                            </button>
-                        </div>
+                        {activeCam.status === 'online' && activeCam.streamUrl && !isCheckingStream && !streamError && isStreamReady && (
+                            <div className="absolute top-5 right-5 flex gap-2 z-10">
+                                <button
+                                    onClick={() => setMuted(!muted)}
+                                    className="p-3 bg-black/20 backdrop-blur-md text-white rounded-full border border-white/20 hover:bg-black/40 transition-all"
+                                >
+                                    {muted ? <VolumeX className="w-5 h-5 text-red-200" /> : <Volume2 className="w-5 h-5" />}
+                                </button>
+                                <button
+                                    onClick={() => setFullscreen(!fullscreen)}
+                                    className="p-3 bg-black/20 backdrop-blur-md text-white rounded-full border border-white/20 hover:bg-black/40 transition-all"
+                                >
+                                    {fullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                                </button>
+                            </div>
+                        )}
 
                         {/* Bottom: action bar */}
-                        <div className="absolute bottom-0 left-0 right-0 p-6 z-10 flex items-center justify-between">
-                            <div className="text-sm font-semibold text-white/90">
-                                <span className="font-mono bg-black/20 px-2 py-1 rounded-md">{currentTime.toLocaleTimeString('vi-VN')}</span>
-                                <span className="mx-2">•</span>
-                                <span>{activeCam.area}</span>
+                        {activeCam.status === 'online' && !isCheckingStream && !streamError && isStreamReady && (
+                            <div className="absolute bottom-0 left-0 right-0 p-6 z-10 flex items-center justify-between">
+                                <div className="text-sm font-semibold text-white/90">
+                                    <span className="font-mono bg-black/20 px-2 py-1 rounded-md">{currentTime.toLocaleTimeString('vi-VN')}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>{activeCam.area}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Fullscreen close hint */}
-                        {fullscreen && (
+                        {fullscreen && !isCheckingStream && !streamError && isStreamReady && (
                             <button
                                 onClick={() => setFullscreen(false)}
                                 className="absolute top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-white text-primary text-sm font-bold px-5 py-2.5 rounded-full shadow-xl hover:scale-105 transition-transform"
@@ -339,10 +490,10 @@ export default function CameraView() {
                         )}
                     </div>
 
-                    {/* Thumbnail row – only in split layout */}
-                    {layout === 'split' && (
+                    {/* Thumbnail row – only in split layout and when there are multiple cameras */}
+                    {layout === 'split' && cameras.length > 1 && (
                         <div className="flex gap-4 h-40 shrink-0">
-                            {CAMERAS.map(cam => (
+                            {cameras.map(cam => (
                                 <div key={cam.id} className="flex-1" onClick={() => setActiveCam(cam)}>
                                     <CamCell cam={cam} isSelected={activeCam.id === cam.id} />
                                 </div>
@@ -357,15 +508,11 @@ export default function CameraView() {
                         {/* Pet header */}
                         <div className="p-6 border-b border-slate-100 space-y-5 bg-gradient-to-b from-slate-50 to-white">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop"
-                                        className="w-full h-full object-cover"
-                                        alt="Miu Miu"
-                                    />
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 shadow-sm shrink-0 bg-slate-50 flex items-center justify-center text-2xl">
+                                    🐾
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h2 className="text-xl font-bold text-primary">Miu Miu</h2>
+                                    <h2 className="text-xl font-bold text-primary">{activeCam.pet}</h2>
                                     <p className="text-xs font-semibold text-secondary uppercase tracking-wider flex items-center gap-1 mt-1">
                                         <ShieldCheck className="w-4 h-4" />
                                         Đang được chăm sóc
@@ -375,27 +522,26 @@ export default function CameraView() {
                                     <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-100">
                                         AN TOÀN
                                     </span>
-                                    <span className="text-[10px] text-slate-500 font-medium">Ngày 2/3</span>
                                 </div>
                             </div>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-3 gap-3">
-                                {[
-                                    { label: 'Nhịp tim', value: '115', unit: 'bpm', icon: <Activity className="w-4 h-4" />, color: 'text-rose-500', bg: 'bg-rose-50' },
-                                    { label: 'Nhiệt độ', value: '38.5', unit: '°C', icon: <Thermometer className="w-4 h-4" />, color: 'text-orange-500', bg: 'bg-orange-50' },
-                                    { label: 'Thời gian', value: '2', unit: 'ngày', icon: <Clock className="w-4 h-4" />, color: 'text-secondary', bg: 'bg-secondary/10' },
-                                ].map(s => (
-                                    <div key={s.label} className={`${s.bg} rounded-2xl p-3 border border-slate-100/50 flex flex-col items-center justify-center text-center gap-1`}>
-                                        <div className={`${s.color} mb-1`}>
-                                            {s.icon}
-                                        </div>
-                                        <p className="text-lg font-bold text-primary leading-none">
-                                            {s.value}
-                                        </p>
-                                        <span className="text-[10px] font-medium text-slate-500">{s.unit}</span>
+                            
+                            {/* Time info card */}
+                            <div className="px-6 pb-6 mt-[-10px]">
+                                <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm text-sm">
+                                    <div className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-indigo-50/40 border border-indigo-100/50">
+                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Nhận phòng</span>
+                                        <strong className="text-indigo-700 font-mono text-sm">
+                                            {activeCam.checkIn ? new Date(activeCam.checkIn).toLocaleDateString('vi-VN') : new Date(activeCam.appointmentDatetime).toLocaleDateString('vi-VN')}
+                                        </strong>
                                     </div>
-                                ))}
+                                    <div className="w-px h-8 bg-slate-100"></div>
+                                    <div className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-indigo-50/40 border border-indigo-100/50">
+                                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Trả phòng</span>
+                                        <strong className="text-indigo-700 font-mono text-sm">
+                                            {activeCam.checkOut ? new Date(activeCam.checkOut).toLocaleDateString('vi-VN') : (activeCam.serviceEndDatetime ? new Date(activeCam.serviceEndDatetime).toLocaleDateString('vi-VN') : '---')}
+                                        </strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -416,57 +562,60 @@ export default function CameraView() {
                         <div className="flex-1 overflow-y-auto scrollbar-hide bg-white">
                             {tab === 'logs' && (
                                 <div className="p-5 space-y-0">
-                                    {CARE_LOGS.map((log, i) => (
-                                        <div key={i} className="flex gap-4 py-3 relative group">
-                                            <div className="flex flex-col items-center gap-1 pt-1">
-                                                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform shadow-sm">
-                                                    <LogIcon type={log.icon} color={log.color} />
+                                    {realLogs.length === 0 ? (
+                                        <p className="text-sm text-center text-slate-400 py-10">Chưa có nhật ký chăm sóc nào.</p>
+                                    ) : (
+                                        realLogs.map((log, i) => {
+                                            const config = getLogIconConfig(log.type);
+                                            return (
+                                                <div key={i} className="flex gap-4 py-3 relative group">
+                                                    <div className="flex flex-col items-center gap-1 pt-1">
+                                                        <div className={`w-8 h-8 rounded-full ${config.bg} ${config.border} border flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform shadow-sm`} style={{ color: config.color }}>
+                                                            {config.icon}
+                                                        </div>
+                                                        {i < realLogs.length - 1 && <div className="w-px flex-1 bg-slate-100 absolute top-9 bottom-[-10px] left-[15px]" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 pb-1">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-sm font-bold text-primary">{config.label}</span>
+                                                        <span className="text-[10px] font-semibold text-slate-400 shrink-0 bg-slate-50 px-2 py-0.5 rounded-full">
+                                                            {new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">{log.note}</p>
+                                                    {log.imageUrl && (
+                                                        <img src={log.imageUrl} alt="Care log" className="mt-2 rounded-lg w-full object-cover max-h-32 border border-slate-200" />
+                                                    )}
                                                 </div>
-                                                {i < CARE_LOGS.length - 1 && <div className="w-px flex-1 bg-slate-100 absolute top-9 bottom-[-10px] left-[15px]" />}
                                             </div>
-                                            <div className="flex-1 min-w-0 pb-1">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-sm font-bold text-primary">{log.action}</span>
-                                                    <span className="text-[10px] font-semibold text-slate-400 shrink-0 bg-slate-50 px-2 py-0.5 rounded-full">{log.time}</span>
-                                                </div>
-                                                <p className="text-xs text-slate-600 mt-1 leading-relaxed">{log.desc}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* All good banner */}
-                                    <div className="flex items-center gap-3 bg-teal-50 border border-teal-100 rounded-2xl p-4 mt-6">
-                                        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                                            <CheckCircle className="w-4 h-4 text-teal-600" />
-                                        </div>
-                                        <p className="text-xs text-teal-700 font-semibold leading-relaxed">Tuyệt vời! Mọi chỉ số của Miu Miu đều rất tốt trong ngày hôm nay.</p>
-                                    </div>
+                                        );
+                                    })
+                                    )}
                                 </div>
                             )}
 
                             {tab === 'chat' && (
                                 <div className="flex flex-col h-full bg-slate-50/50">
                                     <div className="flex-1 p-5 space-y-4 overflow-y-auto scrollbar-hide">
-                                        {(chatMessages[activeCam.id] || []).map((m, i) => (
-                                            <div key={i} className={`flex gap-3 ${m.from === 'me' ? 'flex-row-reverse' : ''}`}>
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold shadow-sm ${m.from === 'staff' ? 'bg-secondary/10 text-secondary border border-secondary/20' : 'bg-primary text-white'}`}>
-                                                    {m.name.charAt(0)}
-                                                </div>
-                                                <div className={`max-w-[75%] ${m.from === 'me' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                                                    <p className={`text-[10px] font-bold ${m.from === 'staff' ? 'text-secondary' : 'text-slate-500'}`}>{m.name}</p>
-                                                    <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${m.from === 'me' ? 'bg-primary text-white rounded-tr-sm' : 'bg-white text-primary border border-slate-100 rounded-tl-sm'}`}>
-                                                        {m.text}
+                                        {chatMessages.map((m, i) => {
+                                            const isMe = m.senderEmail === user?.email;
+                                            return (
+                                                <div key={i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold shadow-sm ${!isMe ? 'bg-secondary/10 text-secondary border border-secondary/20' : 'bg-primary text-white'}`}>
+                                                        {(!isMe ? m.senderRole : 'Bạn').charAt(0)}
                                                     </div>
-                                                    <p className="text-[9px] font-medium text-slate-400">{m.time}</p>
+                                                    <div className={`max-w-[75%] ${isMe ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                                                        <p className={`text-[10px] font-bold ${!isMe ? 'text-secondary' : 'text-slate-500'}`}>{!isMe ? 'Nhân viên' : 'Bạn'}</p>
+                                                        <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${isMe ? 'bg-primary text-white rounded-tr-sm' : 'bg-white text-primary border border-slate-100 rounded-tl-sm'}`}>
+                                                            {m.content}
+                                                        </div>
+                                                        <p className="text-[9px] font-medium text-slate-400">
+                                                            {new Date(m.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                        {(!chatMessages[activeCam.id] || chatMessages[activeCam.id].length === 0) && (
-                                            <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-3">
-                                                <MessageCircle className="w-12 h-12" />
-                                                <p className="text-xs font-medium">Chưa có tin nhắn cho camera này</p>
-                                            </div>
-                                        )}
+                                            );
+                                        })}
                                         <div ref={chatEndRef} />
                                     </div>
                                 </div>
@@ -481,10 +630,12 @@ export default function CameraView() {
                                     placeholder={tab === 'chat' ? 'Nhắn tin cho nhân viên...' : 'Tìm kiếm nhật ký...'}
                                     value={msg}
                                     onChange={e => setMsg(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                                    disabled={tab !== 'chat'}
+                                    onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                                 />
                                 <button
-                                    onClick={sendMessage}
+                                    onClick={handleSendMessage}
+                                    disabled={tab !== 'chat' || !connected}
                                     className="w-10 h-10 flex items-center justify-center bg-secondary text-white rounded-xl hover:bg-secondary/90 transition-all shadow-md shadow-secondary/20"
                                 >
                                     <Send className="w-4 h-4 ml-0.5" />

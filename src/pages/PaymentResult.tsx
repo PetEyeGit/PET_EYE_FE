@@ -20,6 +20,7 @@ export default function PaymentResult() {
       const status    = searchParams.get('status');    // 'PAID' | 'CANCELLED'
       const orderCode = searchParams.get('orderCode');
       const cancel    = searchParams.get('cancel');    // 'true' | 'false'
+      const isMock    = searchParams.get('mock') === 'true';
 
       // ── Bị huỷ ───────────────────────────────────────────────────────────
       if (cancel === 'true' || status === 'CANCELLED') {
@@ -59,7 +60,14 @@ export default function PaymentResult() {
 
       try {
         let booking;
-        if (isCashDeposit) {
+        if (isMock) {
+          if (isCashDeposit) {
+            localStorage.removeItem('pendingCashDeposit');
+            booking = await bookingService.mockConfirmCashDeposit(parseInt(orderCode));
+          } else {
+            booking = await bookingService.mockConfirmPayment(parseInt(orderCode));
+          }
+        } else if (isCashDeposit) {
           localStorage.removeItem('pendingCashDeposit');
           booking = await bookingService.confirmCashDeposit(parseInt(orderCode));
         } else {
@@ -79,18 +87,23 @@ export default function PaymentResult() {
               serviceId: booking.serviceId,
               serviceName: booking.serviceName,
               servicePrice: booking.servicePrice,
+              services: bookingInfo?.services, // Bảo toàn danh sách dịch vụ đã đặt
               petId: booking.petId,
               petName: booking.petName,
               petNote: booking.note,
               staffId: booking.staffId,
               staffName: booking.staffName,
               appointmentDatetime: booking.appointmentDatetime,
-              date: new Date(booking.appointmentDatetime).toLocaleDateString('vi-VN', {
-                weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit'
-              }),
-              time: new Date(booking.appointmentDatetime).toLocaleTimeString('vi-VN', {
-                hour: '2-digit', minute: '2-digit'
-              })
+              date: booking.checkIn && booking.checkOut
+                ? `Lưu trú: ${new Date(booking.checkIn).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} → ${new Date(booking.checkOut).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+                : new Date(booking.appointmentDatetime).toLocaleDateString('vi-VN', {
+                    weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit'
+                  }),
+              time: booking.checkIn && booking.checkOut
+                ? `${Math.max(1, Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000))} ngày`
+                : new Date(booking.appointmentDatetime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit', minute: '2-digit'
+                  })
             }
           },
           replace: true
