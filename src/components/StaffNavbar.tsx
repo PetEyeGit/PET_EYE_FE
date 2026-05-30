@@ -27,13 +27,10 @@ export default function StaffNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   
-  const userRef = useRef<HTMLDivElement>(null);
   const notiRef = useRef<HTMLDivElement>(null);
   
-  useOutsideClick(userRef, () => setUserMenuOpen(false));
   useOutsideClick(notiRef, () => setNotiOpen(false));
 
   const { notifications, unreadCount, markRead } = useNotifications(!!user);
@@ -110,7 +107,7 @@ export default function StaffNavbar() {
 
             <div ref={notiRef} className="relative">
               <button 
-                onClick={() => { setNotiOpen(!notiOpen); setUserMenuOpen(false); }}
+                onClick={() => { setNotiOpen(!notiOpen); }}
                 className={`flex p-3 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all relative ${notiOpen ? 'bg-slate-50 text-primary' : ''}`}
               >
                 <Bell size={20} />
@@ -188,62 +185,24 @@ export default function StaffNavbar() {
 
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-2 hidden md:block" />
 
-            <div ref={userRef} className="relative">
+            <div className="flex items-center gap-2 p-1.5 pr-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+              <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center text-sm font-black shadow-md shadow-primary/20">
+                {user?.fullName?.charAt(0).toUpperCase() || 'S'}
+              </div>
+              <div className="hidden lg:block text-left mr-2">
+                <p className="text-[12px] font-black text-slate-900 dark:text-white leading-none">
+                  {user?.fullName?.split(' ').pop() || 'Staff'}
+                </p>
+                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">Nhân viên</p>
+              </div>
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden lg:block mx-1" />
               <button 
-                onClick={() => { setUserMenuOpen(v => !v); setNotiOpen(false); }}
-                className={`flex items-center gap-3 p-1.5 pr-4 rounded-2xl transition-all ${
-                    userMenuOpen ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
+                onClick={handleLogout}
+                title="Đăng xuất"
+                className="p-2 text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all flex items-center gap-1.5 group"
               >
-                <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-sm font-black shadow-lg shadow-primary/20">
-                  {user?.fullName?.charAt(0).toUpperCase() || 'S'}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-[13px] font-black text-slate-900 dark:text-white leading-none">
-                    {user?.fullName?.split(' ').pop() || 'Staff'}
-                  </p>
-                  <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">Nhân viên</p>
-                </div>
-                <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${userMenuOpen ? 'rotate-180' : ''}`} />
+                <LogOut size={16} />
               </button>
-
-              <AnimatePresence>
-                {userMenuOpen && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute top-[calc(100%+12px)] right-0 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-slate-100 dark:border-slate-800 p-3 z-50"
-                  >
-                    <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 mb-2">
-                      <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.fullName}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">ID: {user?.id || 'STAFF_01'}</p>
-                    </div>
-
-                    <div className="space-y-1">
-                        <Link 
-                            to="/staff/profile" 
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 w-full text-left rounded-xl transition-all"
-                        >
-                            <UserCircle size={18} /> Hồ sơ cá nhân
-                        </Link>
-                        <button 
-                            className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 w-full text-left rounded-xl transition-all"
-                        >
-                            <Settings size={18} /> Cài đặt tài khoản
-                        </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-800 my-2 mx-2" />
-                        <button 
-                            onClick={handleLogout} 
-                            className="flex items-center gap-3 px-4 py-3 text-sm font-black text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 w-full text-left rounded-xl transition-all"
-                        >
-                            <LogOut size={18} /> Đăng xuất
-                        </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
 
             <button 

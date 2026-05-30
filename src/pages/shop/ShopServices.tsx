@@ -80,6 +80,7 @@ export default function ShopServices() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ServiceForm>(EMPTY_FORM);
+  const [deletingService, setDeletingService] = useState<ServiceResponse | null>(null);
 
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -269,15 +270,17 @@ export default function ShopServices() {
 
   // ── Delete ──────────────────────────────────────────────────────────────────
 
-  async function handleDelete(service: ServiceResponse) {
-    if (!window.confirm(`Bạn có chắc muốn xóa dịch vụ "${service.serviceName}"?`)) return;
+  async function confirmDelete() {
+    if (!deletingService) return;
 
     try {
-      await serviceService.deleteService(service.id);
-      setServices((prev) => prev.filter((s) => s.id !== service.id));
+      await serviceService.deleteService(deletingService.id);
+      setServices((prev) => prev.filter((s) => s.id !== deletingService.id));
       showSuccess('Dịch vụ đã được xóa.');
     } catch {
       showError('Xóa dịch vụ thất bại. Vui lòng thử lại.');
+    } finally {
+      setDeletingService(null);
     }
   }
 
@@ -391,44 +394,50 @@ export default function ShopServices() {
         {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((service) => (
-              <div key={service.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div key={service.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col group">
                 {/* Image */}
                 <div className="relative h-48 bg-slate-100">
                   {service.imageUrl ? (
                     <img
                       src={service.imageUrl}
                       alt={service.serviceName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Camera size={40} className="text-slate-300" />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100/80 group-hover:bg-slate-200/50 transition-colors">
+                      <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-2 text-slate-300">
+                        <Camera size={24} />
+                      </div>
+                      <span className="text-xs font-medium text-slate-400">Chưa có ảnh</span>
                     </div>
                   )}
                   {/* Active badge */}
-                  <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold ${
-                    service.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
+                    service.active ? 'bg-white/90 text-green-600' : 'bg-white/90 text-slate-500'
                   }`}>
                     {service.active ? 'Đang hoạt động' : 'Tạm dừng'}
                   </div>
                   {/* Category badge */}
-                  <div className="absolute top-3 right-3 px-2 py-1 bg-[#1a2b4c]/80 text-white rounded-full text-xs font-bold">
+                  <div className={`absolute top-3 right-3 px-2.5 py-1 text-white rounded-full text-xs font-bold shadow-sm
+                    ${service.category === 'GROOMING' ? 'bg-pink-500' : service.category === 'CLINIC' ? 'bg-emerald-500' : 'bg-indigo-500'}
+                  `}>
                     {categoryLabel(service.category)}
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-5">
+                <div className="p-5 flex-1 flex flex-col">
                   <h3 className="font-bold text-lg mb-1 truncate">{service.serviceName}</h3>
-                  <p className="text-slate-500 text-sm mb-4 line-clamp-2">{service.description}</p>
+                  <p className="text-slate-500 text-sm mb-4 line-clamp-2">{service.description || 'Chưa có mô tả cho dịch vụ này.'}</p>
 
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1 text-sm text-slate-600">
-                      <DollarSign size={15} className="text-[#1a2b4c]" />
-                      <span className="font-semibold">{service.price.toLocaleString('vi-VN')}đ</span>
+                  <div className="flex flex-wrap items-center gap-3 mb-5 mt-auto">
+                    <div className="flex items-center text-sm">
+                      <span className="font-extrabold text-[#1a2b4c] bg-[#1a2b4c]/5 px-2.5 py-1 rounded-lg">
+                        {service.price.toLocaleString('vi-VN')}đ
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-slate-600">
-                      <Clock size={15} className="text-[#1a2b4c]" />
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600 font-medium bg-slate-50 px-2.5 py-1 rounded-lg">
+                      <Clock size={14} className="text-slate-400" />
                       <span>{service.durationMinutes} phút</span>
                     </div>
                     {service.category === 'BOARDING' && service.cameraEnabled && (
@@ -462,7 +471,7 @@ export default function ShopServices() {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(service)}
+                        onClick={() => setDeletingService(service)}
                         className="p-2 rounded-lg bg-slate-100 hover:bg-red-500 hover:text-white transition-all"
                         title="Xóa"
                       >
@@ -850,6 +859,35 @@ export default function ShopServices() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deletingService && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Xóa dịch vụ</h3>
+            <p className="text-slate-500 mb-6 text-sm">
+              Bạn có chắc chắn muốn xóa dịch vụ <span className="font-bold text-slate-700">"{deletingService.serviceName}"</span> không? Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingService(null)}
+                className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors"
+              >
+                Xóa dịch vụ
+              </button>
+            </div>
           </div>
         </div>
       )}

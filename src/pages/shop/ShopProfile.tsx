@@ -135,9 +135,18 @@ export default function ShopProfile() {
     }
 
     try {
-      if (type === 'logo') setUploadingLogo(true);
-      else if (type === 'banner') setUploadingBanner(true);
-      else setUploadingGallery(true);
+      if (type === 'gallery') {
+        const currentImages = shopInfo.galleryUrls ? shopInfo.galleryUrls.split(',').filter(Boolean) : [];
+        if (currentImages.length >= 10) {
+          toast.error('Đã đạt giới hạn 10 ảnh tối đa.');
+          return;
+        }
+        setUploadingGallery(true);
+      } else if (type === 'logo') {
+        setUploadingLogo(true);
+      } else {
+        setUploadingBanner(true);
+      }
 
       const url = await fileService.upload(file);
       
@@ -327,23 +336,30 @@ export default function ShopProfile() {
                 ))}
                 
                 {/* Upload Button */}
-                <button
-                  type="button"
-                  onClick={() => galleryInputRef.current?.click()}
-                  disabled={uploadingGallery}
-                  className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition-all group disabled:opacity-50"
-                >
-                  {uploadingGallery ? (
-                    <Loader2 className="animate-spin" size={24} />
-                  ) : (
-                    <>
-                      <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <span className="material-symbols-outlined">add_photo_alternate</span>
-                      </div>
-                      <span className="text-xs font-bold">Thêm ảnh</span>
-                    </>
-                  )}
-                </button>
+                {shopInfo.galleryUrls.split(',').filter(Boolean).length < 10 ? (
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={uploadingGallery}
+                    className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition-all group disabled:opacity-50"
+                  >
+                    {uploadingGallery ? (
+                      <Loader2 className="animate-spin" size={24} />
+                    ) : (
+                      <>
+                        <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                          <span className="material-symbols-outlined">add_photo_alternate</span>
+                        </div>
+                        <span className="text-xs font-bold">Thêm ảnh</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 bg-slate-50 opacity-70">
+                     <span className="material-symbols-outlined text-red-400">block</span>
+                     <span className="text-[10px] font-bold text-center px-2">Đã đạt tối đa 10 ảnh</span>
+                  </div>
+                )}
               </div>
               <input
                 type="file"
@@ -352,9 +368,66 @@ export default function ShopProfile() {
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e, 'gallery')}
               />
-              <p className="mt-4 text-xs text-slate-500 italic">
-                * Thư viện ảnh giúp khách hàng hiểu rõ hơn về cơ sở vật chất và dịch vụ của bạn.
-              </p>
+              <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-blue-600 text-lg">info</span>
+                  Hướng dẫn hiển thị thư viện ảnh
+                </h4>
+                <p className="text-xs text-blue-800/80 mb-3 leading-relaxed">
+                  Bố cục ảnh trên trang chi tiết cửa hàng sẽ tự động điều chỉnh dựa trên số lượng ảnh bạn tải lên:
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+                  {/* 1 Image */}
+                  <div className="flex flex-col gap-2 items-center">
+                    <div className="w-full aspect-[4/3] bg-blue-100/50 rounded-lg border border-blue-200"></div>
+                    <span className="text-[10px] font-bold text-blue-900">1 ảnh</span>
+                  </div>
+                  {/* 2 Images */}
+                  <div className="flex flex-col gap-2 items-center">
+                    <div className="w-full aspect-[4/3] grid grid-cols-2 gap-1">
+                      <div className="bg-blue-100/50 rounded-l-lg border border-blue-200"></div>
+                      <div className="bg-blue-100/50 rounded-r-lg border border-blue-200"></div>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-900">2 ảnh</span>
+                  </div>
+                  {/* 3 Images */}
+                  <div className="flex flex-col gap-2 items-center">
+                    <div className="w-full aspect-[4/3] grid grid-cols-3 gap-1">
+                      <div className="col-span-2 bg-blue-100/50 rounded-l-lg border border-blue-200"></div>
+                      <div className="col-span-1 grid grid-rows-2 gap-1">
+                        <div className="bg-blue-100/50 rounded-tr-lg border border-blue-200"></div>
+                        <div className="bg-blue-100/50 rounded-br-lg border border-blue-200"></div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-900">3 ảnh</span>
+                  </div>
+                  {/* 4 Images */}
+                  <div className="flex flex-col gap-2 items-center">
+                    <div className="w-full aspect-[4/3] grid grid-cols-3 grid-rows-2 gap-1">
+                      <div className="col-span-2 row-span-2 bg-blue-100/50 rounded-l-lg border border-blue-200"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-100/50 rounded-tr-lg border border-blue-200"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-100/50 rounded-br-lg border border-blue-200"></div>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-900">4 ảnh</span>
+                  </div>
+                  {/* 5+ Images */}
+                  <div className="flex flex-col gap-2 items-center relative">
+                    <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                      Nên dùng
+                    </div>
+                    <div className="w-full aspect-[4/3] grid grid-cols-4 grid-rows-2 gap-1">
+                      <div className="col-span-2 row-span-2 bg-blue-500/20 rounded-l-lg border border-blue-300"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-500/20 border border-blue-300"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-500/20 rounded-tr-lg border border-blue-300"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-500/20 border border-blue-300"></div>
+                      <div className="col-span-1 row-span-1 bg-blue-500/20 rounded-br-lg border border-blue-300 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-blue-700 opacity-60">+</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-900">5+ ảnh</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
           {/* Basic Info */}

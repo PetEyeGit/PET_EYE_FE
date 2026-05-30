@@ -452,7 +452,7 @@ export default function AdminLayout() {
     );
   }
 
-  if (user?.role !== 'ADMIN') return <Navigate to="/home" />;
+  if (user?.role !== 'ADMIN') return <Navigate to="/" />;
 
   const handleLogout = () => {
     logout();

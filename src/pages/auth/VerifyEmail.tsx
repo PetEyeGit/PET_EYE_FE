@@ -2,8 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Mail, RefreshCw } from 'lucide-react';
-import { authService } from '../services/auth.service';
-import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../../services/auth.service';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function VerifyEmail() {

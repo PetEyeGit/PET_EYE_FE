@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
-import { petService } from '../services/pet.service';
-import { bookingService } from '../services/booking.service';
-import { shopService, ShopPublicResponse } from '../services/shop.service';
-import type { Pet } from '../types';
-import type { ServiceResponse, BookingResponse } from '../types/api';
-import { reviewService, ReviewResponse } from '../services/review.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { petService } from '../../services/pet.service';
+import { bookingService } from '../../services/booking.service';
+import { shopService, ShopPublicResponse } from '../../services/shop.service';
+import type { Pet } from '../../types';
+import type { ServiceResponse, BookingResponse } from '../../types/api';
+import { reviewService, ReviewResponse } from '../../services/review.service';
 
 // Mock reviews for homepage
 const MOCK_REVIEWS = [
@@ -56,26 +56,20 @@ export default function HomePage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user?.id) return;
             try {
-                const [petsData, bookingsData, shopsData, reviewsData] = await Promise.all([
-                    petService.getByOwner(Number(user.id)),
-                    bookingService.getMyBookings(),
+                // 1. Fetch public data (shops, reviews, services)
+                const [shopsData, reviewsData] = await Promise.all([
                     shopService.searchPublic(),
                     reviewService.getLatestReviews(3)
                 ]);
-                setPets(petsData || []);
-                setBookings(bookingsData || []);
                 setShops(shopsData || []);
                 setReviews(reviewsData || []);
 
-                // Fetch services for more shops to ensure category diversity
                 if (shopsData && shopsData.length > 0) {
                     const topShops = shopsData.slice(0, 12);
                     const servicesPromises = topShops.map(s => shopService.getShopServices(s.id));
                     const allServicesResults = await Promise.all(servicesPromises);
 
-                    // Flatten and ensure each service has the shopName from the shop object if missing
                     const flattenedServices = allServicesResults.flatMap((services, index) =>
                         (services || []).map(service => ({
                             ...service,
@@ -84,6 +78,16 @@ export default function HomePage() {
                     );
 
                     setFeaturedServices(flattenedServices);
+                }
+
+                // 2. Fetch user-specific data if logged in
+                if (user?.id) {
+                    const [petsData, bookingsData] = await Promise.all([
+                        petService.getByOwner(Number(user.id)),
+                        bookingService.getMyBookings()
+                    ]);
+                    setPets(petsData || []);
+                    setBookings(bookingsData || []);
                 }
             } catch (error) {
                 console.error("Error fetching homepage data:", error);
@@ -169,7 +173,7 @@ export default function HomePage() {
                     >
                         <div>
                             <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-                                {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{user?.name?.split(' ')[0] || 'bạn'}! 👋</span>
+                                {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{user?.name?.split(' ')[0] || 'bạn'}!</span> <span className="inline-block origin-bottom-right hover:rotate-12 transition-transform cursor-pointer">👋</span>
                             </h1>
                             <p className="text-xl text-slate-500 dark:text-slate-400 font-medium">Hôm nay bé cưng của bạn cần gì?</p>
                         </div>
@@ -202,7 +206,7 @@ export default function HomePage() {
                             <motion.button
                                 whileHover={{ scale: 1.1, y: -5 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => navigate('/search?type=HOTEL')}
+                                onClick={() => navigate('/search?type=BOARDING')}
                                 className="relative flex flex-col items-center justify-center gap-3 p-4 bg-gradient-to-br from-orange-50/80 to-amber-50/40 dark:from-orange-950/20 dark:to-amber-950/10 rounded-2xl shadow-md border-2 border-orange-200 dark:border-orange-800 hover:shadow-xl hover:shadow-orange-500/10 hover:border-orange-400 transition-all group scale-105 z-10"
                             >
                                 <span className="absolute -top-2 right-1 bg-rose-500 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse z-20">HOT</span>
@@ -212,7 +216,7 @@ export default function HomePage() {
                                 <span className="text-sm font-black text-orange-700 dark:text-orange-200">Lưu trú</span>
                             </motion.button>
 
-                            <motion.button
+                            {/* <motion.button
                                 whileHover={{ scale: 1.05, y: -5 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => navigate('/camera')}
@@ -222,7 +226,7 @@ export default function HomePage() {
                                     <span className="material-symbols-outlined text-2xl">videocam</span>
                                 </div>
                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Camera</span>
-                            </motion.button>
+                            </motion.button> */}
                         </div>
                     </motion.div>
 
@@ -433,7 +437,7 @@ export default function HomePage() {
 
                             {/* Category Filter Pills */}
                             <div className="flex overflow-x-auto gap-2 pt-2 pb-4 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 scroll-smooth">
-                                {['Tất cả', 'CLINIC', 'GROOMING', 'HOTEL'].map((cat) => (
+                                {['Tất cả', 'CLINIC', 'GROOMING', 'BOARDING'].map((cat) => (
                                     <button
                                         key={cat}
                                         onClick={() => {
@@ -447,7 +451,7 @@ export default function HomePage() {
                                     >
                                         {cat === 'CLINIC' && <span className="material-symbols-outlined text-lg">medical_services</span>}
                                         {cat === 'GROOMING' && <span className="material-symbols-outlined text-lg">content_cut</span>}
-                                        {cat === 'HOTEL' && <span className="material-symbols-outlined text-lg">hotel</span>}
+                                        {cat === 'BOARDING' && <span className="material-symbols-outlined text-lg">hotel</span>}
                                         {cat === 'Tất cả' ? 'Tất cả' :
                                             cat === 'CLINIC' ? 'Phòng khám' :
                                                 cat === 'GROOMING' ? 'Spa & Grooming' : 'Lưu trú'}
@@ -464,6 +468,7 @@ export default function HomePage() {
                                 const selCat = selectedCategory.toUpperCase();
                                 const matchesCat = selectedCategory === 'Tất cả' ||
                                     (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                    (selCat === 'BOARDING' && (sCat === 'BOARDING' || sCat === 'HOTEL')) ||
                                     sCat === selCat;
                                 const matchesSearch = (s.serviceName || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
                                     (s.shopName || '').toLowerCase().includes((searchTerm || '').toLowerCase());
@@ -476,6 +481,7 @@ export default function HomePage() {
                                     const selCat = selectedCategory.toUpperCase();
                                     const matchesCat = selectedCategory === 'Tất cả' ||
                                         (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                        (selCat === 'BOARDING' && (sCat === 'BOARDING' || sCat === 'HOTEL')) ||
                                         sCat === selCat;
                                     const matchesSearch = (s.serviceName || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
                                         (s.shopName || '').toLowerCase().includes((searchTerm || '').toLowerCase());
@@ -570,6 +576,7 @@ export default function HomePage() {
                         const selCat = selectedCategory.toUpperCase();
                         const matchesCat = selectedCategory === 'Tất cả' ||
                             (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                            (selCat === 'BOARDING' && (sCat === 'BOARDING' || sCat === 'HOTEL')) ||
                             sCat === selCat;
                         const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                             (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -595,6 +602,7 @@ export default function HomePage() {
                                         const selCat = selectedCategory.toUpperCase();
                                         const matchesCat = selectedCategory === 'Tất cả' ||
                                             (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                            (selCat === 'BOARDING' && (sCat === 'BOARDING' || sCat === 'HOTEL')) ||
                                             sCat === selCat;
                                         const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                                             (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -604,6 +612,7 @@ export default function HomePage() {
                                         const selCat = selectedCategory.toUpperCase();
                                         const matchesCat = selectedCategory === 'Tất cả' ||
                                             (selCat === 'GROOMING' && (sCat === 'GROOMING' || sCat === 'SPA')) ||
+                                            (selCat === 'BOARDING' && (sCat === 'BOARDING' || sCat === 'HOTEL')) ||
                                             sCat === selCat;
                                         const matchesSearch = (s.serviceName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                                             (s.shopName || '').toLowerCase().includes(searchTerm.toLowerCase());

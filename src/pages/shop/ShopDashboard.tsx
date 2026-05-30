@@ -2,8 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
     Calendar, DollarSign, Users, TrendingUp, TrendingDown, Bell, LayoutDashboard,
-    ArrowUpRight, Video, ChevronRight, MessageCircle, Settings,
-    Camera, Package, Activity, Loader2
+    ArrowUpRight, Video, MessageCircle, Package, Activity, Loader2,Store
 } from 'lucide-react';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -53,12 +52,12 @@ export default function ShopDashboard() {
 
   const kpis = [
     { 
-      label: 'Tổng doanh thu', 
+      label: 'Tổng doanh thu ', 
       value: formatCurrency(dashboardData?.totalRevenue || 0), 
       icon: DollarSign, 
       color: 'bg-emerald-500', 
       shadow: 'shadow-emerald-500/20',
-      desc: 'Toàn bộ từ trước tới nay' 
+      desc: 'Lũy kế từ khi bắt đầu hoạt động' 
     },
     { 
       label: 'Doanh thu tháng này', 
@@ -66,7 +65,7 @@ export default function ShopDashboard() {
       icon: Activity, 
       color: 'bg-blue-500', 
       shadow: 'shadow-blue-500/20',
-      desc: 'Tháng ' + (new Date().getMonth() + 1)
+      desc: `Tính riêng trong Tháng ${new Date().getMonth() + 1}`
     },
     { 
       label: 'Lịch hẹn', 
@@ -251,7 +250,7 @@ export default function ShopDashboard() {
                         { label: 'Dịch vụ', icon: Package, color: 'bg-indigo-500', path: '/shop/services' },
                         { label: 'Nhân viên', icon: Users, color: 'bg-emerald-500', path: '/shop/staff' },
                         { label: 'Khách hàng', icon: MessageCircle, color: 'bg-blue-500', path: '/shop/customers' },
-                        { label: 'Cài đặt', icon: Settings, color: 'bg-slate-500', path: '/shop/profile' },
+                        { label: 'Thông Tin Cửa Hàng', icon: Store, color: 'bg-slate-500', path: '/shop/profile' },
                     ].map(a => (
                         <Link key={a.label} to={a.path} className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-700 border border-transparent hover:border-slate-100 hover:shadow-lg transition-all group">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.color} text-white shadow-lg shadow-indigo-500/10 group-hover:scale-110 transition-transform`}>

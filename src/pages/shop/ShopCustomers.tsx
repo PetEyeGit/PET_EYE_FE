@@ -192,31 +192,27 @@ export default function ShopCustomers() {
             <div key={customer.id} className="group bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-slate-50 to-transparent dark:from-slate-700/20 rounded-bl-full group-hover:scale-110 transition-transform" />
               <div className="flex flex-col lg:flex-row gap-6 relative z-10">
-                {/* Avatar & Basic Info */}
                 <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img
-                      src={customer.avatar}
-                      alt={customer.name}
-                      className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-700 shadow-sm"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                  <div className="flex flex-col items-center gap-1.5">
+                    {(() => {
+                        const tier = getCustomerTier(customer);
+                        return (
+                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm ${tier.color} ${tier.text}`}>
+                                {tier.icon}
+                                {tier.label}
+                            </div>
+                        );
+                    })()}
+                    <div className="relative">
+                      <img
+                        src={customer.avatar}
+                        alt={customer.name}
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-700 shadow-sm"
+                      />
                     </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-none">{customer.name}</h3>
-                        {(() => {
-                            const tier = getCustomerTier(customer);
-                            return (
-                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter ${tier.color} ${tier.text}`}>
-                                    {tier.icon}
-                                    {tier.label}
-                                </span>
-                            );
-                        })()}
-                    </div>
+                  <div className="mt-4">
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-none mb-1">{customer.name}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">#{customer.id}</p>
                   </div>
                 </div>
@@ -272,14 +268,24 @@ export default function ShopCustomers() {
                     </div>
 
                     {/* Tổng chi */}
-                    <div className="h-20 flex flex-col justify-center text-center
+                    <div className="h-20 flex flex-col justify-center items-center text-center px-1
                   bg-gradient-to-br from-[#1a2b4c] to-slate-700
-                  rounded-xl">
-                      <p className="text-[11px] text-slate-300">
+                  rounded-xl overflow-hidden">
+                      <p className="text-[11px] text-slate-300 whitespace-nowrap">
                         Tổng chi
                       </p>
-                      <p className="text-lg font-bold text-white">
-                        {customer.totalSpent.replace('.000đ', 'K')}
+                      <p className="text-sm sm:text-base font-bold text-white truncate w-full" title={customer.totalSpent}>
+                        {(() => {
+                          const val = parseInt(customer.totalSpent.replace(/\D/g, ''));
+                          if (isNaN(val)) return customer.totalSpent;
+                          if (val >= 1000000) {
+                            return (val / 1000000).toLocaleString('en-US', { maximumFractionDigits: 2 }) + 'M';
+                          }
+                          if (val >= 1000) {
+                            return (val / 1000).toLocaleString('en-US', { maximumFractionDigits: 0 }) + 'K';
+                          }
+                          return customer.totalSpent;
+                        })()}
                       </p>
                     </div>
 

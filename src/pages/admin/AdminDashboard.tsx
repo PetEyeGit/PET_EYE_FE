@@ -72,13 +72,15 @@ export default function AdminDashboard() {
       }))
     : [];
 
+  const formatNum = (n: number) => n.toLocaleString('vi-VN');
+
   const cards = stats ? [
-    { label: 'Tổng doanh thu', value: fmtShort(stats.totalRevenue), icon: DollarSign, color: 'blue' },
-    { label: 'Tổng người dùng', value: fmt(stats.totalUsers), icon: Users, color: 'green' },
-    { label: 'Tổng shop', value: String(stats.totalShops), icon: Store, color: 'indigo' },
-    { label: 'Tổng booking', value: fmt(stats.totalBookings), icon: Calendar, color: 'purple' },
-    { label: 'Shop chờ duyệt', value: String(stats.pendingShops), icon: Clock, color: 'orange' },
-    { label: 'Tin nhắn chưa đọc', value: String(stats.unreadMessages), icon: MessageCircle, color: 'red' },
+    { label: 'Tổng doanh thu', value: fmtShort(stats.totalRevenue), icon: DollarSign, color: 'blue', suffix: '' },
+    { label: 'Tổng người dùng', value: formatNum(stats.totalUsers), icon: Users, color: 'green', suffix: 'user' },
+    { label: 'Tổng shop', value: formatNum(stats.totalShops), icon: Store, color: 'indigo', suffix: 'shop' },
+    { label: 'Tổng booking', value: formatNum(stats.totalBookings), icon: Calendar, color: 'purple', suffix: 'lượt' },
+    { label: 'Shop chờ duyệt', value: formatNum(stats.pendingShops), icon: Clock, color: 'orange', suffix: 'shop' },
+    { label: 'Tin nhắn chưa đọc', value: formatNum(stats.unreadMessages), icon: MessageCircle, color: 'red', suffix: 'tin nhắn' },
   ] : [];
 
   const colorMap: Record<string, string> = {
@@ -115,7 +117,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{s.label}</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{s.value}</h3>
+              <h3 className="text-2xl font-black text-slate-900 mt-1 flex items-baseline gap-1.5">
+                {s.value}
+                {s.suffix && <span className="text-sm font-bold text-slate-500">{s.suffix}</span>}
+              </h3>
             </div>
           ))}
         </div>

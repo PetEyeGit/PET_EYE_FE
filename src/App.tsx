@@ -4,10 +4,11 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Home from './pages/LandingPage';
-import HomePage from './pages/HomePage';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Home from './pages/public/LandingPage';
+import HomePage from './pages/public/HomePage';
+import About from './pages/public/About';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import ShopRegister from './pages/ShopRegister';
 import ShopRegisterSuccess from './pages/ShopRegisterSuccess';
 import ShopLayout from './pages/shop/ShopLayout';
@@ -25,31 +26,31 @@ import ShopAIAssistant from './pages/shop/ShopAIAssistant';
 
 import StaffLayout from './pages/staff/StaffLayout';
 import StaffDashboard from './pages/staff/StaffDashboard';
-import StaffTasks from './pages/staff/StaffTasks';
+
 import StaffProfile from './pages/staff/StaffProfile';
 import StaffMessages from './pages/staff/StaffMessages';
 
-import Profile, { ProfileLayout } from './pages/Profile';
-import OrderHistory from './pages/OrderHistory';
-import BookingHistory from './pages/BookingHistory';
-import TransactionHistory from './pages/TransactionHistory';
-import ClinicDetail from './pages/ClinicDetail';
-import PetProfile from './pages/PetProfile';
-import Messaging from './pages/Messaging';
-import VetSearch from './pages/VetSearch';
-import Payment from './pages/Payment';
-import ProfilePets from './pages/ProfilePets';
-import ProfileSecurity from './pages/ProfileSecurity';
-import ProfileNotifications from './pages/ProfileNotifications';
-import CameraView from './pages/CameraView';
-import ZaloCallback from './pages/ZaloCallback';
-import FacebookCallback from './pages/FacebookCallback';
-import BookingSuccess from './pages/BookingSuccess';
-import PaymentFailure from './pages/PaymentFailure';
-import PaymentResult from './pages/PaymentResult';
-import CompleteProfile from './pages/CompleteProfile';
-import VerifyEmail from './pages/VerifyEmail';
-import ForgotPassword from './pages/ForgotPassword';
+import Profile, { ProfileLayout } from './pages/customer/Profile';
+import OrderHistory from './pages/customer/OrderHistory';
+import BookingHistory from './pages/customer/BookingHistory';
+import TransactionHistory from './pages/customer/TransactionHistory';
+import ClinicDetail from './pages/public/ClinicDetail';
+import PetProfile from './pages/customer/PetProfile';
+import Messaging from './pages/public/Messaging';
+import VetSearch from './pages/public/VetSearch';
+import Payment from './pages/payment/Payment';
+import ProfilePets from './pages/customer/ProfilePets';
+import ProfileSecurity from './pages/customer/ProfileSecurity';
+import ProfileNotifications from './pages/customer/ProfileNotifications';
+import CameraView from './pages/public/CameraView';
+import ZaloCallback from './pages/auth/ZaloCallback';
+import FacebookCallback from './pages/auth/FacebookCallback';
+import BookingSuccess from './pages/customer/BookingSuccess';
+import PaymentFailure from './pages/payment/PaymentFailure';
+import PaymentResult from './pages/payment/PaymentResult';
+import CompleteProfile from './pages/auth/CompleteProfile';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminShops from './pages/admin/AdminShops';
@@ -109,7 +110,8 @@ function AppLayout() {
 
         <Routes>
           <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Home />} />
-          <Route path="/home" element={<HomePage />} />
+          <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
+          <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/zalo/callback" element={<ZaloCallback />} />
           <Route path="/login/facebook/callback" element={<FacebookCallback />} />
@@ -152,14 +154,14 @@ function AppLayout() {
           <Route path="/staff" element={<StaffLayout />}>
             <Route index element={<Navigate to="/staff/dashboard" replace />} />
             <Route path="dashboard" element={<StaffDashboard />} />
-            <Route path="tasks" element={<StaffTasks />} />
+            <Route path="tasks" element={<Navigate to="/staff/dashboard" replace />} />
             <Route path="profile" element={<StaffProfile />} />
             <Route path="messages" element={<StaffMessages />} />
             <Route path="camera" element={<ShopCamera />} />
           </Route>
 
           {/* profile area with persistent sidebar */}
-          <Route path="/profile" element={<ProfileLayout />}>
+          <Route path="/profile" element={user ? <ProfileLayout /> : <Navigate to="/" replace />}>
             <Route index element={<Profile />} />
             <Route path="pets" element={<ProfilePets />} />
             <Route path="bookings" element={<BookingHistory />} />
@@ -169,15 +171,15 @@ function AppLayout() {
             <Route path="notifications" element={<ProfileNotifications />} />
           </Route>
           <Route path="/clinic/:id" element={<ClinicDetail />} />
-          <Route path="/pet/:id" element={<PetProfile />} />
-          <Route path="/messages" element={<Messaging />} />
-          <Route path="/camera" element={<CameraView />} />
+          <Route path="/pet/:id" element={user ? <PetProfile /> : <Navigate to="/" replace />} />
+          <Route path="/messages" element={user ? <Messaging /> : <Navigate to="/" replace />} />
+          <Route path="/camera" element={user ? <CameraView /> : <Navigate to="/" replace />} />
           <Route path="/search" element={<VetSearch />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/payment/result" element={<PaymentResult />} />
-          <Route path="/booking/success" element={<BookingSuccess />} />
-          <Route path="/payment/failure" element={<PaymentFailure />} />
-          <Route path="/bookings/my" element={<BookingHistory />} />
+          <Route path="/payment" element={user ? <Payment /> : <Navigate to="/" replace />} />
+          <Route path="/payment/result" element={user ? <PaymentResult /> : <Navigate to="/" replace />} />
+          <Route path="/booking/success" element={user ? <BookingSuccess /> : <Navigate to="/" replace />} />
+          <Route path="/payment/failure" element={user ? <PaymentFailure /> : <Navigate to="/" replace />} />
+          <Route path="/bookings/my" element={user ? <BookingHistory /> : <Navigate to="/" replace />} />
         </Routes>
       </main>
 
@@ -202,7 +204,34 @@ function ScrollToTop() {
 export default function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster 
+        position="bottom-right" 
+        reverseOrder={false} 
+        toastOptions={{
+          style: {
+            background: '#1e293b', // bg-slate-800
+            color: '#fff',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3)',
+            padding: '12px 24px',
+            fontSize: '13px',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+          },
+          success: {
+            iconTheme: {
+              primary: '#22c55e',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Router>
         <ScrollToTop />
         <AppLayout />

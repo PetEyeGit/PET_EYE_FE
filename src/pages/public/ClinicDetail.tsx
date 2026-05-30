@@ -1,13 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useQuery } from '@tanstack/react-query';
-import { shopService } from '../services/shop.service';
-import { petService } from '../services/pet.service';
-import { reviewService } from '../services/review.service';
-import { bookingService } from '../services/booking.service';
-import { useAuth } from '../contexts/AuthContext';
-import type { ServiceResponse, StaffResponse } from '../types/api';
-import type { Pet } from '../types';
+import { shopService } from '../../services/shop.service';
+import { petService } from '../../services/pet.service';
+import { reviewService } from '../../services/review.service';
+import { bookingService } from '../../services/booking.service';
+import { clinicService } from '../../services/clinic.service';
+import { useAuth } from '../../contexts/AuthContext';
+import type { ServiceResponse, StaffResponse } from '../../types/api';
+import type { Pet } from '../../types';
+import type { NearbyShopResponse, DirectionsResponse } from '../../services/clinic.service';
+import ShopMap from '../../components/ShopMap';
+import NearbyShops from '../../components/NearbyShops';
 
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
@@ -85,6 +90,136 @@ export default function ClinicDetail() {
       .sort((a, b) => b.ratingAvg - a.ratingAvg)
       .slice(0, 4),
   });
+
+  // ── Map & Directions state ──────────────────────────────────────────────────
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyShopsFromAPI, setNearbyShopsFromAPI] = useState<NearbyShopResponse[]>([]);
+  const [loadingNearbyShops, setLoadingNearbyShops] = useState(false);
+  const [directions, setDirections] = useState<DirectionsResponse | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+
+  // Get user location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          console.log('✅ Got user location:', location);
+          setUserLocation(location);
+        },
+        (error) => {
+          console.warn('⚠️ Geolocation error:', error.message);
+          // Fallback: Dùng tọa độ TP.HCM
+          const fallbackLocation = { lat: 10.7769, lng: 106.7009 };
+          console.log('Using fallback location (TP.HCM):', fallbackLocation);
+          setUserLocation(fallbackLocation);
+          
+          // Thông báo cho user
+          import('react-hot-toast').then(({ toast }) => {
+            toast('Không lấy được vị trí của bạn. Đang dùng vị trí mặc định (TP.HCM)', {
+              icon: '📍',
+              duration: 3000,
+            });
+          });
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      console.warn('⚠️ Geolocation not supported');
+      // Fallback: TP.HCM
+      const fallbackLocation = { lat: 10.7769, lng: 106.7009 };
+      console.log('Using fallback location (TP.HCM):', fallbackLocation);
+      setUserLocation(fallbackLocation);
+    }
+  }, []);
+
+  // Add body scroll lock when modal is open
+  useEffect(() => {
+    if (showMap) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showMap]);
+
+  // Fetch nearby shops when user location is available
+  useEffect(() => {
+    if (!userLocation) return;
+    
+    console.log('Fetching nearby shops with location:', userLocation);
+    
+    setLoadingNearbyShops(true);
+    clinicService
+      .getNearbyShops(userLocation.lat, userLocation.lng, 10)
+      .then((shops) => {
+        // Lọc 3 shop gần nhất, loại trừ shop hiện tại
+        const filtered = shops
+          .filter(s => s.id !== shopId)
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, 3);
+        console.log('Nearby shops:', filtered);
+        setNearbyShopsFromAPI(filtered);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch nearby shops:', error);
+      })
+      .finally(() => {
+        setLoadingNearbyShops(false);
+      });
+  }, [userLocation, shopId]);
+
+  // Debug: Log shop coordinates
+  useEffect(() => {
+    if (shop) {
+      console.log('Shop data:', {
+        id: shop.id,
+        name: shop.shopName,
+        latitude: shop.latitude,
+        longitude: shop.longitude,
+        hasCoordinates: !!(shop.latitude && shop.longitude)
+      });
+    }
+  }, [shop]);
+
+  // Get directions to a shop
+  const handleGetDirections = async (targetShopId: number) => {
+    if (!userLocation) {
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('Vui lòng bật định vị để xem chỉ đường');
+      });
+      return;
+    }
+
+    try {
+      const result = await clinicService.getDirectionsToShop(
+        targetShopId,
+        userLocation.lat,
+        userLocation.lng
+      );
+      setDirections(result);
+      setShowMap(true);
+      
+      import('react-hot-toast').then(({ toast }) => {
+        toast.success('Đã tìm thấy đường đi!');
+      });
+    } catch (error) {
+      console.error('Failed to get directions:', error);
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('Không thể lấy chỉ đường. Vui lòng thử lại.');
+      });
+    }
+  };
 
   const { data: myPets = [] } = useQuery({
     queryKey: ['my-pets', user?.id],
@@ -455,11 +590,13 @@ export default function ClinicDetail() {
     if (shop?.galleryUrls) {
       images.push(...shop.galleryUrls.split(',').filter(Boolean));
     }
-    // Fill with placeholders if less than 5
-    while (images.length < 5) {
-      images.push(`https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80`);
+    
+    // If shop has no images at all, show 1 placeholder
+    if (images.length === 0) {
+        images.push('https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80');
     }
-    return images.slice(0, 5);
+    
+    return images;
   }, [shop?.bannerUrl, shop?.galleryUrls]);
 
   const dayName = today.toLocaleDateString('vi-VN', { weekday: 'long' });
@@ -558,39 +695,127 @@ export default function ClinicDetail() {
         </div>
 
         {/* Hero Image Grid */}
-        <div className="w-full h-[280px] md:h-[380px] lg:h-[460px] gap-2 overflow-hidden rounded-2xl grid grid-cols-4 grid-rows-2 mb-8">
-          <div
-            className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-tl-2xl rounded-bl-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${galleryImages[0]})` }}
-          >
-            <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-          </div>
-          {galleryImages.slice(1, 4).map((img, i) => (
-            <div
-              key={i}
-              className={`col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative overflow-hidden ${i === 1 ? 'rounded-tr-2xl' : ''
-                }`}
-              style={{ backgroundImage: `url(${img})` }}
-            >
-              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-            </div>
+        <div className={`w-full h-[280px] md:h-[380px] lg:h-[460px] gap-2 overflow-hidden rounded-2xl mb-8 ${
+            galleryImages.length === 1 ? 'flex' : 
+            galleryImages.length === 2 ? 'grid grid-cols-2' : 
+            galleryImages.length === 3 ? 'grid grid-cols-3' : 
+            galleryImages.length === 4 ? 'grid grid-cols-3 grid-rows-2' : 
+            'grid grid-cols-4 grid-rows-2'
+        }`}>
+          {/* Layout for 1 image */}
+          {galleryImages.length === 1 && (
+              <div
+                className="w-full h-full bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                style={{ backgroundImage: `url(${galleryImages[0]})` }}
+              >
+                  <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+              </div>
+          )}
+
+          {/* Layout for 2 images */}
+          {galleryImages.length === 2 && galleryImages.map((img, i) => (
+              <div
+                key={i}
+                className="w-full h-full bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                style={{ backgroundImage: `url(${img})` }}
+              >
+                  <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+              </div>
           ))}
-          <div
-            className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative rounded-br-2xl overflow-hidden"
-            style={{ backgroundImage: `url(${galleryImages[4]})` }}
-          >
-            <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
-            <button className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 transition-transform">
-              <span className="material-symbols-outlined text-sm">grid_view</span>
-              Xem tất cả ảnh
-            </button>
-          </div>
+
+          {/* Layout for 3 images */}
+          {galleryImages.length === 3 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  <div className="col-span-1 flex flex-col gap-2">
+                      {galleryImages.slice(1, 3).map((img, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                            style={{ backgroundImage: `url(${img})` }}
+                          >
+                              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                          </div>
+                      ))}
+                  </div>
+              </>
+          )}
+
+          {/* Layout for 4 images */}
+          {galleryImages.length === 4 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  <div className="col-span-1 row-span-2 flex flex-col gap-2">
+                      {galleryImages.slice(1, 3).map((img, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                            style={{ backgroundImage: `url(${img})` }}
+                          >
+                              <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                          </div>
+                      ))}
+                  </div>
+                  <div
+                    className="col-span-1 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[3]})` }}
+                  >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+              </>
+          )}
+
+          {/* Layout for 5+ images */}
+          {galleryImages.length >= 5 && (
+              <>
+                  <div
+                    className="col-span-2 row-span-2 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[0]})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                  </div>
+                  {galleryImages.slice(1, 4).map((img, i) => (
+                    <div
+                      key={i}
+                      className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                      style={{ backgroundImage: `url(${img})` }}
+                    >
+                      <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                    </div>
+                  ))}
+                  <div
+                    className="col-span-1 row-span-1 bg-center bg-no-repeat bg-cover hover:brightness-95 transition-all cursor-pointer relative"
+                    style={{ backgroundImage: `url(${galleryImages[4]})` }}
+                  >
+                    <div className="absolute inset-0 bg-black/10 hover:bg-transparent transition-colors" />
+                    {galleryImages.length > 5 && (
+                        <button className="absolute bottom-3 right-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 transition-transform">
+                          <span className="material-symbols-outlined text-sm">grid_view</span>
+                          Xem tất cả ảnh
+                        </button>
+                    )}
+                  </div>
+              </>
+          )}
         </div>
+
+        {/* Map & Directions Section - Đã chuyển xuống dạng Modal ở cuối file */}
 
         {/* Main 2-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
           {/* Left Column */}
           <div className="flex flex-col gap-10">
+
 
             {/* Intro */}
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
@@ -607,59 +832,6 @@ export default function ClinicDetail() {
               )}
             </section>
 
-            {/* Doctors */}
-            <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Đội ngũ Nhân viên</h2>
-                <button className="text-[#1a2b4c] dark:text-teal-400 font-semibold text-sm hover:underline">
-                  Xem tất cả
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(shop?.staffs || []).length > 0 ? (
-                  shop?.staffs?.map((staff: any) => (
-                    <div
-                      key={staff.id}
-                      onClick={() => setSelectedStaff(staff)}
-                      className="flex flex-col gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                    >
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={staff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'}
-                          alt={staff.fullName}
-                          className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
-                        />
-                        <div className="flex-1">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-                            {staff.fullName}
-                          </h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{staff.role}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5 italic">{staff.specialization}</p>
-                        </div>
-                      </div>
-                      
-                      {/* Certificates Section */}
-                      {staff.certificates && staff.certificates.filter((c: any) => c.status === 'VERIFIED').length > 0 && (
-                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Chứng chỉ chuyên môn</p>
-                          <div className="flex flex-wrap gap-2">
-                            {staff.certificates.filter((c: any) => c.status === 'VERIFIED').map((cert: any) => (
-                              <div key={cert.id} className="flex items-center gap-1.5 px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 rounded border border-teal-100 dark:border-teal-800/50">
-                                <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                                <span className="text-[10px] font-bold">{cert.certificateName}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-slate-400 text-sm italic">Chưa có thông tin nhân viên.</p>
-                )}
-              </div>
-            </section>
-  
             {/* Pet Hotel & Camera Options — chỉ hiển thị nếu shop có dịch vụ BOARDING */}
             {boardingService && (
             <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
@@ -906,6 +1078,61 @@ export default function ClinicDetail() {
               )}
             </section>
 
+
+
+            {/* Doctors */}
+            <section className="border-b border-slate-200 dark:border-slate-800 pb-8">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Đội ngũ Nhân viên</h2>
+                <button className="text-[#1a2b4c] dark:text-teal-400 font-semibold text-sm hover:underline">
+                  Xem tất cả
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(shop?.staffs || []).length > 0 ? (
+                  shop?.staffs?.map((staff: any) => (
+                    <div
+                      key={staff.id}
+                      onClick={() => setSelectedStaff(staff)}
+                      className="flex flex-col gap-3 p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                    >
+                      <div className="flex items-start gap-4">
+                        <img
+                          src={staff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'}
+                          alt={staff.fullName}
+                          className="size-16 rounded-full object-cover shrink-0 border-2 border-slate-100 dark:border-slate-700 group-hover:border-teal-400 transition-colors"
+                        />
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
+                            {staff.fullName}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{staff.role}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 italic">{staff.specialization}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Certificates Section */}
+                      {staff.certificates && staff.certificates.filter((c: any) => c.status === 'VERIFIED').length > 0 && (
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Chứng chỉ chuyên môn</p>
+                          <div className="flex flex-wrap gap-2">
+                            {staff.certificates.filter((c: any) => c.status === 'VERIFIED').map((cert: any) => (
+                              <div key={cert.id} className="flex items-center gap-1.5 px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 rounded border border-teal-100 dark:border-teal-800/50">
+                                <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                                <span className="text-[10px] font-bold">{cert.certificateName}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm italic">Chưa có thông tin nhân viên.</p>
+                )}
+              </div>
+            </section>
+
             {/* Live Camera Promo */}
             {/* <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white p-8">
               <div
@@ -932,6 +1159,8 @@ export default function ClinicDetail() {
                 </button>
               </div>
             </section> */}
+
+
 
             {/* Reviews */}
             <section>
@@ -1061,115 +1290,64 @@ export default function ClinicDetail() {
                 </button>
               </div>
             </section>
+
           </div>
 
           {/* Right Column - Sticky Sidebar */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24 flex flex-col gap-5">
+          {/* Right Column - Sidebar */}
+          <div className="hidden lg:block space-y-6">
+            <div className="sticky top-24 flex flex-col gap-6">
               {/* Booking Card */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none p-6 flex flex-col gap-5">
-
-                {/* Service Select */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
-                    Chọn dịch vụ
-                  </label>
-                  <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 max-h-[240px] overflow-y-auto">
-
-                    {/* Hotel — chỉ hiển thị nếu shop có service BOARDING */}
-                    {boardingService && (
-                      <label className="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors group mb-1 border-b border-slate-100 dark:border-slate-700/50 pb-3">
-                        <input
-                          type="checkbox"
-                          checked={isHotelSelected}
-                          onChange={() => setIsHotelSelected(!isHotelSelected)}
-                          className="mt-1 w-4 h-4 rounded border-slate-300 text-[#1a2b4c] focus:ring-[#1a2b4c] cursor-pointer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition-transform inline-block">
-                              {boardingService.serviceName}
-                            </span>
-                            <span className="text-xs font-black text-slate-900 dark:text-slate-100 shrink-0">
-                              {(boardingService.price + cameraTierExtraPrice).toLocaleString('vi-VN')}đ/ng
-                            </span>
-                          </div>
-                          {boardingService.cameraEnabled && (
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                              Camera: {tierLabel(selectedCameraTier, boardingService.cameraTierLabels)}
-                            </p>
-                          )}
-                        </div>
-                      </label>
-                    )}
-
-                    {/* Regular services */}
-                    {apiServices
-                      .filter((s: ServiceResponse) => s.category !== 'BOARDING')
-                      .map((svc: ServiceResponse) => (
-                        <label
-                          key={svc.id}
-                          className="flex items-start gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors group"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedServiceIds.includes(svc.id)}
-                            onChange={() => toggleService(svc.id)}
-                            className="mt-1 w-4 h-4 rounded border-slate-300 text-[#1a2b4c] focus:ring-[#1a2b4c] cursor-pointer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-[#1a2b4c] dark:group-hover:text-teal-400 transition-colors">
-  <span>{svc.serviceName}</span>
-
-  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-slate-400">
-    ( {svc.durationMinutes} phút
-    )
-  </span>
-</span>
-                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                                {svc.price.toLocaleString('vi-VN')}đ
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                             
-                              {svc.description && (
-                                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
-                                  · {svc.description}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
-                  </div>
+              <div className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
+                <div className="p-6 flex flex-col gap-5">
 
                   {/* Summary row */}
-                  {(selectedServiceIds.length > 0 || isHotelSelected) && (
-                    <div className="mt-3 p-3 bg-slate-900 dark:bg-slate-800 rounded-xl text-white">
-                      <div className="flex justify-between items-center text-xs opacity-80 mb-1">
-                        <span>Dịch vụ đã chọn:</span>
-                        <span>{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
-                      </div>
-                      {/* Hiển thị tổng thời gian nếu có dịch vụ thường */}
-                      {selectedServiceIds.length > 0 && (
-                        <div className="flex justify-between items-center text-xs opacity-70 mb-1">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[11px]">schedule</span>
-                            Tổng thời gian:
-                          </span>
-                          <span>{totalServiceDuration} phút</span>
+                  <AnimatePresence>
+                    {(selectedServiceIds.length > 0 || isHotelSelected) ? (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 bg-[#1a2b4c]/5 dark:bg-slate-800 rounded-xl border border-[#1a2b4c]/10 dark:border-slate-700">
+                          <div className="flex justify-between items-center text-xs text-slate-500 mb-2 font-bold uppercase tracking-wider">
+                            <span>Dịch vụ đã chọn</span>
+                            <span className="bg-[#1a2b4c] text-white px-2 py-0.5 rounded-full">{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
+                          </div>
+                          {/* Hiển thị tổng thời gian nếu có dịch vụ thường */}
+                          {selectedServiceIds.length > 0 && (
+                            <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400 mb-2">
+                              <span className="flex items-center gap-1 font-medium">
+                                <span className="material-symbols-outlined text-[14px]">schedule</span>
+                                Tổng thời gian:
+                              </span>
+                              <span className="font-bold">{totalServiceDuration} phút</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center pt-2 border-t border-[#1a2b4c]/10 dark:border-slate-700">
+                            <span className="text-sm font-bold text-slate-900 dark:text-white">Tổng cộng:</span>
+                            <span className="text-lg font-black text-teal-600 dark:text-teal-400">
+                              {totalPrice.toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold">Tổng cộng:</span>
-                        <span className="text-base font-black text-teal-400">
-                          {totalPrice.toLocaleString('vi-VN')}đ
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800/30 text-orange-600 dark:text-orange-400 text-sm font-medium flex items-center gap-2">
+                          <span className="material-symbols-outlined text-lg">info</span>
+                          Vui lòng chọn dịch vụ ở cột bên trái
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                 {/* Date / Check-in-out — hiển thị theo loại dịch vụ đã chọn */}
 
@@ -1217,12 +1395,127 @@ export default function ClinicDetail() {
                   </div>
                 )}
 
-                {/* Dịch vụ thường: date + time slots */}
-                {hasNormalServices && (
+                {/* Dịch vụ thường: date + time slots — Luôn hiển thị, disabled khi chưa chọn */}
+                {!isHotelSelected && (
+                  <div className={`flex flex-col gap-5 transition-opacity duration-300 ${hasNormalServices ? 'opacity-100' : 'opacity-40 pointer-events-none select-none'}`}>
+                    <div>
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
+                        Ngày hẹn
+                      </label>
+                      <input
+                        type="date"
+                        min={today.toISOString().split('T')[0]}
+                        value={selectedDate}
+                        onChange={e => { setSelectedDate(e.target.value); setSelectedTime(null); }}
+                        disabled={!hasNormalServices}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]"
+                      />
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                          Khung giờ
+                        </span>
+                        <span className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold">
+                          {selectedDate
+                            ? new Date(selectedDate + "T00:00:00").toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" })
+                            : `${dayName}, ${dateStr}`}
+                        </span>
+                      </div>
+
+                      <motion.div layout className="relative overflow-hidden transition-all duration-300">
+                        <AnimatePresence mode="wait">
+                          {allTimeSlots.length === 0 ? (
+                            <motion.div
+                              key="empty"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 220 }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3, ease: 'easeInOut' }}
+                              className="flex flex-col items-center justify-center w-full"
+                            >
+                              <span className="material-symbols-outlined text-slate-300 text-3xl block mb-2">schedule</span>
+                              <p className="text-xs text-slate-400 font-medium">
+                                {hasNormalServices ? 'Đang tải khung giờ...' : 'Chọn dịch vụ để xem khung giờ'}
+                              </p>
+                            </motion.div>
+                          ) : (
+                            <motion.div
+                              key="grid"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.4, ease: 'easeInOut' }}
+                            >
+                              <div className="grid grid-cols-3 gap-2">
+                                {allTimeSlots.map((time, idx) => {
+                                  const isAvailable = availableSlots.includes(time);
+                                  const isSelected  = selectedTime === time;
+                                  return (
+                                    <motion.button
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                      key={time}
+                                      disabled={!isAvailable}
+                                      onClick={() => isAvailable && setSelectedTime(time)}
+                                      title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
+                                      className={`py-2 text-xs font-semibold rounded border transition-all relative ${
+                                        isSelected
+                                          ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
+                                          : isAvailable
+                                            ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
+                                            : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
+                                      }`}
+                                    >
+                                      {time}
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {slotsLoading && (
+                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-50/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-lg">
+                            <span className="w-5 h-5 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin" />
+                            <span className="text-[10px] text-slate-500 font-semibold">Đang cập nhật...</span>
+                          </div>
+                        )}
+                      </motion.div>
+
+                      {/* Chú thích */}
+                      <AnimatePresence>
+                        {!slotsLoading && allTimeSlots.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-slate-200 dark:border-slate-700 overflow-hidden"
+                          >
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 rounded-sm bg-white border border-slate-300 inline-block" />
+                              <span className="text-[10px] text-slate-400">Còn trống</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-3 h-3 rounded-sm bg-slate-100 border border-slate-200 inline-block" />
+                              <span className="text-[10px] text-slate-400">Hết nhân viên</span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
+                {/* Khi có hotel và có dịch vụ thường → vẫn hiện date+time */}
+                {isHotelSelected && hasNormalServices && (
                   <>
                     <div>
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">
-                        {isHotelSelected ? 'Dịch vụ thường — Ngày hẹn' : 'Ngày hẹn'}
+                        Dịch vụ thường — Ngày hẹn
                       </label>
                       <input
                         type="date"
@@ -1245,7 +1538,7 @@ export default function ClinicDetail() {
                         </span>
                       </div>
 
-                      <div className="relative min-h-[180px]">
+                      <div className="relative min-h-[220px]">
                         {slotsLoading && (
                           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-50/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-lg">
                             <span className="w-5 h-5 border-2 border-slate-300 border-t-[#1a2b4c] rounded-full animate-spin" />
@@ -1301,18 +1594,18 @@ export default function ClinicDetail() {
                   </>
                 )}
 
-                {/* Nếu chưa chọn gì */}
-                {!isHotelSelected && !hasNormalServices && (
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 text-center text-xs text-slate-400">
-                    Chọn dịch vụ để đặt lịch
-                  </div>
-                )}
-
                 {/* ── Staff Selection / Auto Assignment Info ──────────────── */}
-                {hasNormalServices && selectedDate && selectedTime && (
-                  <>
-                    {(!shop?.assignmentMode || shop.assignmentMode === 'MANUAL') ? (
-                      <div>
+                <AnimatePresence>
+                  {hasNormalServices && selectedDate && selectedTime && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      {(!shop?.assignmentMode || shop.assignmentMode === 'MANUAL') ? (
+                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Chọn nhân viên
@@ -1460,143 +1753,162 @@ export default function ClinicDetail() {
                             </p>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </>
-                )}
-            {/* CTA */}
-<button
-  onClick={handleBookClick}
-  disabled={!canBook}
-  className={`w-full h-12 flex items-center justify-center gap-2 rounded-xl font-bold transition-all text-base ${
-    canBook
-      ? "bg-[#1a2b4c] text-white hover:bg-[#243d6b] hover:scale-[1.02] shadow-lg shadow-[#1a2b4c]/25 cursor-pointer"
-      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
-  }`}
->
-  <span className="material-symbols-outlined">calendar_month</span>
-  {canBook
-    ? "Đặt lịch ngay"
-    : !isHotelSelected && !hasNormalServices
-      ? "Chọn dịch vụ trước"
-      : isHotelSelected && !boardingReady
-        ? "Chọn ngày nhận & trả phòng"
-        : hasNormalServices && !normalReady
-          ? "Chọn ngày & giờ hẹn"
-          : "Đặt lịch ngay"}
-</button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-<div className="flex gap-3">
-  <button className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
-    <span className="material-symbols-outlined text-lg">call</span>
-    Gọi điện
-  </button>
+              {/* Fixed CTA Footer */}
+              <div className="p-6 pt-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col gap-4 shrink-0">
+                {/* CTA */}
+                <button
+                  onClick={handleBookClick}
+                  disabled={!canBook}
+                  className={`w-full h-12 flex items-center justify-center gap-2 rounded-xl font-bold transition-all text-base ${
+                    canBook
+                      ? "bg-[#1a2b4c] text-white hover:bg-[#243d6b] hover:scale-[1.02] shadow-lg shadow-[#1a2b4c]/25 cursor-pointer"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  <span className="material-symbols-outlined">calendar_month</span>
+                  {canBook
+                    ? "Đặt lịch ngay"
+                    : !isHotelSelected && !hasNormalServices
+                      ? "Chọn dịch vụ trước"
+                      : isHotelSelected && !boardingReady
+                        ? "Chọn ngày nhận & trả phòng"
+                        : hasNormalServices && !normalReady
+                          ? "Chọn ngày & giờ hẹn"
+                          : "Đặt lịch ngay"}
+                </button>
 
-  <Link
-    to="/messages"
-    className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
-  >
-    <span className="material-symbols-outlined text-lg">chat</span>
-    Nhắn tin
-  </Link>
-</div>
+                <div className="flex gap-3">
+                  <button className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
+                    <span className="material-symbols-outlined text-lg">call</span>
+                    Gọi điện
+                  </button>
 
-<div className="flex items-center justify-center gap-1 text-xs text-slate-400 font-medium">
-  <span className="material-symbols-outlined text-sm text-teal-500">
-    verified_user
-  </span>
-  Đặt lịch miễn phí · Hủy dễ dàng
-</div>
+                  <Link
+                    to="/messages"
+                    className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-lg">chat</span>
+                    Nhắn tin
+                  </Link>
+                </div>
+
+                <div className="flex items-center justify-center gap-1 text-xs text-slate-400 font-medium">
+                  <span className="material-symbols-outlined text-sm text-teal-500">
+                    verified_user
+                  </span>
+                  Đặt lịch miễn phí · Hủy dễ dàng
+                </div>
+              </div>
+            </div>
+
+            {/* Map and Nearby Shops Restored to Right Column */}
+            <div className="flex flex-col gap-6">
               {/* Map Card */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 flex flex-col gap-3">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex flex-col gap-4 shadow-sm">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400">location_on</span>
+                  Địa chỉ & Liên hệ
+                </h3>
                 <div
-                  className="w-full h-44 rounded-xl overflow-hidden relative bg-cover bg-center"
-                  style={{
-                    backgroundImage:
-                      'url(https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600&auto=format&fit=crop)',
+                  className="w-full h-40 rounded-xl overflow-hidden relative cursor-pointer group bg-slate-100 dark:bg-slate-800"
+                  onClick={() => {
+                    if (userLocation && shop && shop.latitude && shop.longitude) {
+                      setShowMap(true);
+                    }
                   }}
                 >
-                  <div className="absolute inset-0 bg-[#1a2b4c]/20" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-red-500 text-5xl drop-shadow-lg" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      location_on
-                    </span>
+                  {/* The actual mini map */}
+                  {userLocation && shop && shop.latitude && shop.longitude && (
+                    <div className="absolute inset-0 pointer-events-none z-0">
+                      <ShopMap
+                        userLocation={userLocation}
+                        nearbyShops={[]}
+                        currentShop={{
+                          id: shop.id,
+                          latitude: shop.latitude,
+                          longitude: shop.longitude,
+                          shopName: shop.shopName,
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Overlay for hover effect */}
+                  <div className="absolute inset-0 bg-transparent group-hover:bg-[#1a2b4c]/10 transition-colors z-10" />
+                  {userLocation && shop && shop.latitude && shop.longitude ? (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMap(true);
+                      }}
+                      className="absolute bottom-3 right-3 bg-white text-[#1a2b4c] px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md hover:bg-slate-100 transition-all flex items-center gap-1 z-10"
+                    >
+                      <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      Mở bản đồ
+                    </button>
+                  ) : (
+                    <div className="absolute bottom-3 right-3 bg-slate-100 text-slate-400 px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-md flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm">location_off</span>
+                      Chưa có vị trí
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start gap-3 px-1">
+                    <span className="material-symbols-outlined text-slate-400 mt-0.5 text-lg">map</span>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      {shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '---'}
+                    </p>
                   </div>
-                  <button className="absolute bottom-3 right-3 bg-white text-[#1a2b4c] px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:bg-slate-100 transition-colors flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm">open_in_new</span>
-                    Mở bản đồ
-                  </button>
-                </div>
-                <div className="flex items-start gap-3 px-1">
-                  <span className="material-symbols-outlined text-slate-400 mt-0.5 text-xl">map</span>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {shop ? `${shop.address}${shop.city ? `, ${shop.city}` : ''}` : '---'}
-                  </p>
-                </div>
-                <div className="flex items-start gap-3 px-1">
-                  <span className="material-symbols-outlined text-slate-400 mt-0.5 text-xl">schedule</span>
-                  <div className="flex flex-col text-sm">
-                    {shop?.openTime && shop?.closeTime ? (
-                      <>
-                        <span className="text-green-600 dark:text-green-400 font-semibold">Đang mở cửa</span>
-                        <span className="text-slate-500 dark:text-slate-400">
-                          {shop.openTime} - {shop.closeTime}
-                          {shop.workingDays ? ` (${shop.workingDays})` : ''}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-slate-400 dark:text-slate-500">Chưa cập nhật giờ mở cửa</span>
-                    )}
+                  <div className="flex items-start gap-3 px-1">
+                    <span className="material-symbols-outlined text-slate-400 mt-0.5 text-lg">schedule</span>
+                    <div className="flex flex-col text-xs">
+                      {shop?.openTime && shop?.closeTime ? (
+                        <>
+                          <span className="text-green-600 dark:text-green-400 font-semibold">Đang mở cửa</span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {shop.openTime} - {shop.closeTime}
+                            {shop.workingDays ? ` (${shop.workingDays})` : ''}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">Chưa cập nhật giờ mở cửa</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 px-1">
-                  <span className="material-symbols-outlined text-slate-400 text-xl">phone</span>
-                  <a href={`tel:${shop?.phone}`} className="text-sm text-[#1a2b4c] dark:text-teal-400 font-semibold hover:underline">
-                    {shop?.phone ?? '---'}
-                  </a>
+                  <div className="flex items-center gap-3 px-1">
+                    <span className="material-symbols-outlined text-slate-400 text-lg">phone</span>
+                    <a href={`tel:${shop?.phone}`} className="text-xs text-[#1a2b4c] dark:text-teal-400 font-semibold hover:underline">
+                      {shop?.phone ?? '---'}
+                    </a>
+                  </div>
                 </div>
               </div>
 
               {/* Nearby Clinics */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-teal-500 text-base">near_me</span>
-                  Cơ sở gần đây
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex flex-col shadow-sm">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-teal-500">near_me</span>
+                  Shop gần bạn
                 </h3>
-                <div className="flex flex-col gap-3">
-                  {nearbyShops.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic px-1">
-                      {shop?.city ? 'Không có cơ sở nào khác tại ' + shop.city : 'Chưa có dữ liệu'}
-                    </p>
-                  ) : nearbyShops.map((c) => (
-                    <Link
-                      key={c.id}
-                      to={`/clinic/${c.id}`}
-                      className="flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-2 transition-colors"
-                    >
-                      <div>
-                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-                          {c.shopName}
-                        </p>
-                        <p className="text-xs text-slate-400">{c.city}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-amber-400">
-                        <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
-                          star
-                        </span>
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                          {c.ratingAvg > 0 ? c.ratingAvg.toFixed(1) : 'Mới'}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
+                <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+                  <NearbyShops 
+                    shops={nearbyShopsFromAPI}
+                    loading={loadingNearbyShops}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
       {/* Mobile bottom bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 z-50 shadow-2xl">
         <div className="flex flex-col">
@@ -2061,6 +2373,129 @@ export default function ClinicDetail() {
           </div>
         </div>
       )}
+      {/* ── MAP MODAL ── */}
+      <AnimatePresence>
+        {showMap && userLocation && shop && shop.latitude && shop.longitude && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowMap(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+              className={`bg-white dark:bg-slate-900 overflow-hidden flex flex-col relative shadow-2xl transition-all duration-300 ${
+                isMapFullscreen 
+                  ? 'w-full h-full rounded-none' 
+                  : 'rounded-[32px] w-full max-w-5xl h-[85vh]'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary text-3xl">map</span>
+                    Vị trí & Chỉ đường
+                  </h2>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Đến {shop.shopName}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsMapFullscreen(!isMapFullscreen)}
+                    className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800/50 text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
+                    title={isMapFullscreen ? "Thu nhỏ" : "Phóng to"}
+                  >
+                    <span className="material-symbols-outlined">
+                      {isMapFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleGetDirections(shopId)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 hover:-translate-y-0.5 uppercase tracking-widest"
+                  >
+                    <span className="material-symbols-outlined text-lg">directions</span>
+                    Chỉ đường
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMap(false);
+                      setIsMapFullscreen(false);
+                    }}
+                    className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Map Body */}
+              <div className="flex-1 min-h-0 relative bg-slate-50 dark:bg-slate-950 p-2">
+                <div className="w-full h-full rounded-[24px] overflow-hidden shadow-inner border border-slate-200/50 dark:border-slate-800">
+                  <ShopMap
+                    userLocation={userLocation}
+                    nearbyShops={[]}
+                    currentShop={{
+                      id: shop.id,
+                      latitude: shop.latitude,
+                      longitude: shop.longitude,
+                      shopName: shop.shopName,
+                    }}
+                    directions={directions}
+                    onShopClick={(id) => {
+                      setShowMap(false);
+                      navigate(`/clinic/${id}`);
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {/* Directions Summary Footer */}
+              <AnimatePresence>
+                {directions && directions.routes && directions.routes.length > 0 && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="border-t border-slate-100 dark:border-slate-800 p-6 shrink-0 bg-white dark:bg-slate-900"
+                  >
+                    <div className="flex items-center gap-8 justify-center">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-[16px] bg-teal-500/10 text-teal-600 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-2xl">straighten</span>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Khoảng cách</p>
+                          <p className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                            {directions.routes[0].legs[0].distance.text}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-px h-12 bg-slate-200 dark:bg-slate-700" />
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-[16px] bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-2xl">schedule</span>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Thời gian</p>
+                          <p className="text-2xl font-black text-slate-900 dark:text-slate-100">
+                            {directions.routes[0].legs[0].duration.text}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
     </div>
   );

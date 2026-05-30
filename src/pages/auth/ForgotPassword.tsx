@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { authService } from '../services/auth.service';
+import { authService } from '../../services/auth.service';
 import toast from 'react-hot-toast';
 
 type Step = 'email' | 'otp' | 'newPassword';
@@ -124,9 +124,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-900">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 md:p-10"
       >
         {/* Back button */}
@@ -310,7 +308,7 @@ export default function ForgotPassword() {
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 }

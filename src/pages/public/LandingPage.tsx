@@ -2,12 +2,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Video, Star, ArrowRight, ShieldCheck, Heart, Sparkles, Zap, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Import assets
-import heroImage from '../assets/landing/landing_hero_pet_care_1778855096349.png';
-import cameraPreview from '../assets/landing/live_camera_preview_1778855116615.png';
-import spaImage from '../assets/landing/pet_spa_grooming_1778855139420.png';
+import heroImage from '../../assets/landing/landing_hero_pet_care_1778855096349.png';
+import cameraPreview from '../../assets/landing/live_camera_preview_1778855116615.png';
+import spaImage from '../../assets/landing/pet_spa_grooming_1778855139420.png';
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -77,8 +77,8 @@ export default function Home() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
-                <span className="text-[11px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
-                  Nền tảng B2B2C Thú y số 1 Việt Nam
+                <span className="text-[17px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
+                  HỆ SINH THÁI THÚ Y TOÀN DIỆN
                 </span>
               </motion.div>
 

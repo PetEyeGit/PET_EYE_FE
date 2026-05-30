@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Send, Image, Paperclip, Smile, MoreVertical, Phone, Video, MessageCircle, ChevronLeft, Users, ShieldCheck } from 'lucide-react';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useShopChat } from '../hooks/useShopChat';
-import { bookingService } from '../services/booking.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { useShopChat } from '../../hooks/useShopChat';
+import { bookingService } from '../../services/booking.service';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '../services/apiClient';
-import type { ApiResponse } from '../types/api';
-import ConversationThread from '../components/chat/shared/ConversationThread';
+import apiClient from '../../services/apiClient';
+import type { ApiResponse } from '../../types/api';
+import ConversationThread from '../../components/chat/shared/ConversationThread';
 
 export default function Messaging() {
   const { user } = useAuth();

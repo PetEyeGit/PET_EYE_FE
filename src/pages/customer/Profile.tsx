@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { userService } from '../services/user.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { userService } from '../../services/user.service';
 
 const NAV_ITEMS = [
   { icon: 'person', label: 'Thông tin cá nhân', path: '/profile' },

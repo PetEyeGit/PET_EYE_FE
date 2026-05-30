@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, X, Dog, Cat, Calendar, Weight, ClipboardList, Info, AlertCircle, CheckCircle2, Camera, Loader2, ChevronRight, Utensils, Heart, Trash2, Activity, ShieldCheck, Sparkles, User, ArrowRight, HeartPulse } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { petService } from '../services/pet.service';
-import { useAuth } from '../contexts/AuthContext';
-import { Pet } from '../types';
+import { petService } from '../../services/pet.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { Pet } from '../../types';
 import toast from 'react-hot-toast';
 
 export default function ProfilePets() {
