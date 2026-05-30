@@ -245,11 +245,11 @@ export default function ClinicDetail() {
   const [selectedRoomType, setSelectedRoomType] = useState<string>('');
 
   // Derive the boarding service from API data
-  const boardingService = apiServices.find((s: ServiceResponse) => s.category === 'BOARDING' && s.active);
+  const boardingService = apiServices.find((s: ServiceResponse) => (s.category === 'BOARDING' || s.category.toUpperCase() === 'HOTEL') && s.active);
   // Camera tiers supported by this shop's boarding service
   const supportedCameraTiers = boardingService?.cameraTiers ?? [];
   // Non-boarding services for "Dịch vụ nổi bật"
-  const nonBoardingServices = apiServices.filter((s: ServiceResponse) => s.category !== 'BOARDING');
+  const nonBoardingServices = apiServices.filter((s: ServiceResponse) => s.category !== 'BOARDING' && s.category.toUpperCase() !== 'HOTEL');
 
   useEffect(() => {
     if (boardingService) {
@@ -2141,7 +2141,7 @@ export default function ClinicDetail() {
               <div className="relative flex flex-col md:flex-row gap-6 -mt-12 mb-8">
                 <div className="relative">
                   <img 
-                    src={selectedStaff.avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'} 
+                    src={(selectedStaff as any).avatar || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=200&auto=format&fit=crop'} 
                     alt={selectedStaff.fullName}
                     className="size-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl"
                   />
@@ -2184,7 +2184,7 @@ export default function ClinicDetail() {
                         <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
                           <span className="material-symbols-outlined text-base">mail</span>
                         </div>
-                        <span className="text-sm font-medium truncate">{selectedStaff.email || 'Chưa cập nhật'}</span>
+                        <span className="text-sm font-medium truncate">{(selectedStaff as any).email || 'Chưa cập nhật'}</span>
                       </div>
                     </div>
                   </section>

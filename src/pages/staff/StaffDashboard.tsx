@@ -160,7 +160,7 @@ export default function StaffDashboard() {
         try {
             let imageUrl = '';
             if (careLogImage) {
-                imageUrl = await fileService.uploadImage(careLogImage);
+                imageUrl = await fileService.upload(careLogImage);
             }
             const newLog = await careLogService.addLog(selectedTask.bookingId, {
                 type: careLogType,
@@ -184,7 +184,7 @@ export default function StaffDashboard() {
 
         setSubmittingMedical(true);
         try {
-            await petMedicalService.createMedicalRecord(selectedTask.petId, medicalForm);
+            await petMedicalService.addMedicalRecord(selectedTask.petId, medicalForm);
             toast.success('Đã lưu hồ sơ y tế thành công!');
             setActiveWorkspaceTab('info');
         } catch {

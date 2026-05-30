@@ -5,11 +5,11 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReactPlayer from 'react-player';
-import apiClient from '../services/apiClient';
-import { resolveStreamUrl, checkStreamReady } from '../utils/streamHelper';
-import { useShopChat } from '../hooks/useShopChat';
-import { useAuth } from '../contexts/AuthContext';
-import { careLogService, CareLogResponse } from '../services/care-log.service';
+import apiClient from '../../services/apiClient';
+import { resolveStreamUrl, checkStreamReady } from '../../utils/streamHelper';
+import { useShopChat } from '../../hooks/useShopChat';
+import { useAuth } from '../../contexts/AuthContext';
+import { careLogService, CareLogResponse } from '../../services/care-log.service';
 
 
 
