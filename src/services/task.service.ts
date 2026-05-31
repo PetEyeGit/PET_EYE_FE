@@ -121,4 +121,12 @@ export const taskService = {
     );
     return response.data.result!;
   },
+
+  /** PUT /tasks/:bookingId/no-show — Staff/Owner: cancel booking due to customer no-show */
+  cancelNoShow: async (bookingId: number): Promise<TaskResponse> => {
+    const response = await apiClient.put<ApiResponse<TaskResponse>>(
+      `/tasks/${bookingId}/no-show`
+    );
+    return response.data.result!;
+  },
 };

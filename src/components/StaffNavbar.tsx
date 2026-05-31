@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Store, Bell, LogOut, Menu, X, ChevronDown, 
-  Calendar, MessageCircle, Award, 
+import {
+  Store, Bell, LogOut, Menu, X, ChevronDown,
+  Calendar, MessageCircle, Award,
   LayoutDashboard, UserCircle, Settings, Check, Clock, AlertCircle,
   Video
 } from 'lucide-react';
@@ -28,12 +28,12 @@ export default function StaffNavbar() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
-  
+
   const notiRef = useRef<HTMLDivElement>(null);
-  
+
   useOutsideClick(notiRef, () => setNotiOpen(false));
 
-  const { notifications, unreadCount, markRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
 
   const handleLogout = () => {
     logout();
@@ -42,9 +42,7 @@ export default function StaffNavbar() {
 
   const navItems = [
     { label: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
-    { label: 'Lịch làm việc', path: '/staff/tasks', icon: Calendar },
     { label: 'Hồ sơ chuyên môn', path: '/staff/profile', icon: Award },
-    { label: 'Cấu hình Cam', path: '/staff/camera', icon: Video },
     { label: 'Tin nhắn', path: '/staff/messages', icon: MessageCircle },
   ];
 
@@ -57,7 +55,7 @@ export default function StaffNavbar() {
           {/* Left: Brand */}
           <div className="flex items-center gap-6">
             <Link to="/staff/dashboard" className="flex items-center gap-3.5 group">
-              <motion.div 
+              <motion.div
                 whileHover={{ rotate: 10, scale: 1.1 }}
                 className="w-11 h-11 bg-gradient-to-br from-primary to-slate-700 rounded-[1rem] flex items-center justify-center shadow-lg shadow-primary/20 transition-all"
               >
@@ -73,31 +71,30 @@ export default function StaffNavbar() {
           {/* Center: Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-2">
             {navItems.map((item) => {
-                const Active = isActive(item.path);
-                return (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`relative flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 ${
-                            Active ? 'text-primary' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                    >
-                        {Active && (
-                            <motion.div 
-                                layoutId="nav-active"
-                                className="absolute inset-0 bg-primary/5 rounded-2xl border border-primary/10"
-                            />
-                        )}
-                        <item.icon size={16} className={Active ? 'text-primary' : 'text-slate-400'} />
-                        <span className="relative z-10">{item.label}</span>
-                    </Link>
-                );
+              const Active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`relative flex items-center gap-2.5 px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 ${Active ? 'text-primary' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                >
+                  {Active && (
+                    <motion.div
+                      layoutId="nav-active"
+                      className="absolute inset-0 bg-primary/5 rounded-2xl border border-primary/10"
+                    />
+                  )}
+                  <item.icon size={16} className={Active ? 'text-primary' : 'text-slate-400'} />
+                  <span className="relative z-10">{item.label}</span>
+                </Link>
+              );
             })}
           </nav>
 
           {/* Right: User Actions */}
           <div className="flex items-center gap-3">
-            <Link 
+            <Link
               to="/staff/messages"
               className="flex p-3 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all relative"
             >
@@ -106,7 +103,7 @@ export default function StaffNavbar() {
             </Link>
 
             <div ref={notiRef} className="relative">
-              <button 
+              <button
                 onClick={() => { setNotiOpen(!notiOpen); }}
                 className={`flex p-3 text-slate-400 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-all relative ${notiOpen ? 'bg-slate-50 text-primary' : ''}`}
               >
@@ -120,7 +117,7 @@ export default function StaffNavbar() {
 
               <AnimatePresence>
                 {notiOpen && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -128,7 +125,7 @@ export default function StaffNavbar() {
                   >
                     <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                       <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Thông báo</h4>
-                      <button 
+                      <button
                         onClick={() => markAllRead()}
                         className="text-[10px] font-black text-primary hover:underline"
                       >
@@ -140,8 +137,8 @@ export default function StaffNavbar() {
                       {notifications.length > 0 ? (
                         <div className="divide-y divide-slate-50 dark:divide-slate-800">
                           {notifications.map((n) => (
-                            <div 
-                              key={n.id} 
+                            <div
+                              key={n.id}
                               onClick={() => !n.isRead && markRead(n.id)}
                               className={`p-5 transition-colors cursor-pointer flex gap-4 ${n.isRead ? 'opacity-60' : 'bg-primary/[0.02] hover:bg-primary/[0.04]'}`}
                             >
@@ -174,10 +171,12 @@ export default function StaffNavbar() {
                         </div>
                       )}
                     </div>
-                    
-                    <button className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-primary hover:bg-slate-50 transition-all border-t border-slate-100 dark:border-slate-800">
-                      Xem tất cả thông báo
-                    </button>
+
+                    {notifications.length > 0 && (
+                      <div className="w-full py-3 text-[10px] text-center font-bold text-slate-300 uppercase tracking-widest border-t border-slate-100 dark:border-slate-800">
+                        Hết thông báo
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -196,7 +195,7 @@ export default function StaffNavbar() {
                 <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">Nhân viên</p>
               </div>
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden lg:block mx-1" />
-              <button 
+              <button
                 onClick={handleLogout}
                 title="Đăng xuất"
                 className="p-2 text-rose-500 hover:text-white hover:bg-rose-500 rounded-xl transition-all flex items-center gap-1.5 group"
@@ -205,9 +204,9 @@ export default function StaffNavbar() {
               </button>
             </div>
 
-            <button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-                className="lg:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 transition-colors"
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden w-11 h-11 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 transition-colors"
             >
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -216,30 +215,29 @@ export default function StaffNavbar() {
 
         {/* Mobile Menu */}
         <AnimatePresence>
-            {mobileMenuOpen && (
-            <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="lg:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden"
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden"
             >
-                <div className="py-6 space-y-2">
+              <div className="py-6 space-y-2">
                 {navItems.map((item) => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center gap-4 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest ${
-                            isActive(item.path) ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                    >
-                        <item.icon size={20} />
-                        {item.label}
-                    </Link>
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-4 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest ${isActive(item.path) ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                  >
+                    <item.icon size={20} />
+                    {item.label}
+                  </Link>
                 ))}
-                </div>
+              </div>
             </motion.div>
-            )}
+          )}
         </AnimatePresence>
       </div>
     </header>

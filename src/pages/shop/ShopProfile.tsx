@@ -31,6 +31,7 @@ export default function ShopProfile() {
     bannerUrl: '',
     galleryUrls: '',
     isVerified: false,
+    lateGracePeriod: 15,
   });
 
   const VIETNAM_CITIES = [
@@ -63,6 +64,7 @@ export default function ShopProfile() {
         bannerUrl: data.bannerUrl || prev.bannerUrl,
         galleryUrls: data.galleryUrls || prev.galleryUrls,
         isVerified: data.isVerified,
+        lateGracePeriod: data.lateGracePeriod ?? prev.lateGracePeriod,
       }));
     } catch (err) {
       console.error('Failed to fetch shop profile:', err);
@@ -92,6 +94,7 @@ export default function ShopProfile() {
         logoUrl: shopInfo.logoUrl,
         bannerUrl: shopInfo.bannerUrl,
         galleryUrls: shopInfo.galleryUrls,
+        lateGracePeriod: shopInfo.lateGracePeriod,
       };
       console.log('Sending update request with data:', updateData);
       const data = await shopService.updateMyShop(updateData);
@@ -113,6 +116,7 @@ export default function ShopProfile() {
         bannerUrl: data.bannerUrl || prev.bannerUrl,
         galleryUrls: data.galleryUrls || prev.galleryUrls,
         isVerified: data.isVerified,
+        lateGracePeriod: data.lateGracePeriod ?? prev.lateGracePeriod,
       }));
       
       toast.success('Đã cập nhật thông tin cửa hàng!');
@@ -584,6 +588,26 @@ export default function ShopProfile() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Thời gian chờ tối đa (Grace Period)
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="number"
+                    min="5"
+                    max="30"
+                    value={shopInfo.lateGracePeriod}
+                    onChange={(e) => setShopInfo({ ...shopInfo, lateGracePeriod: parseInt(e.target.value) || 15 })}
+                    className="w-32 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  />
+                  <span className="text-sm font-medium text-slate-500">phút (Từ 5 đến 30 phút)</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Nếu khách hàng đến trễ quá thời gian này, nhân viên sẽ có quyền hủy lịch hẹn và cửa hàng sẽ giữ lại tiền cọc (No-Show).
+                </p>
               </div>
             </div>
           </div>

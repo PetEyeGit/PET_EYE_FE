@@ -24,6 +24,7 @@ export interface ShopPublicResponse {
   staffs?: any[];
   latitude?: number;
   longitude?: number;
+  lateGracePeriod?: number;
 }
 
 export interface ShopRegistrationRequest {
@@ -54,6 +55,7 @@ export interface ShopUpdateRequest {
   bannerUrl?: string;
   galleryUrls?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
+  lateGracePeriod?: number;
 }
 
 export const shopService = {

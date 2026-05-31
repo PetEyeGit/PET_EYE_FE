@@ -484,7 +484,7 @@ export default function Chatbot() {
         <div className="relative">
           <div className="absolute inset-0 rounded-full bg-indigo-500 blur-lg opacity-40 group-hover:opacity-70 transition duration-300"></div>
           {/* NOTE: Bạn có thể đổi w-16 h-16 thành w-14 h-14 (nhỏ hơn) hoặc w-20 h-20 (lớn hơn) ở class bên dưới để tùy chỉnh kích thước */}
-          <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#1a2b4c] via-indigo-600 to-purple-600 text-white shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-[#1a2b4c] via-indigo-600 to-purple-600 text-white shadow-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
             {open ? (
               <span className="material-symbols-outlined text-2xl">close</span>
             ) : (

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Clock, CheckCircle2, Search, Filter, Camera, Zap, Heart, User, Plus, LayoutGrid, X,
     Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save, PlayCircle, MonitorPlay,
-    StopCircle, VideoOff
+    StopCircle, VideoOff, UserX
 } from 'lucide-react';
 import type { BookingResponse } from '../../types/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -11,6 +11,8 @@ import { taskService, type TaskResponse, type TaskStatus } from '../../services/
 import { careLogService, type CareLogResponse } from '../../services/care-log.service';
 import { petMedicalService, type PetMedicalRecordRequest } from '../../services/pet-medical.service';
 import { bookingService } from '../../services/booking.service';
+import { petService } from '../../services/pet.service';
+import type { Pet } from '../../types';
 import { fileService } from '../../services/file.service';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -82,6 +84,7 @@ export default function StaffDashboard() {
     const [myTasks, setMyTasks] = useState<TaskResponse[]>([]);
     const [poolTasks, setPoolTasks] = useState<TaskResponse[]>([]);
     const [activeTab, setActiveTab] = useState<'mine' | 'pool'>('mine');
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'>('ACTIVE');
 
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -118,12 +121,17 @@ export default function StaffDashboard() {
     const [modalStreamReady, setModalStreamReady] = useState(false);
     const [modalStreamError, setModalStreamError] = useState(false);
     const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null);
+    const [petDetails, setPetDetails] = useState<Pet | null>(null);
     const [isStoppingCamera, setIsStoppingCamera] = useState(false);
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
     const [checkoutReason, setCheckoutReason] = useState('');
     const [checkoutType, setCheckoutType] = useState<'EARLY' | 'LATE'>('EARLY');
     const [localStartTime, setLocalStartTime] = useState<string | null>(null);
     const [localCompletionTime, setLocalCompletionTime] = useState<string | null>(null);
+
+    // No-Show states
+    const [isNoShowModalOpen, setIsNoShowModalOpen] = useState(false);
+    const [isNoShowProcessing, setIsNoShowProcessing] = useState(false);
 
     const loadData = async () => {
         setLoading(true);
@@ -321,6 +329,7 @@ export default function StaffDashboard() {
         setCareLogImage(null);
         setLocalStartTime(null);
         setLocalCompletionTime(null);
+        setPetDetails(null);
         setMedicalForm({ diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString() });
 
         if (task) {
@@ -329,6 +338,12 @@ export default function StaffDashboard() {
                 setCareLogs(logs);
             } catch (e) {
                 setCareLogs([]);
+            }
+            try {
+                const pet = await petService.getById(task.petId);
+                setPetDetails(pet);
+            } catch (e) {
+                setPetDetails(null);
             }
         }
     };
@@ -383,6 +398,27 @@ export default function StaffDashboard() {
         }
     };
 
+    const handleNoShow = async () => {
+        if (!selectedTask) return;
+        setIsNoShowProcessing(true);
+        try {
+            const updated = await taskService.cancelNoShow(selectedTask.bookingId);
+            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
+            setSelectedTask(updated);
+            setIsNoShowModalOpen(false);
+            toast.success('Đã hủy đơn do khách không đến');
+        } catch (err: any) {
+            const code = err?.response?.data?.code;
+            if (code === 10009) {
+                toast.error('Chưa đủ thời gian chờ! Vui lòng đợi thêm.');
+            } else {
+                toast.error(err?.response?.data?.message || 'Không thể hủy đơn');
+            }
+        } finally {
+            setIsNoShowProcessing(false);
+        }
+    };
+
     const handleAddCareLog = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!careLogNote.trim() || !selectedTask) return;
@@ -427,7 +463,25 @@ export default function StaffDashboard() {
 
     const inProgressTasks = myTasks.filter(t => t.status === 'IN_PROGRESS');
     const pendingTasks = myTasks.filter(t => t.status === 'CONFIRMED');
-    const displayTasks = activeTab === 'mine' ? myTasks : poolTasks;
+    
+    let displayTasks = activeTab === 'mine' ? myTasks : poolTasks;
+    
+    if (statusFilter === 'ACTIVE') {
+        displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(t.status));
+    } else if (statusFilter === 'COMPLETED') {
+        displayTasks = displayTasks.filter(t => t.status === 'COMPLETED');
+    } else if (statusFilter === 'CANCELLED') {
+        displayTasks = displayTasks.filter(t => t.status === 'CANCELLED' || t.status === 'CANCEL_REQUESTED');
+    }
+
+    displayTasks = [...displayTasks].sort((a, b) => {
+        const order: Record<string, number> = { 'IN_PROGRESS': 1, 'CONFIRMED': 2, 'PENDING_PAYMENT': 3, 'WAITING_REFUND': 4, 'COMPLETED': 5, 'CANCELLED': 6, 'CANCEL_REQUESTED': 6 };
+        const orderA = order[a.status] || 99;
+        const orderB = order[b.status] || 99;
+        
+        if (orderA !== orderB) return orderA - orderB;
+        return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
+    });
 
     return (
         <div className="h-[calc(100vh-4rem)] bg-[#f8fafc] dark:bg-background-dark flex overflow-hidden">
@@ -439,7 +493,7 @@ export default function StaffDashboard() {
                         Xin chào, {user?.name || 'Staff'} 👋
                     </h1>
 
-                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-3">
                         <button
                             onClick={() => setActiveTab('mine')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'mine' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -452,6 +506,19 @@ export default function StaffDashboard() {
                         >
                             <LayoutGrid size={16} /> Kho chung ({poolTasks.length})
                         </button>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                        {['ALL', 'ACTIVE', 'COMPLETED', 'CANCELLED'].map(filter => (
+                            <button
+                                key={filter}
+                                onClick={() => setStatusFilter(filter as any)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${statusFilter === filter ? 'bg-slate-800 text-white border-slate-800 dark:bg-primary dark:border-primary shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                            >
+                                {filter === 'ALL' ? 'Tất cả' : filter === 'ACTIVE' ? 'Đang thực hiện' : filter === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã hủy'}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -517,13 +584,40 @@ export default function StaffDashboard() {
                             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-200">
                                 <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-100 relative shrink-0">
-                                            🐾
+                                        <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-100 relative shrink-0 overflow-hidden">
+                                            {petDetails?.avatar ? (
+                                                <img src={petDetails.avatar} alt={selectedTask.petName} className="w-full h-full object-cover" />
+                                            ) : (
+                                                '🐾'
+                                            )}
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold text-slate-900">{selectedTask.petName}</h2>
+                                            <h2 className="text-2xl font-bold text-slate-900 flex flex-wrap items-center gap-2">
+                                                {selectedTask.petName}
+                                                {petDetails && (
+                                                    <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-2">
+                                                        <span>{petDetails.species} - {petDetails.breed}</span>
+                                                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                        <span>{petDetails.weight}kg</span>
+                                                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                        <span>{petDetails.gender === 'MALE' ? 'Đực' : petDetails.gender === 'FEMALE' ? 'Cái' : 'Chưa rõ'}</span>
+                                                        {(petDetails.birthDate || petDetails.dob) && (
+                                                            <>
+                                                                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                                <span>{new Date().getFullYear() - new Date(petDetails.birthDate || petDetails.dob).getFullYear()} tuổi</span>
+                                                            </>
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </h2>
                                             <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
                                                 <span className="font-medium text-slate-600 flex items-center gap-1"><User size={14} /> {selectedTask.customerName}</span>
+                                                {selectedTask.customerPhone && (
+                                                    <span className="font-medium text-slate-600 flex items-center gap-1">
+                                                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 
+                                                        {selectedTask.customerPhone}
+                                                    </span>
+                                                )}
                                                 <span className="hidden sm:inline text-slate-300">|</span>
                                                 <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${STATUS_CONFIG[selectedTask.status]?.color}`}>
                                                     {STATUS_CONFIG[selectedTask.status]?.label}
@@ -621,6 +715,16 @@ export default function StaffDashboard() {
                                                         );
                                                     })()
                                                 )}
+                                                {/* Nút Hủy do khách trễ (No-Show) — chỉ hiện khi đơn CONFIRMED và đã qua giờ hẹn */}
+                                                {selectedTask.status === 'CONFIRMED' && new Date() > new Date(selectedTask.appointmentDatetime) && (
+                                                    <button
+                                                        onClick={() => setIsNoShowModalOpen(true)}
+                                                        className="w-full py-3 bg-rose-50 text-rose-600 border border-rose-200 rounded-xl font-bold text-sm hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <UserX size={16} />
+                                                        Hủy do khách trễ
+                                                    </button>
+                                                )}
                                             </>
                                         )}
                                     </div>
@@ -658,6 +762,58 @@ export default function StaffDashboard() {
                                     <div className="p-4 lg:p-6">
                                         {activeWorkspaceTab === 'info' && (
                                             <div className="space-y-6">
+                                                {/* Pet Profile Details */}
+                                                {petDetails && (
+                                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                                                            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                                                <Heart size={16} className="text-rose-500" />
+                                                                Hồ sơ chi tiết của bé
+                                                            </h3>
+                                                        </div>
+                                                        <div className="p-5">
+                                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                                                {petDetails.color && (
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Màu lông</p>
+                                                                        <p className="text-sm font-medium text-slate-700">{petDetails.color}</p>
+                                                                    </div>
+                                                                )}
+                                                                {petDetails.favoriteFood && (
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Utensils size={10}/> Yêu thích</p>
+                                                                        <p className="text-sm font-medium text-slate-700">{petDetails.favoriteFood}</p>
+                                                                    </div>
+                                                                )}
+                                                                {petDetails.allergies && (
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><AlertCircle size={10} className="text-rose-500"/> Dị ứng</p>
+                                                                        <p className="text-sm font-medium text-rose-600">{petDetails.allergies}</p>
+                                                                    </div>
+                                                                )}
+                                                                {petDetails.hobbies && (
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Sở thích</p>
+                                                                        <p className="text-sm font-medium text-slate-700">{petDetails.hobbies}</p>
+                                                                    </div>
+                                                                )}
+                                                                {petDetails.walkTime && (
+                                                                    <div>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Activity size={10}/> Vận động</p>
+                                                                        <p className="text-sm font-medium text-slate-700">{petDetails.walkTime}</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {petDetails.healthNote && (
+                                                                <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100/50">
+                                                                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1 flex items-center gap-1"><Syringe size={10}/> Lưu ý sức khỏe đặc biệt</p>
+                                                                    <p className="text-sm font-medium text-amber-900">{petDetails.healthNote}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
                                                     <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 space-y-3 shadow-inner">
                                                         <div className="flex items-center gap-3">
@@ -943,10 +1099,10 @@ export default function StaffDashboard() {
 
                                                 <div className="space-y-4">
                                                     <h3 className="font-bold text-slate-900">Lịch sử chăm sóc</h3>
-                                                    {careLogs.length === 0 ? (
+                                                    {careLogs.filter(log => !log.note?.startsWith('[Kết thúc')).length === 0 ? (
                                                         <p className="text-slate-500 text-sm text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">Chưa có nhật ký nào được ghi lại.</p>
                                                     ) : (
-                                                        careLogs.map((log) => {
+                                                        careLogs.filter(log => !log.note?.startsWith('[Kết thúc')).map((log) => {
                                                             const typeCfg = CARE_LOG_TYPES.find(t => t.id === log.type) || CARE_LOG_TYPES[0];
                                                             const LogIcon = typeCfg.icon;
                                                             return (
@@ -1370,6 +1526,67 @@ export default function StaffDashboard() {
                                     >
                                         <CheckCircle2 size={14} />
                                         Xác nhận
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Xác nhận No-Show */}
+            <AnimatePresence>
+                {isNoShowModalOpen && selectedTask && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => !isNoShowProcessing && setIsNoShowModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800"
+                        >
+                            <div className="p-6">
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                                        <UserX className="text-rose-600" size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                            Khách hàng không đến
+                                        </h3>
+                                        <p className="text-sm text-slate-500">
+                                            Hủy lịch hẹn của {selectedTask.petName}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl mb-6">
+                                    <p className="text-sm text-rose-700">
+                                        Lưu ý: Bạn chỉ có thể hủy đơn nếu khách hàng đến trễ quá thời gian châm chước (Grace Period). Hệ thống sẽ tự động giữ lại phí cọc làm phí phạt.
+                                    </p>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsNoShowModalOpen(false)}
+                                        disabled={isNoShowProcessing}
+                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                                    >
+                                        Đóng
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNoShow}
+                                        disabled={isNoShowProcessing}
+                                        className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-rose-500/10 disabled:opacity-50"
+                                    >
+                                        {isNoShowProcessing ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
+                                        Xác nhận hủy đơn
                                     </button>
                                 </div>
                             </div>
