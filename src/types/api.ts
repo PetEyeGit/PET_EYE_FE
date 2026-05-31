@@ -155,6 +155,7 @@ export interface BookingResponse {
   cameraStreamUrl?: string;
   cameraEnabled?: boolean;
   cameraConfiguredAt?: string;
+  serviceStartDatetime?: string;
   serviceEndDatetime?: string;
   cageSize?: string;
   roomType?: string;

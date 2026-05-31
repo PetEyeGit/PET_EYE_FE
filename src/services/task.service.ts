@@ -19,9 +19,16 @@ export interface TaskResponse {
   staffId: number | null;
   staffName: string | null;
   appointmentDatetime: string;
-  checkOut?: string;
+  checkOutDatetime?: string;
+  serviceStartDatetime?: string;
+  serviceEndDatetime?: string;
+  cageSize?: string;
+  roomType?: string;
   status: 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PENDING_PAYMENT' | 'CANCEL_REQUESTED' | 'WAITING_REFUND';
   note: string | null;
+  cameraEnabled?: boolean;
+  rtspLink?: string;
+  category?: string;
   cancellationReason?: string;
   bankName?: string;
   bankAccount?: string;
@@ -57,10 +64,10 @@ export const taskService = {
   },
 
   /** PUT /tasks/:id/status — Staff: update task status */
-  updateStatus: async (bookingId: number, status: TaskStatus): Promise<TaskResponse> => {
+  updateStatus: async (bookingId: number, status: TaskStatus, rtspLink?: string): Promise<TaskResponse> => {
     const response = await apiClient.put<ApiResponse<TaskResponse>>(
       `/tasks/${bookingId}/status`,
-      { status }
+      { status, rtspLink }
     );
     return response.data.result!;
   },

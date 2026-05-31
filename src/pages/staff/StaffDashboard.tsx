@@ -2,16 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Clock, CheckCircle2, Search, Filter, Camera, Zap, Heart, User, Plus, LayoutGrid, X,
-    Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save
+    Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save, PlayCircle, MonitorPlay,
+    StopCircle, VideoOff
 } from 'lucide-react';
+import type { BookingResponse } from '../../types/api';
+import { motion, AnimatePresence } from 'motion/react';
 import { taskService, type TaskResponse, type TaskStatus } from '../../services/task.service';
 import { careLogService, type CareLogResponse } from '../../services/care-log.service';
 import { petMedicalService, type PetMedicalRecordRequest } from '../../services/pet-medical.service';
+import { bookingService } from '../../services/booking.service';
 import { fileService } from '../../services/file.service';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import HLSPlayer from '../../components/HLSPlayer';
+import { checkStreamReady, resolveStreamUrl } from '../../utils/streamHelper';
 
 // Constants
 const STATUS_CONFIG = {
@@ -30,6 +36,34 @@ const CARE_LOG_TYPES = [
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
 
+const EARLY_BOARDING_SUGGESTIONS = [
+    'Khách hàng muốn đón thú cưng sớm hơn dự kiến',
+    'Thú cưng đã phục hồi sức khỏe tốt và hoàn thành dịch vụ sớm',
+    'Có việc đột xuất từ phía gia đình chủ nuôi',
+    'Chủ nuôi thay đổi kế hoạch di chuyển/công tác'
+];
+
+const LATE_BOARDING_SUGGESTIONS = [
+    'Khách hàng bận việc đột xuất nên đến đón trễ',
+    'Phát sinh thêm dịch vụ chăm sóc ngoài giờ theo yêu cầu',
+    'Thời tiết/Giao thông không thuận lợi, khách đến đón muộn',
+    'Đợi khách hàng xác nhận thanh toán/bàn giao'
+];
+
+const EARLY_SERVICE_SUGGESTIONS = [
+    'Nhân viên thao tác nhanh, hoàn thành dịch vụ trước thời hạn',
+    'Thú cưng rất hợp tác, không gặp khó khăn khi thực hiện',
+    'Khách hàng yêu cầu rút ngắn quy trình để đón sớm',
+    'Tình trạng thú cưng đơn giản, xử lý nhanh chóng'
+];
+
+const LATE_SERVICE_SUGGESTIONS = [
+    'Thú cưng nghịch ngợm, không hợp tác nên cần thêm thời gian',
+    'Phát sinh thêm yêu cầu từ phía chủ nuôi',
+    'Lượng khách tại cửa hàng đông, xử lý chậm hơn dự kiến',
+    'Gặp khó khăn kỹ thuật trong quá trình thực hiện dịch vụ'
+];
+
 const guessCategory = (name: string) => {
     const n = name.toLowerCase();
     if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông')) return 'BOARDING';
@@ -44,18 +78,18 @@ export default function StaffDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
-    
+
     const [myTasks, setMyTasks] = useState<TaskResponse[]>([]);
     const [poolTasks, setPoolTasks] = useState<TaskResponse[]>([]);
     const [activeTab, setActiveTab] = useState<'mine' | 'pool'>('mine');
-    
+
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
 
     // Workspace states
     const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'info' | 'logs' | 'medical'>('info');
-    
+
     // Care log states
     const [careLogs, setCareLogs] = useState<CareLogResponse[]>([]);
     const [careLogNote, setCareLogNote] = useState('');
@@ -68,6 +102,28 @@ export default function StaffDashboard() {
         diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString()
     });
     const [submittingMedical, setSubmittingMedical] = useState(false);
+
+    // Camera configuration states
+    const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+    const [rtspInput, setRtspInput] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
+    const [workspaceRtspInput, setWorkspaceRtspInput] = useState('');
+    const [dashboardPreviewUrl, setDashboardPreviewUrl] = useState('');
+    const [isCheckingStream, setIsCheckingStream] = useState(false);
+    const [isStreamReady, setIsStreamReady] = useState(false);
+    const [streamError, setStreamError] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+
+    const [modalCheckingStream, setModalCheckingStream] = useState(false);
+    const [modalStreamReady, setModalStreamReady] = useState(false);
+    const [modalStreamError, setModalStreamError] = useState(false);
+    const [bookingDetails, setBookingDetails] = useState<BookingResponse | null>(null);
+    const [isStoppingCamera, setIsStoppingCamera] = useState(false);
+    const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+    const [checkoutReason, setCheckoutReason] = useState('');
+    const [checkoutType, setCheckoutType] = useState<'EARLY' | 'LATE'>('EARLY');
+    const [localStartTime, setLocalStartTime] = useState<string | null>(null);
+    const [localCompletionTime, setLocalCompletionTime] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -90,8 +146,8 @@ export default function StaffDashboard() {
     // Handle deep links from old /staff/tasks
     useEffect(() => {
         if (!loading && location.state?.taskId) {
-            const task = myTasks.find(t => t.bookingId === location.state.taskId) || 
-                         poolTasks.find(t => t.bookingId === location.state.taskId);
+            const task = myTasks.find(t => t.bookingId === location.state.taskId) ||
+                poolTasks.find(t => t.bookingId === location.state.taskId);
             if (task && (!selectedTask || selectedTask.bookingId !== task.bookingId)) {
                 handleSelectTask(task);
                 navigate(location.pathname, { replace: true, state: {} });
@@ -99,13 +155,174 @@ export default function StaffDashboard() {
         }
     }, [loading, myTasks, poolTasks, location.state, selectedTask, navigate, location.pathname]);
 
+    useEffect(() => {
+        if (selectedTask) {
+            setWorkspaceRtspInput(selectedTask.rtspLink || '');
+            setDashboardPreviewUrl(selectedTask.rtspLink || '');
+            setRtspInput(selectedTask.rtspLink || '');
+            setBookingDetails(null);
+
+            bookingService.getById(selectedTask.bookingId)
+                .then(booking => {
+                    if (booking) {
+                        setBookingDetails(booking);
+                        setWorkspaceRtspInput(booking.cameraRtspUrl || selectedTask.rtspLink || '');
+                        setDashboardPreviewUrl(booking.cameraStreamUrl || booking.cameraRtspUrl || selectedTask.rtspLink || '');
+                        setRtspInput(booking.cameraRtspUrl || selectedTask.rtspLink || '');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading booking stream details:', err);
+                });
+        }
+    }, [selectedTask?.bookingId, selectedTask?.rtspLink]);
+
+    // Check stream readiness when the dashboard preview URL is updated
+    useEffect(() => {
+        if (!dashboardPreviewUrl) {
+            setIsStreamReady(false);
+            setIsCheckingStream(false);
+            return;
+        }
+
+        let isMounted = true;
+        setIsCheckingStream(true);
+        setIsStreamReady(false);
+        setStreamError(false);
+
+        const checkReady = async () => {
+            const ready = await checkStreamReady(dashboardPreviewUrl);
+            if (!isMounted) return;
+
+            setIsCheckingStream(false);
+            if (ready) {
+                setIsStreamReady(true);
+            } else {
+                setStreamError(true);
+            }
+        };
+
+        checkReady();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [dashboardPreviewUrl]);
+
+    // Check stream readiness when the modal preview is triggered
+    useEffect(() => {
+        if (!showPreview || !dashboardPreviewUrl) {
+            setModalStreamReady(false);
+            setModalCheckingStream(false);
+            return;
+        }
+
+        let isMounted = true;
+        setModalCheckingStream(true);
+        setModalStreamReady(false);
+        setModalStreamError(false);
+
+        const checkReady = async () => {
+            const ready = await checkStreamReady(dashboardPreviewUrl);
+            if (!isMounted) return;
+
+            setModalCheckingStream(false);
+            if (ready) {
+                setModalStreamReady(true);
+            } else {
+                setModalStreamError(true);
+            }
+        };
+
+        checkReady();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [showPreview, dashboardPreviewUrl]);
+
+    const handleConfigureModalPreview = async () => {
+        if (!selectedTask || !rtspInput.trim()) return;
+        setModalCheckingStream(true);
+        setModalStreamError(false);
+        try {
+            const updated = await bookingService.configureCamera(selectedTask.bookingId, rtspInput);
+            setBookingDetails(updated);
+            setDashboardPreviewUrl(updated.cameraStreamUrl || '');
+            setWorkspaceRtspInput(updated.cameraRtspUrl || '');
+            setShowPreview(true);
+        } catch (err: any) {
+            setModalCheckingStream(false);
+            setModalStreamError(true);
+            toast.error(err.response?.data?.message || 'Lỗi khởi chạy camera Docker');
+        }
+    };
+
+    const handleConfigureDashboardPreview = async () => {
+        if (!selectedTask || !workspaceRtspInput.trim()) return;
+        setIsCheckingStream(true);
+        setStreamError(false);
+        try {
+            const updated = await bookingService.configureCamera(selectedTask.bookingId, workspaceRtspInput);
+            setBookingDetails(updated);
+            setDashboardPreviewUrl(updated.cameraStreamUrl || '');
+            setRtspInput(updated.cameraRtspUrl || '');
+        } catch (err: any) {
+            setIsCheckingStream(false);
+            setStreamError(true);
+            toast.error(err.response?.data?.message || 'Lỗi khởi chạy camera Docker');
+        }
+    };
+
+    const handleDeleteCamera = async () => {
+        if (!selectedTask) return;
+        if (!window.confirm('Bạn có chắc muốn tắt camera và dừng luồng stream cho đơn này?')) return;
+
+        setIsStoppingCamera(true);
+        try {
+            const updated = await bookingService.deleteCamera(selectedTask.bookingId);
+            setBookingDetails(updated);
+            setDashboardPreviewUrl('');
+            setWorkspaceRtspInput('');
+            setRtspInput('');
+            toast.success('Đã tắt camera và dừng Docker container thành công');
+        } catch (err: any) {
+            console.error('Delete camera failed:', err);
+            toast.error(err.response?.data?.message || 'Tắt camera thất bại');
+        } finally {
+            setIsStoppingCamera(false);
+        }
+    };
+
+    const handleSaveDashboardConfig = async () => {
+        if (!selectedTask || !workspaceRtspInput.trim()) return;
+        setUpdatingId(selectedTask.bookingId);
+        try {
+            const updated = await bookingService.configureCamera(selectedTask.bookingId, workspaceRtspInput);
+            setBookingDetails(updated);
+            setDashboardPreviewUrl(updated.cameraStreamUrl || '');
+            setRtspInput(updated.cameraRtspUrl || '');
+
+            setSelectedTask(prev => prev ? { ...prev, rtspLink: updated.cameraRtspUrl } : null);
+            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? { ...t, rtspLink: updated.cameraRtspUrl } : t));
+
+            toast.success('Đã lưu cấu hình camera thành công!');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Lỗi lưu cấu hình camera');
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     const handleSelectTask = async (task: TaskResponse | null) => {
         setSelectedTask(task);
         setActiveWorkspaceTab('info');
         setCareLogNote('');
         setCareLogImage(null);
+        setLocalStartTime(null);
+        setLocalCompletionTime(null);
         setMedicalForm({ diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString() });
-        
+
         if (task) {
             try {
                 const logs = await careLogService.getLogs(task.bookingId);
@@ -116,13 +333,27 @@ export default function StaffDashboard() {
         }
     };
 
-    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus) => {
+    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus, rtspLink?: string) => {
         setUpdatingId(bookingId);
         try {
-            const updated = await taskService.updateStatus(bookingId, nextStatus);
+            const updated = await taskService.updateStatus(bookingId, nextStatus, rtspLink);
             setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
             if (selectedTask?.bookingId === bookingId) setSelectedTask(updated);
+            if (nextStatus === 'IN_PROGRESS') {
+                setLocalStartTime(new Date().toISOString());
+            }
+            if (nextStatus === 'COMPLETED') {
+                setLocalCompletionTime(new Date().toISOString());
+            }
+
+            // Fetch updated booking details
+            const booking = await bookingService.getById(bookingId);
+            if (booking) {
+                setBookingDetails(booking);
+            }
+
             toast.success(nextStatus === 'IN_PROGRESS' ? 'Đã bắt đầu công việc' : 'Đã hoàn thành công việc!');
+            setIsCameraModalOpen(false);
         } catch (err: any) {
             const code = err?.response?.data?.code;
             if (code === 5016) {
@@ -155,7 +386,7 @@ export default function StaffDashboard() {
     const handleAddCareLog = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!careLogNote.trim() || !selectedTask) return;
-        
+
         setSubmittingLog(true);
         try {
             let imageUrl = '';
@@ -207,15 +438,15 @@ export default function StaffDashboard() {
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
                         Xin chào, {user?.name || 'Staff'} 👋
                     </h1>
-                    
+
                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                        <button 
+                        <button
                             onClick={() => setActiveTab('mine')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'mine' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
                             <User size={16} /> Của tôi ({inProgressTasks.length + pendingTasks.length})
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveTab('pool')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'pool' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                         >
@@ -237,14 +468,13 @@ export default function StaffDashboard() {
                         </div>
                     ) : (
                         displayTasks.map(task => (
-                            <div 
-                                key={task.bookingId} 
+                            <div
+                                key={task.bookingId}
                                 onClick={() => handleSelectTask(task)}
-                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                                    selectedTask?.bookingId === task.bookingId 
-                                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId
+                                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                                }`}
+                                    }`}
                             >
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
@@ -282,7 +512,7 @@ export default function StaffDashboard() {
 
                     <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
                         <div className="max-w-4xl mx-auto space-y-6">
-                            
+
                             {/* Main Info Card */}
                             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-200">
                                 <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
@@ -301,39 +531,95 @@ export default function StaffDashboard() {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Action Buttons */}
                                     <div className="flex flex-col gap-3 min-w-[200px]">
                                         {activeTab === 'pool' ? (
-                                            <button 
+                                            <button
                                                 onClick={() => handleClaimTask(selectedTask.bookingId)}
                                                 disabled={updatingId === selectedTask.bookingId}
                                                 className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl font-bold text-sm shadow-md hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
                                             >
-                                                {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} 
+                                                {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                                                 Nhận ca trực
                                             </button>
                                         ) : (
                                             <>
                                                 {selectedTask.status === 'CONFIRMED' && (
-                                                    <button 
-                                                        onClick={() => handleUpdateStatus(selectedTask.bookingId, 'IN_PROGRESS')}
-                                                        disabled={updatingId === selectedTask.bookingId}
-                                                        className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-md shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />} 
-                                                        Bắt đầu làm
-                                                    </button>
+                                                    (selectedTask.category === 'BOARDING' || guessCategory(selectedTask.serviceName) === 'BOARDING') && (selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                setRtspInput(rtspInput || selectedTask.rtspLink || '');
+                                                                setShowPreview(!!dashboardPreviewUrl || !!rtspInput || !!selectedTask.rtspLink);
+                                                                setIsCameraModalOpen(true);
+                                                            }}
+                                                            disabled={updatingId === selectedTask.bookingId}
+                                                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-600/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                                                            Bắt đầu cấu hình
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleUpdateStatus(selectedTask.bookingId, 'IN_PROGRESS')}
+                                                            disabled={updatingId === selectedTask.bookingId}
+                                                            className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-md shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                                        >
+                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+                                                            Bắt đầu làm
+                                                        </button>
+                                                    )
                                                 )}
                                                 {selectedTask.status === 'IN_PROGRESS' && (
-                                                    <button 
-                                                        onClick={() => handleUpdateStatus(selectedTask.bookingId, 'COMPLETED')}
-                                                        disabled={updatingId === selectedTask.bookingId}
-                                                        className="w-full py-3 bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                                                    >
-                                                        {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} 
-                                                        Hoàn thành
-                                                    </button>
+                                                    (() => {
+                                                        const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                        const checkOutDateStr = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
+                                                        
+                                                        const getCheckoutTime = () => {
+                                                             if (checkOutDateStr) return new Date(checkOutDateStr);
+                                                             // Fallback to 1 hour after appointment start time
+                                                             return new Date(new Date(selectedTask.appointmentDatetime).getTime() + 60 * 60 * 1000);
+                                                         };
+
+                                                         let isBeforeCheckOut = false;
+                                                         let isAfterCheckOut = false;
+                                                         
+                                                         const checkout = getCheckoutTime();
+                                                         const now = new Date();
+                                                         if (isBoarding) {
+                                                             const checkoutDay = new Date(checkout.getFullYear(), checkout.getMonth(), checkout.getDate());
+                                                             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                                             isBeforeCheckOut = today.getTime() < checkoutDay.getTime();
+                                                             isAfterCheckOut = today.getTime() > checkoutDay.getTime();
+                                                         } else {
+                                                             // For non-boarding services, compare exact timestamps
+                                                             isBeforeCheckOut = now.getTime() < checkout.getTime();
+                                                             isAfterCheckOut = now.getTime() > checkout.getTime();
+                                                         }
+                                                        
+                                                        return (
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (isBeforeCheckOut) {
+                                                                        setCheckoutType('EARLY');
+                                                                        setCheckoutReason('');
+                                                                        setIsCheckoutModalOpen(true);
+                                                                    } else if (isAfterCheckOut) {
+                                                                        setCheckoutType('LATE');
+                                                                        setCheckoutReason('');
+                                                                        setIsCheckoutModalOpen(true);
+                                                                    } else {
+                                                                        handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
+                                                                    }
+                                                                }}
+                                                                disabled={updatingId === selectedTask.bookingId}
+                                                                className="w-full py-3 bg-emerald-500 hover:bg-emerald-650 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                                            >
+                                                                {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                                                {isBoarding ? 'Kết thúc lưu trú' : 'Hoàn thành'}
+                                                            </button>
+                                                        );
+                                                    })()
                                                 )}
                                             </>
                                         )}
@@ -345,14 +631,14 @@ export default function StaffDashboard() {
                             {activeTab === 'mine' && selectedTask.status !== 'CONFIRMED' && (
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
-                                        <button 
+                                        <button
                                             onClick={() => setActiveWorkspaceTab('info')}
                                             className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                         >
                                             Thông tin chung
                                         </button>
                                         {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
-                                            <button 
+                                            <button
                                                 onClick={() => setActiveWorkspaceTab('logs')}
                                                 className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
@@ -360,7 +646,7 @@ export default function StaffDashboard() {
                                             </button>
                                         )}
                                         {guessCategory(selectedTask.serviceName) === 'CLINIC' && (selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
-                                            <button 
+                                            <button
                                                 onClick={() => setActiveWorkspaceTab('medical')}
                                                 className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
@@ -372,20 +658,230 @@ export default function StaffDashboard() {
                                     <div className="p-4 lg:p-6">
                                         {activeWorkspaceTab === 'info' && (
                                             <div className="space-y-6">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                        <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
-                                                            <ClipboardList size={16} /> Dịch vụ
+                                                {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
+                                                    <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 space-y-3 shadow-inner">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl">
+                                                                <PlayCircle size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">Thời gian bắt đầu thực tế</p>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                    <strong className="text-slate-700 dark:text-slate-300">{(localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime) ? format(parseISO(localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa cập nhật'}</strong>
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <p className="font-semibold text-slate-800">{selectedTask.serviceName}</p>
                                                     </div>
-                                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                        <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">
-                                                            <Clock size={16} /> Thời gian hẹn
+                                                )}
+                                                {selectedTask.status === 'COMPLETED' && (
+                                                    <div className="p-5 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 space-y-3 shadow-inner">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-xl">
+                                                                <CheckCircle2 size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">Dịch vụ đã hoàn thành</p>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                    Thời gian kết thúc thực tế: <strong className="text-slate-700 dark:text-slate-300">{(localCompletionTime || bookingDetails?.serviceEndDatetime || selectedTask.serviceEndDatetime) ? format(parseISO(localCompletionTime || bookingDetails?.serviceEndDatetime || selectedTask.serviceEndDatetime!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa cập nhật'}</strong>
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <p className="font-semibold text-slate-800">{formatTime(selectedTask.appointmentDatetime)} - {formatDate(selectedTask.appointmentDatetime)}</p>
+                                                        {(() => {
+                                                            const earlyLog = careLogs.find(log => log.note && log.note.startsWith('[Kết thúc sớm] Lý do:'));
+                                                            const lateLog = careLogs.find(log => log.note && log.note.startsWith('[Kết thúc trễ] Lý do:'));
+                                                            
+                                                            if (earlyLog) {
+                                                                return (
+                                                                    <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+                                                                        <span className="font-black text-[9px] uppercase tracking-wider text-amber-600 dark:text-amber-450 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-900/45 px-2.5 py-1 rounded-md">Kết thúc sớm</span>
+                                                                        <span>Lý do: <strong className="italic text-slate-700 dark:text-slate-300">"{earlyLog.note.replace('[Kết thúc sớm] Lý do:', '').trim()}"</strong></span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            if (lateLog) {
+                                                                return (
+                                                                    <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+                                                                        <span className="font-black text-[9px] uppercase tracking-wider text-rose-600 dark:text-rose-450 bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-900/45 px-2.5 py-1 rounded-md">Kết thúc trễ</span>
+                                                                        <span>Lý do: <strong className="italic text-slate-700 dark:text-slate-300">"{lateLog.note.replace('[Kết thúc trễ] Lý do:', '').trim()}"</strong></span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
                                                     </div>
-                                                </div>
+                                                )}
+                                                {guessCategory(selectedTask.serviceName) === 'BOARDING' ? (
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
+                                                                <ClipboardList size={16} /> Số phòng
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">P-{(selectedTask.bookingId % 20) + 101}</p>
+                                                        </div>
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">
+                                                                <Clock size={16} /> T.gian nhận thú
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">{formatTime(selectedTask.appointmentDatetime)} - {formatDate(selectedTask.appointmentDatetime)}</p>
+                                                        </div>
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">
+                                                                <Calendar size={16} /> Ngày kết thúc
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">
+                                                                {selectedTask.checkOutDatetime || (selectedTask as any).checkOut
+                                                                    ? `${formatTime(selectedTask.checkOutDatetime || (selectedTask as any).checkOut)} - ${formatDate(selectedTask.checkOutDatetime || (selectedTask as any).checkOut)}`
+                                                                    : 'Chưa xác định'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
+                                                                <ClipboardList size={16} /> Kích thước
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">{selectedTask.cageSize || 'Tiêu chuẩn'}</p>
+                                                        </div>
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
+                                                                <ClipboardList size={16} /> Loại phòng
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">{selectedTask.roomType || 'Thường'}</p>
+                                                        </div>
+                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || guessCategory(selectedTask.serviceName) === 'BOARDING') && (
+                                                            <>
+                                                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                                    <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold text-sm">
+                                                                        <Camera size={16} /> Camera
+                                                                    </div>
+                                                                    <p className="font-semibold text-slate-800">Cơ bản (720p)</p>
+                                                                </div>
+                                                                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                                    <div className="flex items-center gap-2 mb-2 text-emerald-600 font-bold text-sm">
+                                                                        <Play size={16} /> Trạng thái
+                                                                    </div>
+                                                                    <p className="font-semibold text-emerald-600">Sẵn sàng</p>
+                                                                </div>
+                                                                {bookingDetails?.cameraConfiguredAt && (
+                                                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                                        <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">
+                                                                            <Clock size={16} /> Cấu hình lúc
+                                                                        </div>
+                                                                        <p className="font-semibold text-slate-800">
+                                                                            {format(parseISO(bookingDetails.cameraConfiguredAt), 'HH:mm - dd/MM/yyyy', { locale: vi })}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                                <div className="col-span-2 md:col-span-3 mt-2">
+                                                                    <p className="text-slate-500 mb-3 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                                                        <MonitorPlay size={16} /> Màn hình giám sát trực tiếp
+                                                                    </p>
+                                                                    <div className="w-full bg-slate-900 rounded-2xl overflow-hidden relative flex items-center justify-center min-h-[250px] border border-slate-800 shadow-inner">
+                                                                        {dashboardPreviewUrl ? (
+                                                                            isCheckingStream ? (
+                                                                                <div className="text-center p-6 text-slate-400 space-y-3 z-10">
+                                                                                    <Loader2 size={40} className="mx-auto text-blue-500 animate-spin" />
+                                                                                    <p className="text-sm font-semibold">Đang kết nối tới camera...</p>
+                                                                                </div>
+                                                                            ) : streamError ? (
+                                                                                <div className="text-center p-6 text-slate-400 space-y-3 z-10">
+                                                                                    <AlertCircle size={40} className="mx-auto text-slate-500" />
+                                                                                    <p className="text-sm">Không thể tải luồng video.</p>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            setStreamError(false);
+                                                                                            setIsCheckingStream(true);
+                                                                                            checkStreamReady(dashboardPreviewUrl).then(ready => {
+                                                                                                setIsCheckingStream(false);
+                                                                                                if (ready) setIsStreamReady(true);
+                                                                                                else setStreamError(true);
+                                                                                            });
+                                                                                        }}
+                                                                                        className="px-3 py-1.5 bg-slate-700 text-white rounded-lg text-xs hover:bg-slate-600 transition-colors"
+                                                                                    >
+                                                                                        Thử lại
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : isStreamReady ? (
+                                                                                <HLSPlayer
+                                                                                    streamUrl={dashboardPreviewUrl}
+                                                                                    isMuted={isMuted}
+                                                                                    onError={() => setStreamError(true)}
+                                                                                />
+                                                                            ) : null
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-center justify-center text-slate-600 gap-3">
+                                                                                <Camera size={48} className="opacity-20" />
+                                                                                <p className="text-[10px] font-black uppercase tracking-widest">Chưa cấu hình RTSP</p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {selectedTask.status === 'IN_PROGRESS' && (
+                                                                        <div className="mt-4 flex gap-2 flex-wrap">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={workspaceRtspInput}
+                                                                                onChange={e => setWorkspaceRtspInput(e.target.value)}
+                                                                                placeholder="Nhập đường dẫn RTSP mới (nếu cần)..."
+                                                                                className="flex-1 min-w-[200px] bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner"
+                                                                            />
+                                                                            <button
+                                                                                onClick={handleConfigureDashboardPreview}
+                                                                                disabled={!workspaceRtspInput.trim() || isCheckingStream}
+                                                                                className="px-4 py-3 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 text-sm"
+                                                                            >
+                                                                                {isCheckingStream ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+                                                                                Kiểm tra
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={handleSaveDashboardConfig}
+                                                                                disabled={updatingId === selectedTask.bookingId || !workspaceRtspInput.trim() || workspaceRtspInput === selectedTask.rtspLink}
+                                                                                className="px-5 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors flex items-center justify-center gap-2 whitespace-nowrap shadow-md shadow-blue-500/20 disabled:opacity-50 text-sm"
+                                                                            >
+                                                                                {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                                                                Lưu cấu hình
+                                                                            </button>
+                                                                            {bookingDetails?.cameraStreamUrl && (
+                                                                                <button
+                                                                                    onClick={handleDeleteCamera}
+                                                                                    disabled={isStoppingCamera}
+                                                                                    className="px-5 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 text-sm"
+                                                                                >
+                                                                                    {isStoppingCamera ? <Loader2 size={16} className="animate-spin" /> : <VideoOff size={16} />}
+                                                                                    Dừng Camera
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
+                                                                <ClipboardList size={16} /> Dịch vụ
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">{selectedTask.serviceName}</p>
+                                                        </div>
+                                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">
+                                                                <Clock size={16} /> Thời gian bắt đầu
+                                                            </div>
+                                                            <p className="font-semibold text-slate-800">{formatTime(selectedTask.appointmentDatetime)} - {formatDate(selectedTask.appointmentDatetime)}</p>
+                                                        </div>
+                                                        <div className={`p-4 rounded-2xl border ${(bookingDetails?.serviceEndDatetime || localCompletionTime) ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}>
+                                                            <div className={`flex items-center gap-2 mb-2 font-bold text-sm ${(bookingDetails?.serviceEndDatetime || localCompletionTime) ? 'text-emerald-600' : 'text-violet-600'}`}>
+                                                                {(bookingDetails?.serviceEndDatetime || localCompletionTime) ? <CheckCircle2 size={16} /> : <Clock size={16} />}
+                                                                {(bookingDetails?.serviceEndDatetime || localCompletionTime) ? 'Thời gian kết thúc' : 'Thời gian kết thúc dự kiến'}
+                                                            </div>
+                                                            <p className={`font-semibold ${(bookingDetails?.serviceEndDatetime || localCompletionTime) ? 'text-emerald-800' : 'text-slate-800'}`}>
+                                                                {(bookingDetails?.serviceEndDatetime || localCompletionTime)
+                                                                    ? format(parseISO(bookingDetails?.serviceEndDatetime || localCompletionTime!), 'HH:mm - dd/MM/yyyy', { locale: vi })
+                                                                    : selectedTask.checkOutDatetime ? `${formatTime(selectedTask.checkOutDatetime)} - ${formatDate(selectedTask.checkOutDatetime)}` : 'Chưa xác định'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {selectedTask.note && (
                                                     <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
                                                         <div className="flex items-center gap-2 mb-2 text-amber-600 font-bold text-sm">
@@ -408,18 +904,17 @@ export default function StaffDashboard() {
                                                                     key={type.id}
                                                                     type="button"
                                                                     onClick={() => setCareLogType(type.id)}
-                                                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
-                                                                        careLogType === type.id 
-                                                                        ? 'bg-primary text-white border-primary shadow-sm' 
+                                                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${careLogType === type.id
+                                                                        ? 'bg-primary text-white border-primary shadow-sm'
                                                                         : 'bg-white border-slate-200 text-slate-500 hover:border-primary/30'
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     <type.icon size={18} />
                                                                     <span className="text-xs font-semibold">{type.label}</span>
                                                                 </button>
                                                             ))}
                                                         </div>
-                                                        <textarea 
+                                                        <textarea
                                                             value={careLogNote}
                                                             onChange={(e) => setCareLogNote(e.target.value)}
                                                             placeholder="Mô tả nội dung chăm sóc..."
@@ -435,7 +930,7 @@ export default function StaffDashboard() {
                                                                 </label>
                                                                 {careLogImage && <span className="text-xs text-green-600 font-medium whitespace-nowrap">✓ Sẵn sàng</span>}
                                                             </div>
-                                                            <button 
+                                                            <button
                                                                 type="submit"
                                                                 disabled={submittingLog}
                                                                 className="w-full sm:w-auto px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-md hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
@@ -491,19 +986,19 @@ export default function StaffDashboard() {
                                                     <form onSubmit={handleSubmitMedical} className="space-y-5">
                                                         <div>
                                                             <label className="block text-sm font-bold text-slate-700 mb-2">Chẩn đoán <span className="text-red-500">*</span></label>
-                                                            <input 
+                                                            <input
                                                                 type="text" required
                                                                 value={medicalForm.diagnosis}
-                                                                onChange={e => setMedicalForm({...medicalForm, diagnosis: e.target.value})}
+                                                                onChange={e => setMedicalForm({ ...medicalForm, diagnosis: e.target.value })}
                                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/10 transition-all"
                                                                 placeholder="Nhập kết luận chẩn đoán..."
                                                             />
                                                         </div>
                                                         <div>
                                                             <label className="block text-sm font-bold text-slate-700 mb-2">Triệu chứng</label>
-                                                            <textarea 
+                                                            <textarea
                                                                 value={medicalForm.symptoms}
-                                                                onChange={e => setMedicalForm({...medicalForm, symptoms: e.target.value})}
+                                                                onChange={e => setMedicalForm({ ...medicalForm, symptoms: e.target.value })}
                                                                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/10 transition-all h-24 resize-none"
                                                                 placeholder="Mô tả triệu chứng lâm sàng..."
                                                             />
@@ -511,25 +1006,25 @@ export default function StaffDashboard() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                                             <div>
                                                                 <label className="block text-sm font-bold text-slate-700 mb-2">Đơn thuốc</label>
-                                                                <textarea 
+                                                                <textarea
                                                                     value={medicalForm.prescription}
-                                                                    onChange={e => setMedicalForm({...medicalForm, prescription: e.target.value})}
+                                                                    onChange={e => setMedicalForm({ ...medicalForm, prescription: e.target.value })}
                                                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/10 transition-all h-24 resize-none"
                                                                     placeholder="Kê đơn thuốc..."
                                                                 />
                                                             </div>
                                                             <div>
                                                                 <label className="block text-sm font-bold text-slate-700 mb-2">Hướng dẫn điều trị</label>
-                                                                <textarea 
+                                                                <textarea
                                                                     value={medicalForm.treatment}
-                                                                    onChange={e => setMedicalForm({...medicalForm, treatment: e.target.value})}
+                                                                    onChange={e => setMedicalForm({ ...medicalForm, treatment: e.target.value })}
                                                                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/10 transition-all h-24 resize-none"
                                                                     placeholder="Phương pháp điều trị..."
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="pt-4 flex justify-end">
-                                                            <button 
+                                                            <button
                                                                 type="submit"
                                                                 disabled={submittingMedical}
                                                                 className="w-full md:w-auto px-8 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-md shadow-primary/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
@@ -558,6 +1053,330 @@ export default function StaffDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Camera Configuration Modal */}
+            {/* Camera Configuration Modal */}
+            <AnimatePresence>
+                {isCameraModalOpen && selectedTask && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsCameraModalOpen(false)}
+                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-4xl bg-slate-900 dark:bg-slate-950 border border-slate-800 rounded-3xl p-6 md:p-8 text-white shadow-2xl overflow-hidden flex flex-col md:flex-row gap-8"
+                        >
+                            <button
+                                onClick={() => setIsCameraModalOpen(false)}
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors rounded-xl bg-slate-800/50 z-10"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            {/* Left Side: Form */}
+                            <div className="flex-1 min-w-0 md:min-w-[300px]">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="w-14 h-14 rounded-[1.2rem] bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                                        <Camera size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black tracking-tight">Cấu hình Camera</h3>
+                                        {selectedTask ? (
+                                            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
+                                                Phòng P-{(selectedTask.bookingId % 20) + 101}
+                                                {rtspInput && showPreview && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-1" />}
+                                            </p>
+                                        ) : (
+                                            <div className="w-20 h-4 bg-slate-800 rounded animate-pulse mt-2" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {selectedTask ? (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Thú cưng</p>
+                                                <p className="font-bold text-slate-200">{selectedTask.petName}</p>
+                                            </div>
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Số phòng</p>
+                                                <p className="font-bold text-slate-200">P-{(selectedTask.bookingId % 20) + 101}</p>
+                                            </div>
+
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Ngày bắt đầu lưu trú</p>
+                                                <p className="font-bold text-slate-200">
+                                                    {selectedTask.appointmentDatetime
+                                                        ? `${formatTime(selectedTask.appointmentDatetime)} - ${formatDate(selectedTask.appointmentDatetime)}`
+                                                        : 'Chưa có thông tin'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Ngày kết thúc lưu trú</p>
+                                                <p className="font-bold text-slate-200">
+                                                    {selectedTask.checkOutDatetime || (selectedTask as any).checkOut
+                                                        ? `${formatTime(selectedTask.checkOutDatetime || (selectedTask as any).checkOut)} - ${formatDate(selectedTask.checkOutDatetime || (selectedTask as any).checkOut)}`
+                                                        : 'Chưa có thông tin'}
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Kích thước chuồng</p>
+                                                <p className="font-bold text-slate-200">{selectedTask.cageSize || 'Tiêu chuẩn'}</p>
+                                            </div>
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Loại phòng</p>
+                                                <p className="font-bold text-amber-400">{selectedTask.roomType || 'Thường'}</p>
+                                            </div>
+
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Camera</p>
+                                                <p className="font-bold text-blue-400">Cơ bản (720p)</p>
+                                            </div>
+                                            <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Trạng thái kết nối</p>
+                                                <p className="font-bold text-emerald-400">Sẵn sàng</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Đường dẫn RTSP</label>
+                                            <div className="flex gap-2 mb-6">
+                                                <input
+                                                    type="text"
+                                                    value={rtspInput}
+                                                    onChange={e => {
+                                                        setRtspInput(e.target.value);
+                                                        setShowPreview(false);
+                                                    }}
+                                                    placeholder="rtsp://admin:pass@ip:port/stream"
+                                                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
+                                                />
+                                                <button
+                                                    onClick={handleConfigureModalPreview}
+                                                    disabled={!rtspInput.trim() || modalCheckingStream}
+                                                    className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest disabled:opacity-50 transition-all border border-slate-700 shrink-0 whitespace-nowrap flex items-center gap-2 justify-center"
+                                                >
+                                                    {modalCheckingStream ? <Loader2 size={14} className="animate-spin" /> : null}
+                                                    Cấu hình
+                                                </button>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleUpdateStatus(selectedTask.bookingId, 'IN_PROGRESS', rtspInput)}
+                                                disabled={updatingId === selectedTask.bookingId || !rtspInput.trim() || !showPreview}
+                                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-[1.5rem] font-black text-sm uppercase tracking-widest disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-900/20"
+                                            >
+                                                {updatingId === selectedTask.bookingId ? <Loader2 size={18} className="animate-spin" /> : <PlayCircle size={18} />}
+                                                {updatingId === selectedTask.bookingId ? 'Đang lưu...' : 'Lưu cấu hình & Bắt đầu ca'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="py-16 flex flex-col items-center justify-center gap-4">
+                                        <Loader2 size={32} className="animate-spin text-blue-500" />
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Đang tải thông tin phòng...</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right Side: Preview */}
+                            <div className="flex-1 bg-black rounded-[2rem] overflow-hidden relative flex items-center justify-center min-h-[300px] border border-slate-800">
+                                {showPreview ? (
+                                    modalCheckingStream ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white space-y-2 z-10 bg-black">
+                                            <Loader2 size={32} className="animate-spin text-blue-500 opacity-80" />
+                                            <p className="text-xs font-black uppercase tracking-widest text-blue-400 animate-pulse">Đang kết nối camera...</p>
+                                        </div>
+                                    ) : modalStreamError ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white space-y-3 z-10 bg-black">
+                                            <AlertCircle size={40} className="mx-auto text-slate-500" />
+                                            <p className="text-sm">Không thể tải luồng video.</p>
+                                            <button
+                                                onClick={() => {
+                                                    setModalStreamError(false);
+                                                    setModalCheckingStream(true);
+                                                    checkStreamReady(dashboardPreviewUrl).then(ready => {
+                                                        setModalCheckingStream(false);
+                                                        if (ready) setModalStreamReady(true);
+                                                        else setModalStreamError(true);
+                                                    });
+                                                }}
+                                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
+                                            >
+                                                Thử lại
+                                            </button>
+                                        </div>
+                                    ) : modalStreamReady ? (
+                                        <div className="absolute inset-0 bg-black">
+                                            <HLSPlayer
+                                                streamUrl={dashboardPreviewUrl}
+                                                isMuted={isMuted}
+                                                onError={() => setModalStreamError(true)}
+                                            />
+                                        </div>
+                                    ) : null
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-slate-500 gap-3">
+                                        <Camera size={48} className="opacity-20" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Không có tín hiệu camera</p>
+                                    </div>
+                                )}
+                                    {selectedTask && (rtspInput || selectedTask.rtspLink) && !showPreview && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-550 gap-3 bg-black">
+                                            <PlayCircle size={48} className="opacity-20" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest">Nhấp cấu hình để xem trước</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
+                {/* Checkout Confirmation Modal (Early / Late) */}
+                <AnimatePresence>
+                    {isCheckoutModalOpen && selectedTask && (
+                    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsCheckoutModalOpen(false)}
+                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 md:p-8 text-slate-900 dark:text-white shadow-2xl z-10"
+                        >
+                            <button
+                                onClick={() => setIsCheckoutModalOpen(false)}
+                                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-650 dark:hover:text-white transition-colors rounded-xl bg-slate-100 dark:bg-slate-800"
+                            >
+                                <X size={18} />
+                            </button>
+
+                            <div className="flex items-center gap-3.5 mb-6">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${
+                                    checkoutType === 'EARLY'
+                                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                        : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                                }`}>
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold tracking-tight">
+                                        {checkoutType === 'EARLY' ? 'Xác nhận Kết thúc Sớm' : 'Xác nhận Kết thúc Trễ'}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        {guessCategory(selectedTask.serviceName) === 'BOARDING' 
+                                            ? 'Thời gian kết thúc lưu trú dự kiến' 
+                                            : 'Thời gian kết thúc dự kiến'}
+                                        : <strong>
+                                            {(() => {
+                                                const rawCheckOut = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
+                                                const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                
+                                                const checkout = rawCheckOut 
+                                                    ? new Date(rawCheckOut)
+                                                    : new Date(new Date(selectedTask.appointmentDatetime).getTime() + 60 * 60 * 1000);
+                                                
+                                                return isBoarding 
+                                                    ? formatDate(checkout.toISOString())
+                                                    : `${formatTime(checkout.toISOString())} - ${formatDate(checkout.toISOString())}`;
+                                            })()}
+                                        </strong>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
+                                        {checkoutType === 'EARLY' ? 'Lý do kết thúc sớm' : 'Lý do kết thúc trễ'}
+                                    </label>
+                                    <div className="space-y-2">
+                                         {(() => {
+                                             const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                             const suggestionsList = checkoutType === 'EARLY'
+                                                 ? (isBoarding ? EARLY_BOARDING_SUGGESTIONS : EARLY_SERVICE_SUGGESTIONS)
+                                                 : (isBoarding ? LATE_BOARDING_SUGGESTIONS : LATE_SERVICE_SUGGESTIONS);
+                                             return suggestionsList;
+                                         })().map((suggestion) => (
+                                            <button
+                                                key={suggestion}
+                                                type="button"
+                                                onClick={() => setCheckoutReason(suggestion)}
+                                                className={`w-full text-left px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${checkoutReason === suggestion
+                                                        ? 'border-primary bg-primary/5 text-primary font-bold'
+                                                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-400'
+                                                    }`}
+                                            >
+                                                {suggestion}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
+                                        Lý do chi tiết
+                                    </label>
+                                    <textarea
+                                        value={checkoutReason}
+                                        onChange={(e) => setCheckoutReason(e.target.value)}
+                                        placeholder={checkoutType === 'EARLY' ? 'Nhập lý do kết thúc sớm...' : 'Nhập lý do kết thúc trễ...'}
+                                        rows={3}
+                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary transition-colors text-slate-900 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCheckoutModalOpen(false)}
+                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all"
+                                    >
+                                        Hủy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (!checkoutReason.trim()) {
+                                                toast.error(checkoutType === 'EARLY' ? 'Vui lòng nhập hoặc chọn lý do kết thúc sớm.' : 'Vui lòng nhập hoặc chọn lý do kết thúc trễ.');
+                                                return;
+                                            }
+                                            setIsCheckoutModalOpen(false);
+                                            const prefix = checkoutType === 'EARLY' ? '[Kết thúc sớm]' : '[Kết thúc trễ]';
+                                            try {
+                                                await careLogService.addLog(selectedTask.bookingId, {
+                                                    type: 'CLEANING',
+                                                    note: `${prefix} Lý do: ${checkoutReason}`,
+                                                    imageUrl: ''
+                                                });
+                                                const logs = await careLogService.getLogs(selectedTask.bookingId);
+                                                setCareLogs(logs);
+                                            } catch (e) {
+                                                console.error('Failed to log checkout reason:', e);
+                                            }
+                                            handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
+                                        }}
+                                        className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
+                                    >
+                                        <CheckCircle2 size={14} />
+                                        Xác nhận
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
