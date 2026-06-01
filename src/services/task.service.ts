@@ -34,6 +34,7 @@ export interface TaskResponse {
   bankAccount?: string;
   accountHolder?: string;
   createdAt: string;
+  updatedAt?: string;
   services?: {
     serviceId: number;
     serviceName: string;

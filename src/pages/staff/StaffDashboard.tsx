@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Clock, CheckCircle2, Search, Filter, Camera, Zap, Heart, User, Plus, LayoutGrid, X,
     Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save, PlayCircle, MonitorPlay,
-    StopCircle, VideoOff, UserX
+    StopCircle, VideoOff, UserX, XCircle
 } from 'lucide-react';
 import type { BookingResponse } from '../../types/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -463,9 +463,9 @@ export default function StaffDashboard() {
 
     const inProgressTasks = myTasks.filter(t => t.status === 'IN_PROGRESS');
     const pendingTasks = myTasks.filter(t => t.status === 'CONFIRMED');
-    
+
     let displayTasks = activeTab === 'mine' ? myTasks : poolTasks;
-    
+
     if (statusFilter === 'ACTIVE') {
         displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(t.status));
     } else if (statusFilter === 'COMPLETED') {
@@ -478,7 +478,7 @@ export default function StaffDashboard() {
         const order: Record<string, number> = { 'IN_PROGRESS': 1, 'CONFIRMED': 2, 'PENDING_PAYMENT': 3, 'WAITING_REFUND': 4, 'COMPLETED': 5, 'CANCELLED': 6, 'CANCEL_REQUESTED': 6 };
         const orderA = order[a.status] || 99;
         const orderB = order[b.status] || 99;
-        
+
         if (orderA !== orderB) return orderA - orderB;
         return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
     });
@@ -614,7 +614,7 @@ export default function StaffDashboard() {
                                                 <span className="font-medium text-slate-600 flex items-center gap-1"><User size={14} /> {selectedTask.customerName}</span>
                                                 {selectedTask.customerPhone && (
                                                     <span className="font-medium text-slate-600 flex items-center gap-1">
-                                                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 
+                                                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
                                                         {selectedTask.customerPhone}
                                                     </span>
                                                 )}
@@ -668,29 +668,29 @@ export default function StaffDashboard() {
                                                     (() => {
                                                         const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
                                                         const checkOutDateStr = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
-                                                        
-                                                        const getCheckoutTime = () => {
-                                                             if (checkOutDateStr) return new Date(checkOutDateStr);
-                                                             // Fallback to 1 hour after appointment start time
-                                                             return new Date(new Date(selectedTask.appointmentDatetime).getTime() + 60 * 60 * 1000);
-                                                         };
 
-                                                         let isBeforeCheckOut = false;
-                                                         let isAfterCheckOut = false;
-                                                         
-                                                         const checkout = getCheckoutTime();
-                                                         const now = new Date();
-                                                         if (isBoarding) {
-                                                             const checkoutDay = new Date(checkout.getFullYear(), checkout.getMonth(), checkout.getDate());
-                                                             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                                                             isBeforeCheckOut = today.getTime() < checkoutDay.getTime();
-                                                             isAfterCheckOut = today.getTime() > checkoutDay.getTime();
-                                                         } else {
-                                                             // For non-boarding services, compare exact timestamps
-                                                             isBeforeCheckOut = now.getTime() < checkout.getTime();
-                                                             isAfterCheckOut = now.getTime() > checkout.getTime();
-                                                         }
-                                                        
+                                                        const getCheckoutTime = () => {
+                                                            if (checkOutDateStr) return new Date(checkOutDateStr);
+                                                            // Fallback to 1 hour after appointment start time
+                                                            return new Date(new Date(selectedTask.appointmentDatetime).getTime() + 60 * 60 * 1000);
+                                                        };
+
+                                                        let isBeforeCheckOut = false;
+                                                        let isAfterCheckOut = false;
+
+                                                        const checkout = getCheckoutTime();
+                                                        const now = new Date();
+                                                        if (isBoarding) {
+                                                            const checkoutDay = new Date(checkout.getFullYear(), checkout.getMonth(), checkout.getDate());
+                                                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                                            isBeforeCheckOut = today.getTime() < checkoutDay.getTime();
+                                                            isAfterCheckOut = today.getTime() > checkoutDay.getTime();
+                                                        } else {
+                                                            // For non-boarding services, compare exact timestamps
+                                                            isBeforeCheckOut = now.getTime() < checkout.getTime();
+                                                            isAfterCheckOut = now.getTime() > checkout.getTime();
+                                                        }
+
                                                         return (
                                                             <button
                                                                 onClick={() => {
@@ -781,13 +781,13 @@ export default function StaffDashboard() {
                                                                 )}
                                                                 {petDetails.favoriteFood && (
                                                                     <div>
-                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Utensils size={10}/> Yêu thích</p>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Utensils size={10} /> Yêu thích</p>
                                                                         <p className="text-sm font-medium text-slate-700">{petDetails.favoriteFood}</p>
                                                                     </div>
                                                                 )}
                                                                 {petDetails.allergies && (
                                                                     <div>
-                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><AlertCircle size={10} className="text-rose-500"/> Dị ứng</p>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><AlertCircle size={10} className="text-rose-500" /> Dị ứng</p>
                                                                         <p className="text-sm font-medium text-rose-600">{petDetails.allergies}</p>
                                                                     </div>
                                                                 )}
@@ -799,14 +799,14 @@ export default function StaffDashboard() {
                                                                 )}
                                                                 {petDetails.walkTime && (
                                                                     <div>
-                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Activity size={10}/> Vận động</p>
+                                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Activity size={10} /> Vận động</p>
                                                                         <p className="text-sm font-medium text-slate-700">{petDetails.walkTime}</p>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                             {petDetails.healthNote && (
                                                                 <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100/50">
-                                                                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1 flex items-center gap-1"><Syringe size={10}/> Lưu ý sức khỏe đặc biệt</p>
+                                                                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest mb-1 flex items-center gap-1"><Syringe size={10} /> Lưu ý sức khỏe đặc biệt</p>
                                                                     <p className="text-sm font-medium text-amber-900">{petDetails.healthNote}</p>
                                                                 </div>
                                                             )}
@@ -814,7 +814,7 @@ export default function StaffDashboard() {
                                                     </div>
                                                 )}
 
-                                                {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
+                                                {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED' || selectedTask.status === 'CANCELLED' || selectedTask.status === 'CANCEL_REQUESTED') && (
                                                     <div className="p-5 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 space-y-3 shadow-inner">
                                                         <div className="flex items-center gap-3">
                                                             <div className="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 rounded-xl">
@@ -823,7 +823,11 @@ export default function StaffDashboard() {
                                                             <div>
                                                                 <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">Thời gian bắt đầu thực tế</p>
                                                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                                    <strong className="text-slate-700 dark:text-slate-300">{(localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime) ? format(parseISO(localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa cập nhật'}</strong>
+                                                                    <strong className="text-slate-700 dark:text-slate-300">
+                                                                        {(selectedTask.status === 'CANCELLED' || selectedTask.status === 'CANCEL_REQUESTED')
+                                                                            ? ((selectedTask.updatedAt || bookingDetails?.updatedAt) ? format(parseISO(selectedTask.updatedAt || bookingDetails?.updatedAt!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : format(new Date(), 'HH:mm - dd/MM/yyyy', { locale: vi }))
+                                                                            : ((localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime) ? format(parseISO(localStartTime || bookingDetails?.serviceStartDatetime || selectedTask.serviceStartDatetime!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : 'Chưa cập nhật')}
+                                                                    </strong>
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -845,7 +849,7 @@ export default function StaffDashboard() {
                                                         {(() => {
                                                             const earlyLog = careLogs.find(log => log.note && log.note.startsWith('[Kết thúc sớm] Lý do:'));
                                                             const lateLog = careLogs.find(log => log.note && log.note.startsWith('[Kết thúc trễ] Lý do:'));
-                                                            
+
                                                             if (earlyLog) {
                                                                 return (
                                                                     <div className="pt-3 border-t border-emerald-100 dark:border-emerald-900/40 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 flex-wrap">
@@ -864,6 +868,27 @@ export default function StaffDashboard() {
                                                             }
                                                             return null;
                                                         })()}
+                                                    </div>
+                                                )}
+                                                {(selectedTask.status === 'CANCELLED' || selectedTask.status === 'CANCEL_REQUESTED') && (
+                                                    <div className="p-5 bg-rose-50 dark:bg-rose-950/20 rounded-2xl border border-rose-100 dark:border-rose-900/30 space-y-3 shadow-inner">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-rose-100 dark:bg-rose-900/40 text-rose-600 rounded-xl">
+                                                                <XCircle size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">Dịch vụ đã hủy</p>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                    Thời gian hủy: <strong className="text-slate-700 dark:text-slate-300">{(selectedTask.updatedAt || bookingDetails?.updatedAt) ? format(parseISO(selectedTask.updatedAt || bookingDetails?.updatedAt!), 'HH:mm - dd/MM/yyyy', { locale: vi }) : format(new Date(), 'HH:mm - dd/MM/yyyy', { locale: vi })}</strong>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        {selectedTask.cancellationReason === 'LATE_NO_SHOW' && (
+                                                            <div className="pt-3 border-t border-rose-100 dark:border-rose-900/40 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+                                                                <span className="font-black text-[9px] uppercase tracking-wider text-rose-600 dark:text-rose-450 bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-900/45 px-2.5 py-1 rounded-md">LỖI KHÁCH HÀNG</span>
+                                                                <span>Lý do: <strong className="italic text-slate-700 dark:text-slate-300">"Khách hàng đến trễ (No-show)"</strong></span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {guessCategory(selectedTask.serviceName) === 'BOARDING' ? (
@@ -1260,8 +1285,14 @@ export default function StaffDashboard() {
                                                 <p className="font-bold text-slate-200">{selectedTask.petName}</p>
                                             </div>
                                             <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
-                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Số phòng</p>
-                                                <p className="font-bold text-slate-200">P-{(selectedTask.bookingId % 20) + 101}</p>
+                                                <p className="text-slate-500 mb-1.5 text-[9px] font-black uppercase tracking-widest">Tình trạng thanh toán</p>
+                                                {selectedTask.paymentMethod === 'PAYOS' ? (
+                                                    <p className="font-bold text-emerald-400">Đã thanh toán đủ 100%</p>
+                                                ) : selectedTask.paymentMethod === 'CASH_DEPOSIT' ? (
+                                                    <p className="font-bold text-amber-500">Đã cọc 10% (Cần thu 90%)</p>
+                                                ) : (
+                                                    <p className="font-bold text-slate-400">Chưa xác định</p>
+                                                )}
                                             </div>
 
                                             <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-800">
@@ -1383,21 +1414,21 @@ export default function StaffDashboard() {
                                         <p className="text-[10px] font-black uppercase tracking-widest">Không có tín hiệu camera</p>
                                     </div>
                                 )}
-                                    {selectedTask && (rtspInput || selectedTask.rtspLink) && !showPreview && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-550 gap-3 bg-black">
-                                            <PlayCircle size={48} className="opacity-20" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest">Nhấp cấu hình để xem trước</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        </div>
-                    )}
-                </AnimatePresence>
+                                {selectedTask && (rtspInput || selectedTask.rtspLink) && !showPreview && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-550 gap-3 bg-black">
+                                        <PlayCircle size={48} className="opacity-20" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Nhấp cấu hình để xem trước</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
-                {/* Checkout Confirmation Modal (Early / Late) */}
-                <AnimatePresence>
-                    {isCheckoutModalOpen && selectedTask && (
+            {/* Checkout Confirmation Modal (Early / Late) */}
+            <AnimatePresence>
+                {isCheckoutModalOpen && selectedTask && (
                     <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1418,11 +1449,10 @@ export default function StaffDashboard() {
                             </button>
 
                             <div className="flex items-center gap-3.5 mb-6">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${
-                                    checkoutType === 'EARLY'
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${checkoutType === 'EARLY'
                                         ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                                         : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                                }`}>
+                                    }`}>
                                     <AlertCircle size={24} />
                                 </div>
                                 <div>
@@ -1430,19 +1460,19 @@ export default function StaffDashboard() {
                                         {checkoutType === 'EARLY' ? 'Xác nhận Kết thúc Sớm' : 'Xác nhận Kết thúc Trễ'}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                        {guessCategory(selectedTask.serviceName) === 'BOARDING' 
-                                            ? 'Thời gian kết thúc lưu trú dự kiến' 
+                                        {guessCategory(selectedTask.serviceName) === 'BOARDING'
+                                            ? 'Thời gian kết thúc lưu trú dự kiến'
                                             : 'Thời gian kết thúc dự kiến'}
                                         : <strong>
                                             {(() => {
                                                 const rawCheckOut = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
                                                 const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
-                                                
-                                                const checkout = rawCheckOut 
+
+                                                const checkout = rawCheckOut
                                                     ? new Date(rawCheckOut)
                                                     : new Date(new Date(selectedTask.appointmentDatetime).getTime() + 60 * 60 * 1000);
-                                                
-                                                return isBoarding 
+
+                                                return isBoarding
                                                     ? formatDate(checkout.toISOString())
                                                     : `${formatTime(checkout.toISOString())} - ${formatDate(checkout.toISOString())}`;
                                             })()}
@@ -1457,20 +1487,20 @@ export default function StaffDashboard() {
                                         {checkoutType === 'EARLY' ? 'Lý do kết thúc sớm' : 'Lý do kết thúc trễ'}
                                     </label>
                                     <div className="space-y-2">
-                                         {(() => {
-                                             const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
-                                             const suggestionsList = checkoutType === 'EARLY'
-                                                 ? (isBoarding ? EARLY_BOARDING_SUGGESTIONS : EARLY_SERVICE_SUGGESTIONS)
-                                                 : (isBoarding ? LATE_BOARDING_SUGGESTIONS : LATE_SERVICE_SUGGESTIONS);
-                                             return suggestionsList;
-                                         })().map((suggestion) => (
+                                        {(() => {
+                                            const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                            const suggestionsList = checkoutType === 'EARLY'
+                                                ? (isBoarding ? EARLY_BOARDING_SUGGESTIONS : EARLY_SERVICE_SUGGESTIONS)
+                                                : (isBoarding ? LATE_BOARDING_SUGGESTIONS : LATE_SERVICE_SUGGESTIONS);
+                                            return suggestionsList;
+                                        })().map((suggestion) => (
                                             <button
                                                 key={suggestion}
                                                 type="button"
                                                 onClick={() => setCheckoutReason(suggestion)}
                                                 className={`w-full text-left px-4 py-2.5 rounded-xl border text-xs font-medium transition-all ${checkoutReason === suggestion
-                                                        ? 'border-primary bg-primary/5 text-primary font-bold'
-                                                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-400'
+                                                    ? 'border-primary bg-primary/5 text-primary font-bold'
+                                                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-650 dark:text-slate-400'
                                                     }`}
                                             >
                                                 {suggestion}

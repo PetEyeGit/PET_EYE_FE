@@ -90,6 +90,11 @@ export const bookingService = {
     return response.data.result!;
   },
 
+  updateBankInfo: async (id: number, payload: { bankName: string; bankAccount: string; accountHolder: string }): Promise<BookingResponse> => {
+    const response = await apiClient.put<ApiResponse<BookingResponse>>(`/bookings/${id}/bank-info`, payload);
+    return response.data.result!;
+  },
+
   /** Get active staff for a shop */
   getShopStaff: async (shopId: number): Promise<StaffResponse[]> => {
     const response = await apiClient.get<ApiResponse<StaffResponse[]>>(`/bookings/staff/${shopId}`);

@@ -94,7 +94,7 @@ function StatCard({ label, value, icon: Icon, color, delay }: any) {
     );
 }
 
-function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
+function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: any) {
     const category = guessCategory(booking.serviceName);
     const cat = CATEGORY_META[category];
     const status = STATUS_META[booking.status] || STATUS_META.CONFIRMED;
@@ -440,6 +440,19 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                                 <AlertCircle size={14} /> Đang chờ shop duyệt hủy
                             </div>
                         )}
+                        {booking.status === 'WAITING_REFUND' && (!booking.bankAccount || booking.bankAccount.trim() === '') && (
+                            <button
+                                onClick={() => onUpdateBank(booking)}
+                                className="px-5 py-2.5 bg-rose-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center gap-2 animate-pulse shadow-lg shadow-rose-500/20"
+                            >
+                                <AlertCircle size={14} /> Cập nhật STK nhận tiền
+                            </button>
+                        )}
+                        {booking.status === 'WAITING_REFUND' && booking.bankAccount && booking.bankAccount.trim() !== '' && (
+                            <div className="px-5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-indigo-100 dark:border-indigo-900/40">
+                                <Clock size={14} /> Đang chờ Admin hoàn tiền
+                            </div>
+                        )}
                         <button
                             onClick={() => setIsExpanded(false)}
                             className="px-5 py-2.5 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200 transition-all flex items-center gap-2"
@@ -480,6 +493,8 @@ export default function BookingHistory() {
     const [comment, setComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
+
     const { data: bookings = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['my-bookings'],
         queryFn: bookingService.getMyBookings,
@@ -513,6 +528,16 @@ export default function BookingHistory() {
         onSettled: () => setCancellingId(null),
     });
 
+    const updateBankMutation = useMutation({
+        mutationFn: ({ id, bankName, bankAccount, accountHolder }: { id: number; bankName: string; bankAccount: string; accountHolder: string }) => bookingService.updateBankInfo(id, { bankName, bankAccount, accountHolder }),
+        onSuccess: () => {
+            toast.success('Cập nhật thông tin nhận hoàn tiền thành công!');
+            setShowUpdateBankModal(false);
+            qc.invalidateQueries({ queryKey: ['my-bookings'] });
+        },
+        onError: () => toast.error('Không thể cập nhật thông tin ngân hàng. Vui lòng thử lại.')
+    });
+
     const handleOpenReview = (booking: BookingResponse) => {
         setSelectedBooking(booking);
         setRating(5);
@@ -529,6 +554,32 @@ export default function BookingHistory() {
         setCancelBankAccount('');
         setCancelAccountHolder('');
         setShowCancelModal(true);
+    };
+
+    const handleOpenUpdateBank = (booking: BookingResponse) => {
+        setSelectedBooking(booking);
+        const knownBanks = ['Vietcombank', 'Techcombank', 'MBBank', 'VietinBank', 'BIDV', 'Agribank', 'ACB', 'TPBank', 'VPBank', 'Sacombank'];
+        const isKnown = booking.bankName && knownBanks.includes(booking.bankName);
+        setCancelBankOption(booking.bankName ? (isKnown ? booking.bankName : 'OTHER') : 'Vietcombank');
+        setCancelBankName(booking.bankName || '');
+        setCancelBankAccount(booking.bankAccount || '');
+        setCancelAccountHolder(booking.accountHolder || '');
+        setShowUpdateBankModal(true);
+    };
+
+    const handleSubmitUpdateBank = async () => {
+        if (!selectedBooking) return;
+        const finalBankName = cancelBankOption === 'OTHER' ? cancelBankName.trim() : cancelBankOption;
+        if (!finalBankName || !cancelBankAccount.trim() || !cancelAccountHolder.trim()) {
+            toast.error('Vui lòng cung cấp đầy đủ thông tin ngân hàng để nhận hoàn tiền');
+            return;
+        }
+        await updateBankMutation.mutateAsync({
+            id: selectedBooking.id,
+            bankName: finalBankName,
+            bankAccount: cancelBankAccount.trim(),
+            accountHolder: cancelAccountHolder.trim(),
+        });
     };
 
     const handleSubmitCancelRequest = async () => {
@@ -1041,6 +1092,106 @@ export default function BookingHistory() {
                                         className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
                                         {cancelMutation.isLoading || directCancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Update Bank Modal */}
+            <AnimatePresence>
+                {showUpdateBankModal && selectedBooking && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setShowUpdateBankModal(false)}
+                            className="absolute inset-0 bg-slate-950/75 backdrop-blur-xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.94, y: 28 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.94, y: 28 }}
+                            className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
+                        >
+                            <div className="bg-gradient-to-r from-indigo-500 to-blue-500 p-8 text-white shrink-0">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                        <Wallet size={32} className="text-white" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h2 className="text-3xl font-black tracking-tight">Cập nhật thông tin ngân hàng</h2>
+                                        <p className="text-sm opacity-90 leading-relaxed">Vui lòng cung cấp STK để Admin có thể tiến hành hoàn tiền cho bạn.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 space-y-6 overflow-y-auto">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Ngân hàng</label>
+                                        <select
+                                            value={cancelBankOption}
+                                            onChange={e => setCancelBankOption(e.target.value)}
+                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 appearance-none"
+                                        >
+                                            <option value="Vietcombank">Vietcombank</option>
+                                            <option value="Techcombank">Techcombank</option>
+                                            <option value="MBBank">MBBank</option>
+                                            <option value="VietinBank">VietinBank</option>
+                                            <option value="BIDV">BIDV</option>
+                                            <option value="Agribank">Agribank</option>
+                                            <option value="ACB">ACB</option>
+                                            <option value="TPBank">TPBank</option>
+                                            <option value="VPBank">VPBank</option>
+                                            <option value="Sacombank">Sacombank</option>
+                                            <option value="OTHER">Khác</option>
+                                        </select>
+                                    </div>
+                                    {cancelBankOption === 'OTHER' && (
+                                        <div className="space-y-3 sm:col-span-2">
+                                            <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên ngân hàng thụ hưởng</label>
+                                            <input
+                                                value={cancelBankName}
+                                                onChange={e => setCancelBankName(e.target.value)}
+                                                placeholder="Ví dụ: VIB, OCB, Bản Việt..."
+                                                className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Số tài khoản</label>
+                                        <input
+                                            value={cancelBankAccount}
+                                            onChange={e => setCancelBankAccount(e.target.value)}
+                                            placeholder="Nhập số tài khoản"
+                                            className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Tên người hưởng thụ</label>
+                                    <input
+                                        value={cancelAccountHolder}
+                                        onChange={e => setCancelAccountHolder(e.target.value)}
+                                        placeholder="Nhập tên chủ tài khoản"
+                                        className="w-full rounded-[1.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-100 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                    />
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2 mt-4">
+                                    <button
+                                        onClick={() => setShowUpdateBankModal(false)}
+                                        className="px-6 py-4 rounded-3xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-black uppercase tracking-[0.25em] hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
+                                    >
+                                        Quay lại
+                                    </button>
+                                    <button
+                                        onClick={handleSubmitUpdateBank}
+                                        disabled={updateBankMutation.isPending}
+                                        className="px-6 py-4 rounded-3xl bg-indigo-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
+                                    >
+                                        {updateBankMutation.isPending ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi thông tin'}
                                     </button>
                                 </div>
                             </div>

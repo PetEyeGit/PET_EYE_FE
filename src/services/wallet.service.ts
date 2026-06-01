@@ -28,6 +28,7 @@ export interface WithdrawalRequestResponse {
   checkoutUrl?: string;
   createdAt: string;
   processedAt?: string;
+  type?: 'WITHDRAWAL' | 'REFUND';
 }
 
 export interface WithdrawalRequestCreate {
@@ -73,6 +74,11 @@ export const walletService = {
   getAllWithdrawals: async (status?: string): Promise<WithdrawalRequestResponse[]> => {
     const params = status ? { status } : {};
     const res = await apiClient.get<ApiResponse<WithdrawalRequestResponse[]>>('/wallet/admin/withdrawals', { params });
+    return res.data.result ?? [];
+  },
+
+  getWaitingRefunds: async (): Promise<WithdrawalRequestResponse[]> => {
+    const res = await apiClient.get<ApiResponse<WithdrawalRequestResponse[]>>('/wallet/admin/refunds/waiting');
     return res.data.result ?? [];
   },
 

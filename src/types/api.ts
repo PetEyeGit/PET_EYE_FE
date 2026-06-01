@@ -176,6 +176,7 @@ export interface BookingResponse {
   accountHolder?: string;
   payosOrderCode: number;
   createdAt: string;
+  updatedAt?: string;
   checkoutUrl?: string;
   paymentStatus?: string;
   paymentMethod?: string;

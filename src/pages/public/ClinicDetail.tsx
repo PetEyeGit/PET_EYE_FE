@@ -1306,6 +1306,24 @@ export default function ClinicDetail() {
                             <span>Dịch vụ đã chọn</span>
                             <span className="bg-[#1a2b4c] text-white px-2 py-0.5 rounded-full">{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
                           </div>
+
+                          {/* Liệt kê tên các dịch vụ đã chọn */}
+                          <div className="flex flex-col gap-1 mb-3">
+                            {isHotelSelected && boardingService && (
+                              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
+                                • {boardingService.serviceName}
+                              </div>
+                            )}
+                            {selectedServiceIds.map(id => {
+                              const svc = apiServices.find((s: ServiceResponse) => s.id === id);
+                              return svc ? (
+                                <div key={id} className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
+                                  • {svc.serviceName}
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+
                           {/* Hiển thị tổng thời gian nếu có dịch vụ thường */}
                           {selectedServiceIds.length > 0 && (
                             <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400 mb-2">

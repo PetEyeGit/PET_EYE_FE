@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -138,8 +138,8 @@ function PayOSModal({ request, checkoutUrl, onConfirm, onClose, confirming }: {
 function DetailModal({ request, onClose, onApprove, onReject, approving, rejecting }: {
   request: WithdrawalRequestResponse;
   onClose: () => void;
-  onApprove: (id: number, note: string) => void;
-  onReject: (id: number, note: string) => void;
+  onApprove: (id: number, note: string, type: string) => void;
+  onReject: (id: number, note: string, type: string) => void;
   approving: boolean;
   rejecting: boolean;
 }) {
@@ -246,12 +246,21 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-1">
             {request.status === 'PENDING' ? (
+              request.type === 'REFUND' ? (
+                <button
+                  onClick={() => onApprove(request.id, adminNote, request.type)}
+                  disabled={approving}
+                  className="w-full py-3 rounded-2xl bg-emerald-600 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  Xác nhận đã hoàn tiền
+                </button>
+              ) : (
               <>
                 <button
-                  onClick={() => onReject(request.id, adminNote)}
+                  onClick={() => onReject(request.id, adminNote, request.type)}
                   disabled={rejecting}
                   className="flex-1 py-3 rounded-2xl border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -259,7 +268,7 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
                   Từ chối
                 </button>
                 <button
-                  onClick={() => onApprove(request.id, adminNote)}
+                  onClick={() => onApprove(request.id, adminNote, request.type)}
                   disabled={approving}
                   className="flex-1 py-3 rounded-2xl bg-emerald-600 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -267,6 +276,7 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
                   Duyệt & Chuyển tiền
                 </button>
               </>
+              )
             ) : (
               <button onClick={onClose} className="w-full py-3 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
                 Đóng
@@ -318,7 +328,17 @@ export default function AdminWithdrawals() {
 
   const { data: withdrawals = [], isLoading, refetch } = useQuery({
     queryKey: ['admin-withdrawals', filterStatus],
-    queryFn: () => walletService.getAllWithdrawals(filterStatus === 'ALL' ? undefined : filterStatus),
+    queryFn: async () => {
+      if (filterStatus === 'ALL' || filterStatus === 'PENDING') {
+        const [w, r] = await Promise.all([
+          walletService.getAllWithdrawals(filterStatus === 'ALL' ? undefined : filterStatus),
+          walletService.getWaitingRefunds()
+        ]);
+        return [...w, ...r].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else {
+        return walletService.getAllWithdrawals(filterStatus);
+      }
+    },
     staleTime: 30_000,
     refetchInterval: 15_000,
   });
@@ -332,27 +352,39 @@ export default function AdminWithdrawals() {
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, note }: { id: number; note: string }) =>
-      walletService.approveWithdrawal(id, note),
-    onSuccess: (data) => {
-      toast.success('Đã tạo link PayOS — vui lòng hoàn tất chuyển khoản');
-      qc.invalidateQueries({ queryKey: ['admin-withdrawals'] });
-      setSelectedRequest(null);
-      // Mở PayOS modal
-      if (data.checkoutUrl) {
-        setPayosModal({ request: data, checkoutUrl: data.checkoutUrl });
+    mutationFn: ({ id, note, type }: { id: number; note: string; type: string }) => {
+      if (type === 'REFUND') {
+        return walletService.confirmRefundForBooking(id);
+      }
+      return walletService.approveWithdrawal(id, note);
+    },
+    onSuccess: (data: any, variables) => {
+      if (variables.type === 'REFUND') {
+        toast.success('Đã xác nhận hoàn tiền cho khách hàng');
+        qc.invalidateQueries({ queryKey: ['admin-withdrawals'] });
+        setSelectedRequest(null);
+      } else {
+        toast.success('Đã tạo link PayOS — vui lòng hoàn tất chuyển khoản');
+        qc.invalidateQueries({ queryKey: ['admin-withdrawals'] });
+        setSelectedRequest(null);
+        // Mở PayOS modal
+        if (data?.checkoutUrl) {
+          setPayosModal({ request: data, checkoutUrl: data.checkoutUrl });
+        }
       }
     },
     onError: (err: any) => {
       const code = err.response?.data?.code;
       if (code === 5007) toast.error('Lỗi kết nối PayOS');
-      else toast.error('Duyệt thất bại');
+      else toast.error('Xử lý thất bại');
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ id, note }: { id: number; note: string }) =>
-      walletService.rejectWithdrawal(id, note),
+    mutationFn: ({ id, note, type }: { id: number; note: string; type: string }) => {
+      if (type === 'REFUND') return Promise.reject(new Error('Cannot reject refund'));
+      return walletService.rejectWithdrawal(id, note);
+    },
     onSuccess: () => {
       toast.success('Đã từ chối yêu cầu, tiền đã hoàn lại ví shop');
       qc.invalidateQueries({ queryKey: ['admin-withdrawals'] });
@@ -639,8 +671,8 @@ export default function AdminWithdrawals() {
         <DetailModal
           request={selectedRequest}
           onClose={() => setSelectedRequest(null)}
-          onApprove={(id, note) => approveMutation.mutate({ id, note })}
-          onReject={(id, note) => rejectMutation.mutate({ id, note })}
+          onApprove={(id, note, type) => approveMutation.mutate({ id, note, type })}
+          onReject={(id, note, type) => rejectMutation.mutate({ id, note, type })}
           approving={approveMutation.isPending}
           rejecting={rejectMutation.isPending}
         />
