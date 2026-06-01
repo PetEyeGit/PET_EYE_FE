@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
+import { userService } from '../services/user.service';
 
 /* ─── helpers ─────────────────────────────────────────────── */
 
@@ -139,6 +140,15 @@ function AuthNavbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [fullUserInfo, setFullUserInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      userService.getById(Number(user.id))
+        .then(setFullUserInfo)
+        .catch(console.error);
+    }
+  }, [user?.id]);
 
   const userRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -316,7 +326,9 @@ function AuthNavbar() {
                 >
                   <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 mb-2">
                     <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user!.name}</p>
-                    <p className="text-[11px] font-bold text-primary mt-1">Hạng Vàng • 2,450 xu</p>
+                    <p className="text-[11px] font-bold text-primary mt-1">
+                      Hạng {fullUserInfo?.currentTier?.name || 'Đồng'} • {Math.floor((fullUserInfo?.totalSpending || 0) / 1000).toLocaleString('en-US')} xu
+                    </p>
                   </div>
 
                   {[

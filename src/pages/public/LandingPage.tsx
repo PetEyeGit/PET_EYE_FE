@@ -400,7 +400,7 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-24 space-y-6">
-            <span className="text-primary font-black uppercase tracking-[0.3em] text-xs">Quy trình thông minh</span>
+            <span className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider w-fit">Quy trình thông minh</span>
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
               Sử dụng Peteye <br />
               <span className="text-gradient">Chỉ với 3 bước</span>
@@ -476,37 +476,61 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 px-6 bg-white dark:bg-slate-900">
+      <section className="py-24 px-6 bg-slate-50/50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative rounded-[60px] overflow-hidden bg-primary p-12 md:p-24 text-center"
+            className="relative rounded-[60px] overflow-hidden bg-gradient-to-br from-primary to-blue-500 p-12 md:p-24 lg:p-28 text-center shadow-[0_40px_80px_-20px_rgba(59,130,246,0.5)] border border-white/20"
           >
-            {/* BG elements */}
-            <div className="absolute top-0 left-0 w-full h-full bg-mesh opacity-20" />
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px]" />
+            {/* Decorative background shapes */}
+            <div className="absolute top-0 left-0 w-full h-full bg-mesh opacity-30 mix-blend-overlay" />
+            <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/20 rounded-full blur-[80px]" />
+            <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-400/30 rounded-full blur-[80px]" />
             
-            <div className="relative z-10 max-w-3xl mx-auto space-y-10">
-              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight">
-                Bắt đầu hành trình <br />
-                chăm sóc tuyệt vời nhất.
+            <motion.div 
+              animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-12 left-12 md:top-24 md:left-24 text-white/10 hidden md:block"
+            >
+              <Heart size={120} className="fill-current" />
+            </motion.div>
+            <motion.div 
+              animate={{ y: [10, -10, 10], rotate: [0, -5, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute bottom-12 right-12 md:bottom-24 md:right-24 text-white/10 hidden md:block"
+            >
+              <Sparkles size={100} />
+            </motion.div>
+            
+            <div className="relative z-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
+              <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/10 text-white border border-white/20 font-bold text-sm mb-2 backdrop-blur-md shadow-lg">
+                <Sparkles size={16} className="text-blue-200" /> Sẵn sàng bắt đầu?
+              </div>
+              
+              <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight">
+                Bắt đầu hành trình <br className="hidden md:block" />
+                chăm sóc <span className="text-gradient">tuyệt vời nhất.</span>
               </h2>
-              <p className="text-xl text-white/80 font-medium leading-relaxed">
-                Hàng ngàn chủ nuôi đã tin tưởng Peteye. Hãy để chúng tôi đồng hành cùng bạn và bé yêu ngay hôm nay.
+              
+              <p className="text-xl md:text-2xl text-white/90 font-medium leading-relaxed max-w-2xl mx-auto">
+                Hàng ngàn chủ nuôi đã tin tưởng PetEye. Hãy để chúng tôi đồng hành cùng bạn và bé yêu ngay hôm nay.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
                 <button 
                   onClick={() => navigate('/register')}
-                  className="w-full sm:w-auto px-12 py-5 bg-white text-primary rounded-2xl font-black shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                  className="w-full sm:w-auto px-10 py-5 bg-white text-primary rounded-full font-black shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all text-lg flex items-center justify-center gap-3 group"
                 >
                   ĐĂNG KÝ NGAY
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button 
                   onClick={() => navigate('/search')}
-                  className="w-full sm:w-auto px-12 py-5 bg-white/10 text-white rounded-2xl font-black backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all"
+                  className="w-full sm:w-auto px-10 py-5 bg-white/10 text-white rounded-full font-black backdrop-blur-md border border-white/30 hover:bg-white/20 hover:border-white/50 transition-all text-lg flex items-center justify-center gap-3 group"
                 >
+                  <Search size={20} className="text-white/70 group-hover:text-white transition-colors" />
                   TÌM KIẾM CƠ SỞ
                 </button>
               </div>

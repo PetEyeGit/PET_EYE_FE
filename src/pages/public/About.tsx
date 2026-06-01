@@ -51,10 +51,11 @@ export default function About() {
           <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-secondary/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
 
-          <h1 className="relative z-10 text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-            Nền tảng kết nối <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">yêu thương</span>
+          <h1 className="relative z-10 text-4xl md:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tighter mb-8 leading-tight">
+            Nền tảng kết nối <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-500 to-secondary">yêu thương</span>
           </h1>
-          <p className="relative z-10 text-lg md:text-xl text-slate-600 max-w-3xl leading-relaxed">
+          <p className="relative z-10 text-lg md:text-2xl text-slate-600 max-w-3xl leading-relaxed font-medium">
             PetEye ra đời với sứ mệnh mang lại cuộc sống tốt đẹp nhất cho thú cưng thông qua hệ sinh thái dịch vụ toàn diện, minh bạch và an toàn.
           </p>
         </motion.div>
@@ -73,8 +74,8 @@ export default function About() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
               <Heart size={16} /> Câu chuyện thương hiệu
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
-              Khởi nguồn từ tình yêu với những người bạn nhỏ
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
+              Khởi nguồn từ tình yêu với <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">những người bạn nhỏ</span>
             </h2>
             <div className="space-y-4 text-slate-600 leading-relaxed text-lg">
               <p>
@@ -116,11 +117,19 @@ export default function About() {
       </section>
 
       {/* Core Values */}
-      <section className="bg-white py-24 border-y border-slate-100 mb-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Giá trị cốt lõi</h2>
-            <p className="text-slate-600">Những tiêu chuẩn chúng tôi không bao giờ thỏa hiệp trong quá trình phục vụ bạn và thú cưng.</p>
+      <section className="bg-slate-50 py-24 mb-32 relative overflow-hidden">
+        {/* Background glow for core values */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+        
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
+              <Zap size={16} /> Tiêu chuẩn PetEye
+            </div>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">Giá trị cốt lõi</span>
+            </h2>
+            <p className="text-lg text-slate-600 md:text-xl font-medium">Những tiêu chuẩn chúng tôi không bao giờ thỏa hiệp trong quá trình phục vụ bạn và thú cưng.</p>
           </div>
 
           <motion.div 
@@ -128,19 +137,30 @@ export default function About() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-3 gap-8"
+            className="grid md:grid-cols-3 gap-8 md:gap-10"
           >
             {[
-              { icon: Shield, title: "Minh bạch & Uy tín", desc: "Mọi đối tác trên PetEye đều được kiểm định chặt chẽ về chất lượng và giấy phép hoạt động." },
-              { icon: Heart, title: "Tận tâm", desc: "Đặt sức khỏe và sự thoải mái của thú cưng lên hàng đầu trong mọi dịch vụ." },
-              { icon: Zap, title: "Nhanh chóng & Tiện lợi", desc: "Đặt lịch, thanh toán và theo dõi dễ dàng chỉ qua vài thao tác trên điện thoại." }
+              { icon: Shield, title: "Minh bạch & Uy tín", desc: "Mọi đối tác trên PetEye đều được kiểm định chặt chẽ về chất lượng và giấy phép hoạt động.", color: "from-blue-400 to-indigo-500", iconBg: "from-blue-500 to-indigo-600", shadow: "hover:shadow-blue-500/20" },
+              { icon: Heart, title: "Tận tâm", desc: "Đặt sức khỏe và sự thoải mái của thú cưng lên hàng đầu trong mọi dịch vụ.", color: "from-sky-400 to-blue-500", iconBg: "from-sky-500 to-blue-600", shadow: "hover:shadow-sky-500/20" },
+              { icon: Zap, title: "Nhanh & Tiện lợi", desc: "Đặt lịch, thanh toán và theo dõi dễ dàng chỉ qua vài thao tác trên điện thoại.", color: "from-cyan-400 to-blue-500", iconBg: "from-cyan-500 to-blue-600", shadow: "hover:shadow-cyan-500/20" }
             ].map((item, index) => (
-              <motion.div key={index} variants={fadeIn} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 hover:shadow-lg transition-shadow duration-300">
-                <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6">
-                  <item.icon size={28} />
+              <motion.div 
+                key={index} 
+                variants={fadeIn} 
+                whileHover={{ y: -10 }}
+                className={`relative bg-white rounded-3xl p-10 shadow-xl ${item.shadow} transition-all duration-300 border border-slate-100 overflow-hidden group`}
+              >
+                <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${item.color} rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity duration-500 translate-x-1/3 -translate-y-1/3`}></div>
+                
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-lg bg-gradient-to-br ${item.iconBg} text-white transform group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon size={32} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{item.desc}</p>
+                
+                <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-primary transition-colors">{item.title}</h3>
+                <p className="text-slate-600 leading-relaxed text-lg">{item.desc}</p>
+                
+                {/* Bottom decorative line */}
+                <div className={`absolute bottom-0 left-0 w-0 h-1.5 bg-gradient-to-r ${item.iconBg} group-hover:w-full transition-all duration-500 ease-out`}></div>
               </motion.div>
             ))}
           </motion.div>
@@ -163,7 +183,9 @@ export default function About() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-slate-200 font-semibold text-sm mb-6 border border-white/10">
                 <Briefcase size={16} /> Tuyển dụng
               </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Gia nhập đội ngũ PetEye</h2>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
+                Gia nhập đội ngũ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">PetEye</span>
+              </h2>
               <p className="text-slate-300 text-lg leading-relaxed mb-8 max-w-lg">
                 Chúng tôi luôn tìm kiếm những con người đam mê công nghệ và yêu thương động vật để cùng nhau xây dựng hệ sinh thái thú cưng tốt nhất Việt Nam.
               </p>
@@ -217,8 +239,8 @@ export default function About() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-semibold text-sm">
               <Handshake size={16} /> Dành cho Doanh nghiệp
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
-              Trở thành đối tác chiến lược
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
+              Trở thành <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">đối tác chiến lược</span>
             </h2>
             <p className="text-slate-600 leading-relaxed text-lg pb-4">
               Bạn là chủ phòng khám thú y, spa hay dịch vụ lưu trú? Tham gia mạng lưới PetEye để tiếp cận hàng ngàn khách hàng tiềm năng, tối ưu quy trình quản lý và nâng tầm thương hiệu.
@@ -231,32 +253,41 @@ export default function About() {
       </section>
 
       {/* News Section */}
-      <section id="news" className="bg-slate-900 text-white py-24 scroll-mt-0">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 text-center">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeIn}
-            className="max-w-2xl mx-auto"
-          >
-            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
-              <Newspaper size={32} />
+      <section id="news" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-10 md:p-16 lg:p-20 border border-blue-100 overflow-hidden shadow-xl"
+        >
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
+          
+          <div className="relative z-10 text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
+              <Newspaper size={16} /> Tin tức & Cộng đồng
             </div>
-            <h2 className="text-3xl font-bold mb-6">Tin tức & Sự kiện</h2>
-            <p className="text-slate-400 text-lg mb-10 leading-relaxed">
-              Cập nhật những kiến thức chăm sóc thú cưng mới nhất và các sự kiện hấp dẫn từ PetEye. Tính năng đang trong quá trình hoàn thiện và sẽ sớm ra mắt.
+            
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">
+              Cập nhật <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">tin tức mới nhất</span>
+            </h2>
+            
+            <p className="text-slate-600 text-lg md:text-xl mb-10 leading-relaxed font-medium">
+              Khám phá những kiến thức chăm sóc thú cưng bổ ích và các sự kiện hấp dẫn từ hệ sinh thái PetEye.
             </p>
+            
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="px-8 py-3 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 font-semibold transition-colors">
-                Theo dõi Facebook
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
+                Tham gia Facebook
               </a>
-              <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="px-8 py-3 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 font-semibold transition-colors">
+              <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-white text-slate-800 border border-slate-200 font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2">
                 Theo dõi TikTok
               </a>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </section>
 
     </div>

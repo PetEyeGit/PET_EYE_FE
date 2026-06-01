@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import Home from './pages/public/LandingPage';
 import HomePage from './pages/public/HomePage';
 import About from './pages/public/About';
+import Legal from './pages/public/Legal';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ShopRegister from './pages/ShopRegister';
@@ -113,6 +114,8 @@ function AppLayout() {
           <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Home />} />
           <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
           <Route path="/about" element={<About />} />
+          <Route path="/terms" element={<Legal />} />
+          <Route path="/privacy" element={<Legal />} />
           <Route path="/login" element={<Login />} />
           <Route path="/login/zalo/callback" element={<ZaloCallback />} />
           <Route path="/login/facebook/callback" element={<FacebookCallback />} />

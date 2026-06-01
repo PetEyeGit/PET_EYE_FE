@@ -261,23 +261,40 @@ function NutritionModal({ pet, onSave, onClose }: { pet: PetData; onSave: (p: Pe
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Thức ăn ưa thích</label>
-                <input value={form.favoriteFood || ''} onChange={e => set('favoriteFood', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" />
+                <input 
+                  placeholder="Vd: Hạt cá hồi, Pate..."
+                  value={form.favoriteFood || ''} 
+                  onChange={e => set('favoriteFood', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" 
+                />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Dị ứng / Tránh</label>
-                <input value={form.allergies || ''} onChange={e => set('allergies', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" />
+                <input 
+                  placeholder="Vd: Thịt gà, Hải sản..."
+                  value={form.allergies || ''} 
+                  onChange={e => set('allergies', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" 
+                />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Sở thích</label>
-                <input value={form.hobbies || ''} onChange={e => set('hobbies', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" />
+                <input 
+                  placeholder="Vd: Nhai xương, Tắm nắng..."
+                  value={form.hobbies || ''} 
+                  onChange={e => set('hobbies', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" 
+                />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Thời gian đi dạo (phút)</label>
-                <input value={form.walkTime || ''} onChange={e => set('walkTime', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" />
+                <input 
+                  type="number"
+                  placeholder="Vd: 30"
+                  value={form.walkTime || ''} 
+                  onChange={e => set('walkTime', e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50" 
+                />
               </div>
             </div>
           </div>
@@ -956,7 +973,7 @@ export default function PetProfile() {
           <ChevronRight className="w-3 h-3" />
           <span className="text-slate-900 dark:text-white">Hồ sơ sức khỏe</span>
         </nav>
-        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">Hồ sơ <span className="text-gradient">Sức khỏe</span></h2>
+        <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">Hồ sơ <span className="text-gradient">Sức khỏe</span></h2>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -1044,10 +1061,15 @@ export default function PetProfile() {
                         {pet.active ? 'Hồ sơ đang hoạt động' : 'Hồ sơ đã tạm ngưng'}
                       </span>
                     </div>
-                    {pet.sterilized && (
+                    {pet.sterilized ? (
                       <div className="flex items-center gap-2 mt-2 text-indigo-500">
                         <ShieldCheck size={14} />
                         <span className="text-[10px] font-black uppercase tracking-wider">Đã triệt sản</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2 text-slate-400">
+                        <AlertCircle size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Chưa triệt sản</span>
                       </div>
                     )}
                  </div>

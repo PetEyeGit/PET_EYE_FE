@@ -172,8 +172,8 @@ export default function HomePage() {
                         className="space-y-8"
                     >
                         <div>
-                            <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-                                {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{user?.name?.split(' ')[0] || 'bạn'}!</span> <span className="inline-block origin-bottom-right hover:rotate-12 transition-transform cursor-pointer">👋</span>
+                            <h1 className="text-6xl md:text-7xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+                                {getGreeting()} <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{user?.name?.split(' ')[0] || 'bạn'}!</span> <span className="inline-block origin-bottom-right hover:rotate-12 transition-transform cursor-pointer">👋</span>
                             </h1>
                             <p className="text-xl text-slate-500 dark:text-slate-400 font-medium">Hôm nay bé cưng của bạn cần gì?</p>
                         </div>
@@ -336,7 +336,7 @@ export default function HomePage() {
                                 <span className="material-symbols-outlined text-sm">pets</span>
                                 Hồ sơ bé yêu
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                            <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                                 Thú cưng <span className="text-gradient">của bạn</span>
                             </h2>
                         </div>
@@ -683,7 +683,7 @@ export default function HomePage() {
                                 <span className="material-symbols-outlined text-sm">calendar_month</span>
                                 Nhật ký đặt lịch
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                            <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                                 Lịch hẹn <span className="text-gradient">gần đây</span>
                             </h2>
                             <p className="text-slate-500 text-sm">Theo dõi và quản lý các hoạt động chăm sóc thú cưng của bạn</p>
@@ -743,7 +743,7 @@ export default function HomePage() {
                                 <span className="material-symbols-outlined text-sm">local_hospital</span>
                                 Địa điểm uy tín
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                            <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                                 Cơ sở nổi bật <span className="text-gradient">dành cho bạn</span>
                             </h2>
                             <p className="text-slate-500 text-sm">Những địa điểm khám chữa bệnh, spa và lưu trú hàng đầu</p>

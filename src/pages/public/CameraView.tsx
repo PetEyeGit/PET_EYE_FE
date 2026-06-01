@@ -297,7 +297,7 @@ export default function CameraView() {
                     Hệ thống giám sát camera chỉ khả dụng khi bạn đăng ký dịch vụ **Lưu trú** có tích hợp camera và đã được Shop phê duyệt đơn đặt.
                 </p>
                 <button
-                    onClick={() => navigate('/bookings')}
+                    onClick={() => navigate('/profile/bookings')}
                     className="px-6 py-3 bg-[#1a2b4c] text-white rounded-xl text-sm font-bold shadow-md hover:scale-105 active:scale-95 transition-transform"
                 >
                     Kiểm tra Đơn đặt chỗ
