@@ -308,7 +308,7 @@ export default function VetSearch() {
                   ))}
                 </>
               ) : (
-                sortedClinics.map((shop: ShopPublicResponse) => (
+                sortedClinics.slice(0, 20).map((shop: ShopPublicResponse) => (
                   <motion.div key={shop.id} variants={itemVariants}>
                     <Link
                       to={`/clinic/${shop.id}`}
