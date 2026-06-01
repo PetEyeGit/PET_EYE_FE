@@ -153,6 +153,11 @@ export interface BookingResponse {
   serviceId: number;
   serviceName: string;
   servicePrice: number;
+  services?: {
+      serviceId: number;
+      serviceName: string;
+      servicePrice: number;
+  }[];
   petId: number;
   petName: string;
   customerName?: string;

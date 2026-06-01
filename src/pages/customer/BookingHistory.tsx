@@ -165,7 +165,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                             <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-xs">{booking.shopName}</h4>
                             <span className="text-[10px] text-slate-400 font-bold">• Bé: {booking.petName}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.serviceName}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
                     </div>
                 </div>
 
@@ -251,7 +251,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview }: any) {
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.serviceName}</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
                         </div>
                     </div>
                     {booking.status === 'CANCEL_REQUESTED' && booking.cancellationReason && (
@@ -909,7 +909,7 @@ export default function BookingHistory() {
                                 <div className="grid gap-4 sm:grid-cols-[1fr_auto] items-center rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5">
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Đơn hàng</p>
-                                        <p className="mt-2 text-base font-black text-slate-900 dark:text-white">{selectedBooking.serviceName}</p>
+                                        <p className="mt-2 text-base font-black text-slate-900 dark:text-white">{selectedBooking.services && selectedBooking.services.length > 0 ? selectedBooking.services.map((s: any) => s.serviceName).join(', ') : selectedBooking.serviceName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedBooking.shopName} • Bé: {selectedBooking.petName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                             {guessCategory(selectedBooking.serviceName) === 'boarding' && selectedBooking.checkIn && selectedBooking.checkOut
@@ -1073,7 +1073,7 @@ export default function BookingHistory() {
                                         <Sparkles size={24} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white">{selectedBooking.serviceName}</p>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">{selectedBooking.services && selectedBooking.services.length > 0 ? selectedBooking.services.map((s: any) => s.serviceName).join(', ') : selectedBooking.serviceName}</p>
                                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{selectedBooking.shopName}</p>
                                     </div>
                                 </div>

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 
 import { customerService } from '../../services/customer.service';
-import { CustomerItemResponse, ShopCustomerResponse } from '../../types/api';
+import { CustomerItemResponse, ShopCustomerResponse, CustomerDetailResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 
 export default function ShopCustomers() {
@@ -503,7 +503,7 @@ export default function ShopCustomers() {
                                                         <Clock size={18} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">{h.serviceName}</p>
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">{h.services && h.services.length > 0 ? h.services.map((s: any) => s.serviceName).join(', ') : h.serviceName}</p>
                                                         <p className="text-[10px] text-slate-500">{new Date(h.appointmentDatetime).toLocaleString('vi-VN')}</p>
                                                     </div>
                                                 </div>

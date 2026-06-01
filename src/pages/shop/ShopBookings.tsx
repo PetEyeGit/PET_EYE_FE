@@ -166,7 +166,7 @@ function BookingListItem({
                                 </span>
                             </div>
                             <p className="text-xs text-slate-500 font-bold flex items-center gap-2">
-                                {booking.serviceName}
+                                {booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}
                             </p>
                         </div>
                     </div>
@@ -354,7 +354,7 @@ export default function ShopBookings() {
     const handleAssignStaff = async (bookingId: number, staffId: number | 'unassign') => {
         const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId)
                      || calendarBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
-        const currentStaffId = booking ? (booking.staffId || (booking.staff && booking.staff.id)) : null;
+        const currentStaffId = booking ? (booking.staffId || ((booking as any).staff && (booking as any).staff.id)) : null;
         // Only require staff change request flow if the booking status is WAITING_SHOP_APPROVAL, CONFIRMED or IN_PROGRESS
         const isChange = booking && 
             (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && 
@@ -655,7 +655,9 @@ export default function ShopBookings() {
                                                 <div className="size-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-sm shadow-sm border border-slate-50 dark:border-slate-700">🐾</div>
                                                 <div>
                                                     <h4 className="text-[11px] font-black text-slate-800 dark:text-white leading-tight">{b.petName}</h4>
-                                                    <p className="text-[9px] text-slate-500 font-medium truncate max-w-[120px]">{b.serviceName}</p>
+                                                    <p className="text-[9px] text-slate-500 font-medium truncate max-w-[120px]">
+                                                        {b.services && b.services.length > 0 ? b.services.map((s: any) => s.serviceName).join(', ') : b.serviceName}
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -780,14 +782,30 @@ export default function ShopBookings() {
 
                                     <div>
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Dịch vụ sử dụng</p>
-                                        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-between border border-indigo-100 dark:border-indigo-900/30">
-                                            <div className="flex items-center gap-2">
-                                                <Scissors size={16} className="text-[#1a2b4c] dark:text-indigo-400" />
-                                                <span className="text-xs font-bold text-[#1a2b4c] dark:text-indigo-400">{selectedBooking.serviceName}</span>
-                                            </div>
-                                            <span className="text-xs font-black text-[#1a2b4c] dark:text-indigo-400">
-                                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedBooking.servicePrice || 0)}
-                                            </span>
+                                        <div className="space-y-2">
+                                            {selectedBooking.services && selectedBooking.services.length > 0 ? (
+                                                selectedBooking.services.map((svc: any, idx: number) => (
+                                                    <div key={idx} className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-between border border-indigo-100 dark:border-indigo-900/30">
+                                                        <div className="flex items-center gap-2">
+                                                            <Scissors size={16} className="text-[#1a2b4c] dark:text-indigo-400" />
+                                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-indigo-400">{svc.serviceName}</span>
+                                                        </div>
+                                                        <span className="text-xs font-black text-[#1a2b4c] dark:text-indigo-400">
+                                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(svc.servicePrice || 0)}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-between border border-indigo-100 dark:border-indigo-900/30">
+                                                    <div className="flex items-center gap-2">
+                                                        <Scissors size={16} className="text-[#1a2b4c] dark:text-indigo-400" />
+                                                        <span className="text-xs font-bold text-[#1a2b4c] dark:text-indigo-400">{selectedBooking.serviceName}</span>
+                                                    </div>
+                                                    <span className="text-xs font-black text-[#1a2b4c] dark:text-indigo-400">
+                                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedBooking.servicePrice || 0)}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

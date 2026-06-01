@@ -554,7 +554,7 @@ export default function StaffDashboard() {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
                                     <ClipboardList size={14} className="text-primary" />
-                                    <span className="font-medium truncate">{task.serviceName}</span>
+                                    <span className="font-medium truncate">{task.services && task.services.length > 0 ? task.services.map((s: any) => s.serviceName).join(', ') : task.serviceName}</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-slate-500">
                                     <div className="flex items-center gap-1"><Clock size={14} /> {formatTime(task.appointmentDatetime)}</div>
@@ -1017,7 +1017,7 @@ export default function StaffDashboard() {
                                                             <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
                                                                 <ClipboardList size={16} /> Dịch vụ
                                                             </div>
-                                                            <p className="font-semibold text-slate-800">{selectedTask.serviceName}</p>
+                                                            <p className="font-semibold text-slate-800">{selectedTask.services && selectedTask.services.length > 0 ? selectedTask.services.map((s: any) => s.serviceName).join(', ') : selectedTask.serviceName}</p>
                                                         </div>
                                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                             <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-sm">

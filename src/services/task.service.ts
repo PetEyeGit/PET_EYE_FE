@@ -34,6 +34,11 @@ export interface TaskResponse {
   bankAccount?: string;
   accountHolder?: string;
   createdAt: string;
+  services?: {
+    serviceId: number;
+    serviceName: string;
+    servicePrice: number;
+  }[];
 }
 
 export type TaskStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
