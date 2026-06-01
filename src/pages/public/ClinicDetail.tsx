@@ -638,7 +638,7 @@ export default function ClinicDetail() {
         {/* Clinic Header */}
         <div className="flex flex-wrap justify-between items-start gap-4 pb-5">
           <div className="flex flex-col gap-2">
-            <h1 className="text-slate-900 dark:text-slate-100 text-2xl md:text-4xl font-black leading-tight tracking-tight">
+            <h1 className="text-3xl md:text-5xl font-black leading-tight tracking-tight bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text">
               {shop?.shopName ?? 'Đang tải...'}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
@@ -661,37 +661,7 @@ export default function ClinicDetail() {
               )}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Link
-              to={`/messages?shopId=${shopId}&shopName=${encodeURIComponent(shop?.shopName || '')}`}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all text-sm font-bold shadow-lg shadow-primary/20"
-            >
-              <span className="material-symbols-outlined text-base">chat</span>
-              Nhắn tin
-            </Link>
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-semibold"
-            >
-              <span className="material-symbols-outlined text-base">ios_share</span>
-              Chia sẻ
-            </button>
-            <button
-              onClick={() => setIsFavorited(!isFavorited)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors text-sm font-semibold ${isFavorited
-                ? 'bg-red-50 border-red-200 text-red-500 dark:bg-red-900/20 dark:border-red-800'
-                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-            >
-              <span
-                className="material-symbols-outlined text-base"
-                style={{ fontVariationSettings: isFavorited ? "'FILL' 1" : "'FILL' 0" }}
-              >
-                favorite
-              </span>
-              Yêu thích
-            </button>
-          </div>
+          
         </div>
 
         {/* Hero Image Grid */}

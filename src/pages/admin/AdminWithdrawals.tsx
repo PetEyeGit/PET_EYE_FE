@@ -456,7 +456,7 @@ export default function AdminWithdrawals() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl p-5 text-white shadow-lg shadow-teal-500/20 col-span-2 sm:col-span-1">
-          <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-1">Ví Admin (Phí 10%)</p>
+          <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-1">Ví Admin (Phí hoa hồng)</p>
           <p className="text-xl font-black">{formatVND(adminBalance)}</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">

@@ -77,11 +77,11 @@ function GuestNavbar() {
 
         <div className="hidden sm:flex items-center gap-4">
           <Link to="/login"
-            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-all hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 active:scale-95">
+            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold bg-primary-light text-primary hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-all hover:-translate-y-1 active:scale-95">
             Đăng nhập
           </Link>
           <Link to="/register"
-          className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:bg-primary hover:text-white transition-all hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 active:scale-95">
+            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold bg-primary text-white hover:bg-primary-dark dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:shadow-xl hover:shadow-primary/20 dark:hover:shadow-blue-600/20 hover:-translate-y-1 active:scale-95">
             Đăng ký
           </Link>
         </div>
@@ -112,11 +112,11 @@ function GuestNavbar() {
               ))}
               <div className="flex flex-col gap-3 pt-4">
                 <Link to="/login" onClick={() => setMobileOpen(false)}
-                  className="w-full text-center py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                  className="w-full text-center py-4 rounded-2xl bg-primary-light text-primary dark:bg-blue-950/40 dark:text-blue-400 font-bold">
                   Đăng nhập
                 </Link>
                 <Link to="/register" onClick={() => setMobileOpen(false)}
-                  className="w-full text-center py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20">
+                  className="w-full text-center py-4 bg-primary text-white dark:bg-blue-600 rounded-2xl font-black shadow-lg shadow-primary/20 dark:shadow-blue-600/20">
                   Tham gia ngay
                 </Link>
               </div>
