@@ -24,6 +24,29 @@ export interface UserResponse {
   address: string;
   avatar: string;
   roles: RoleResponse[];
+  totalSpending?: number;
+  justUpgraded?: boolean;
+  currentTier?: MembershipTierResponse;
+  vouchers?: VoucherResponse[];
+}
+
+export interface MembershipTierResponse {
+  id: number;
+  name: string;
+  requiredSpending: number;
+  benefits?: string;
+}
+
+export interface VoucherResponse {
+  id: number;
+  code: string;
+  targetTierName?: string;
+  requiredSpending?: number;
+  discountType: string;
+  discountValue: number;
+  validDays: number;
+  issueQuantity: number;
+  expiresAt?: string;
 }
 
 export interface ServiceResponse {

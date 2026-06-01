@@ -17,10 +17,114 @@ export function ProfileLayout() {
   const navigate = useNavigate();
   const { user, logout, setUserSession } = useAuth();
   const [showPerksModal, setShowPerksModal] = useState(false);
+  const [showCongratsPopup, setShowCongratsPopup] = useState(false);
+  const [congratsStep, setCongratsStep] = useState<1 | 2>(1);
+  const [fullUserInfo, setFullUserInfo] = useState<any>(null);
+  const [publicVouchers, setPublicVouchers] = useState<any[]>([]);
+
+  useEffect(() => {
+    userService.getPublicVouchers().then(setPublicVouchers).catch(console.error);
+    if (user?.id) {
+      userService.getById(Number(user.id))
+        .then(data => {
+            setFullUserInfo(data);
+            if (data.justUpgraded) {
+                setShowCongratsPopup(true);
+                userService.acknowledgeTierUpgrade().catch(console.error);
+            }
+        })
+        .catch(err => console.error(err));
+    }
+  }, [user?.id]);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const currentTierName = fullUserInfo?.currentTier?.name || 'Đồng';
+  const totalSpending = fullUserInfo?.totalSpending || 0;
+  
+  let nextTier = 'Bạc';
+  let nextThreshold = 500000;
+  let tierIcon = 'military_tech';
+  let tierTextColor = 'text-slate-400';
+  
+  if (currentTierName === 'Bạc') {
+    nextTier = 'Vàng';
+    nextThreshold = 1000000;
+    tierIcon = 'workspace_premium';
+    tierTextColor = 'text-slate-300';
+  } else if (currentTierName === 'Vàng') {
+    nextTier = 'Kim Cương';
+    nextThreshold = 5000000;
+    tierIcon = 'stars';
+    tierTextColor = 'text-yellow-500';
+  } else if (currentTierName === 'Kim Cương') {
+    nextTier = 'Tối đa';
+    nextThreshold = 5000000;
+    tierIcon = 'diamond';
+    tierTextColor = 'text-cyan-400';
+  }
+  
+  const nextTierVouchers = publicVouchers.filter(v => v.targetTier?.name === nextTier);
+  let nextDiscount = 'GIẢM...';
+  if (nextTierVouchers.length > 0) {
+      const v = nextTierVouchers[0];
+      nextDiscount = `GIẢM ${v.discountValue}${v.discountType === 'PERCENTAGE' ? '%' : 'đ'} (x${v.issueQuantity})`;
+  } else if (nextTier === 'Tối đa') {
+      nextDiscount = 'MAX';
+  }
+
+  const progressPercent = Math.min((totalSpending / nextThreshold) * 100, 100);
+
+  const TIER_PERKS_BASE: Record<string, { title: string, colorClass: string, perks: { title: string, desc: string, icon: string }[] }> = {
+    'Đồng': {
+      title: 'Hạng Đồng',
+      colorClass: 'text-slate-400',
+      perks: [
+        { title: 'Tích lũy chi tiêu', desc: 'Hệ thống tự động cộng dồn', icon: 'savings' },
+        { title: 'Ưu đãi cơ bản', desc: 'Áp dụng cho mọi dịch vụ', icon: 'card_membership' }
+      ]
+    },
+    'Bạc': {
+      title: 'Hạng Bạc',
+      colorClass: 'text-slate-300',
+      perks: [
+        { title: 'Ưu tiên hỗ trợ', desc: 'Phản hồi nhanh chóng', icon: 'support_agent' }
+      ]
+    },
+    'Vàng': {
+      title: 'Hạng Vàng',
+      colorClass: 'text-yellow-500',
+      perks: [
+        { title: 'Ưu tiên đặt chỗ', desc: 'Xác nhận lịch hẹn nhanh x3', icon: 'bolt' },
+        { title: 'Tích điểm x2', desc: 'Quy đổi Voucher dễ dàng', icon: 'military_tech' },
+        { title: 'Hỗ trợ VIP', desc: 'Kênh CSKH riêng biệt 24/7', icon: 'headset_mic' },
+      ]
+    },
+    'Kim Cương': {
+      title: 'Hạng Kim Cương',
+      colorClass: 'text-cyan-400',
+      perks: [
+        { title: 'Dịch vụ miễn phí', desc: '1 lần spa/tháng', icon: 'spa' },
+        { title: 'Hotline VIP', desc: 'Hỗ trợ ngay lập tức 24/7', icon: 'phone_in_talk' },
+        { title: 'Quà sinh nhật', desc: 'Voucher đặc biệt', icon: 'cake' },
+      ]
+    }
+  };
+
+  const baseData = TIER_PERKS_BASE[currentTierName] || TIER_PERKS_BASE['Đồng'];
+  const currentTierVouchers = publicVouchers.filter(v => v.targetTier?.name === currentTierName);
+  const voucherPerks = currentTierVouchers.map(v => ({
+      title: `Voucher Giảm ${v.discountValue}${v.discountType === 'PERCENTAGE' ? '%' : 'đ'} (x${v.issueQuantity})`,
+      desc: `Mã ${v.code} - HSD: ${v.validDays} ngày`,
+      icon: 'local_activity'
+  }));
+
+  const currentPerksData = {
+    ...baseData,
+    perks: [...voucherPerks, ...baseData.perks]
   };
 
   return (
@@ -67,25 +171,25 @@ export function ProfileLayout() {
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
             
             <div className="flex justify-between items-start mb-6 relative z-10">
-              <span className="bg-yellow-500/20 text-yellow-500 text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border border-yellow-500/30">
-                Premium
+              <span className={`bg-white/10 text-white text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border border-white/20`}>
+                Membership
               </span>
-              <div className="w-10 h-10 bg-gradient-to-tr from-yellow-400 to-amber-600 rounded-xl flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-all duration-500">
-                <span className="material-symbols-outlined text-white text-2xl">workspace_premium</span>
+              <div className="w-10 h-10 bg-gradient-to-tr from-white/10 to-white/30 rounded-xl flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-all duration-500">
+                <span className={`material-symbols-outlined ${tierTextColor} text-2xl`}>{tierIcon}</span>
               </div>
             </div>
 
             <div className="relative z-10">
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Cấp bậc hiện tại</p>
-              <h3 className="text-2xl font-black text-white mt-1">Peteye <span className="text-yellow-500">Gold</span></h3>
+              <h3 className="text-2xl font-black text-white mt-1">Hạng <span className={tierTextColor}>{currentTierName}</span></h3>
               
               <div className="mt-8 space-y-2">
                 <div className="flex justify-between items-end">
-                  <p className="text-slate-400 text-xs font-medium">Đến hạng Kim cương</p>
-                  <p className="text-white text-sm font-black">26/50 <span className="text-[10px] font-medium text-slate-500">lịch hẹn</span></p>
+                  <p className="text-slate-400 text-xs font-medium">Đến hạng {nextTier}</p>
+                  <p className="text-white text-sm font-black">{(totalSpending / 1000).toLocaleString()}K / {(nextThreshold / 1000).toLocaleString()}K <span className="text-[10px] font-medium text-slate-500">VND</span></p>
                 </div>
                 <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full w-[52%] shadow-[0_0_10px_rgba(234,179,8,0.5)]" />
+                  <div className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)] transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
                 </div>
               </div>
             </div>
@@ -111,9 +215,9 @@ export function ProfileLayout() {
                 
                 <div className="relative z-10 flex flex-col items-center">
                     <div className="w-16 h-16 bg-gradient-to-tr from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-2xl transform -rotate-6 mb-3">
-                        <span className="material-symbols-outlined text-white text-4xl">workspace_premium</span>
+                        <span className="material-symbols-outlined text-white text-4xl">{tierIcon}</span>
                     </div>
-                    <h2 className="text-2xl font-black tracking-tight">Đặc quyền <span className="text-yellow-500">Gold Member</span></h2>
+                    <h2 className="text-2xl font-black tracking-tight">Đặc quyền <span className={currentPerksData.colorClass}>{currentPerksData.title}</span></h2>
                     <p className="text-slate-400 text-xs font-medium uppercase tracking-[0.2em] mt-1">Trạng thái: Hoạt động</p>
                 </div>
                 
@@ -130,12 +234,7 @@ export function ProfileLayout() {
                 <div>
                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Các đặc quyền đang hiệu lực</h4>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {[
-                            { title: 'Giảm giá 10%', desc: 'Áp dụng cho mọi dịch vụ', icon: 'scuba_diving' },
-                            { title: 'Ưu tiên đặt chỗ', desc: 'Xác nhận lịch hẹn nhanh x3', icon: 'bolt' },
-                            { title: 'Tích điểm x2', desc: 'Quy đổi Voucher dễ dàng', icon: 'military_tech' },
-                            { title: 'Hỗ trợ VIP', desc: 'Kênh CSKH riêng biệt 24/7', icon: 'headset_mic' },
-                        ].map(p => (
+                        {currentPerksData.perks.map(p => (
                             <div key={p.title} className="flex gap-3 p-3 rounded-2xl border border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
                                 <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-[#1a2b4c] dark:text-teal-400 shadow-sm shrink-0 border border-slate-100 dark:border-slate-600">
                                     <span className="material-symbols-outlined text-xl">{p.icon}</span>
@@ -149,25 +248,27 @@ export function ProfileLayout() {
                    </div>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 to-indigo-500/10 border border-teal-500/20">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-teal-600">diamond</span>
-                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Cấp Kim cương đang chờ bạn!</p>
-                        </div>
-                        <span className="text-[10px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">+ GIẢM 15%</span>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                            <span>Sắp đạt được</span>
-                            <span>52% Hoàn thành</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-teal-500 rounded-full w-[52%]" />
-                        </div>
-                        <p className="text-[10px] text-slate-400 text-center mt-2 italic">Chỉ cần thêm 24 lịch hẹn nữa để thăng hạng!</p>
-                    </div>
-                </div>
+                {nextTier !== 'Tối đa' && (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 to-indigo-500/10 border border-teal-500/20">
+                      <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-teal-600">diamond</span>
+                              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Cấp {nextTier} đang chờ bạn!</p>
+                          </div>
+                          <span className="text-[10px] font-black text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">+ {nextDiscount}</span>
+                      </div>
+                      <div className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                              <span>Sắp đạt được</span>
+                              <span>{Math.floor(progressPercent)}% Hoàn thành</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
+                          </div>
+                          <p className="text-[10px] text-slate-400 text-center mt-2 italic">Chi tiêu thêm {((nextThreshold - totalSpending) > 0 ? (nextThreshold - totalSpending) : 0).toLocaleString()}đ để thăng hạng!</p>
+                      </div>
+                  </div>
+                )}
 
                 <button 
                   onClick={() => setShowPerksModal(false)}
@@ -176,6 +277,95 @@ export function ProfileLayout() {
                   Tuyệt vời, tôi đã hiểu!
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Congratulation Popup */}
+        {showCongratsPopup && (
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+            <div className="bg-[#0f172a] w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in duration-500 relative border border-slate-800">
+                {/* Glowing background */}
+                <div className={`absolute top-0 inset-x-0 h-64 bg-gradient-to-b transition-all duration-1000 ${
+                  congratsStep === 1 
+                  ? 'from-yellow-500/20 via-amber-500/5' 
+                  : 'from-teal-500/20 via-emerald-500/5'
+                } to-transparent`} />
+                
+                {/* Sparkles */}
+                <div className="absolute top-10 left-10 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_#fff] animate-ping" />
+                <div className="absolute top-20 right-12 w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-[0_0_10px_#facc15] animate-ping delay-300" />
+                <div className="absolute top-32 left-20 w-1 h-1 bg-teal-400 rounded-full shadow-[0_0_10px_#2dd4bf] animate-ping delay-700" />
+
+                <div className="p-8 flex flex-col items-center relative z-10">
+                    {congratsStep === 1 ? (
+                        // Step 1: The Trophy / Gift Box
+                        <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="relative mb-8 mt-4">
+                                {/* Glowing halo */}
+                                <div className="absolute inset-0 bg-yellow-500/30 blur-2xl rounded-full" />
+                                <div className="w-28 h-28 bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full flex items-center justify-center shadow-2xl shadow-yellow-500/40 relative z-10 animate-bounce">
+                                    <span className="material-symbols-outlined text-white text-6xl">featured_seasonal_and_gifts</span>
+                                </div>
+                            </div>
+                            
+                            <h2 className="text-3xl font-black text-white mb-3">
+                                Chúc mừng thăng hạng!
+                            </h2>
+                            <p className="text-slate-400 text-sm mb-8 leading-relaxed px-4">
+                                Tuyệt vời! Bạn đã chính thức đạt <strong className={currentPerksData.colorClass}>{currentPerksData.title}</strong>. 
+                                Chúng tôi đã chuẩn bị những phần quà đặc quyền dành riêng cho bạn!
+                            </p>
+                            
+                            <button 
+                                onClick={() => setCongratsStep(2)}
+                                className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-900 rounded-2xl font-black text-lg shadow-lg shadow-yellow-500/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">redeem</span>
+                                Nhận thưởng ngay
+                            </button>
+                        </div>
+                    ) : (
+                        // Step 2: The Rewards Reveal
+                        <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-500">
+                            <div className="w-16 h-16 bg-gradient-to-tr from-teal-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-teal-500/30 mb-4">
+                                <span className="material-symbols-outlined text-white text-3xl">check_circle</span>
+                            </div>
+                            
+                            <h2 className="text-2xl font-black text-white mb-1">
+                                Quà tặng đã vào túi!
+                            </h2>
+                            <p className="text-slate-400 text-xs mb-6 text-center">
+                                Bạn đã mở khóa các đặc quyền của <span className={currentPerksData.colorClass}>{currentPerksData.title}</span>
+                            </p>
+
+                            {/* Rewards List */}
+                            <div className="w-full space-y-3 mb-8">
+                                {currentPerksData.perks.map((p, idx) => (
+                                    <div key={idx} className="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl flex items-center gap-4 animate-in slide-in-from-right-4 fade-in" style={{ animationDelay: `${idx * 150}ms`, animationFillMode: 'both' }}>
+                                        <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center text-teal-400 shadow-inner border border-slate-800 shrink-0">
+                                            <span className="material-symbols-outlined text-2xl">{p.icon}</span>
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <h4 className="text-sm font-bold text-white mb-0.5">{p.title}</h4>
+                                            <p className="text-[10px] text-slate-400">{p.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <button 
+                                onClick={() => {
+                                    setShowCongratsPopup(false);
+                                    setCongratsStep(1); // Reset for future
+                                }}
+                                className="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold border border-slate-700 hover:bg-slate-700 hover:border-slate-600 active:scale-95 transition-all text-sm"
+                            >
+                                Hoàn tất
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
           </div>
         )}
@@ -204,6 +394,8 @@ export default function Profile() {
   const [message, setMessage] = useState('Thông tin đã được lưu thành công!');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [fullUserInfo, setFullUserInfo] = useState<any>(null);
+
   useEffect(() => {
     if (user?.id) {
       fetchUserData();
@@ -213,6 +405,7 @@ export default function Profile() {
   const fetchUserData = async () => {
     try {
       const data = await userService.getById(Number(user?.id));
+      setFullUserInfo(data);
       setFullName(data.fullName);
       setEmail(data.email);
       setPhone(data.phone || '');
@@ -455,20 +648,23 @@ export default function Profile() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { level: 'Đồng', target: 'Mặc định', icon: 'license', color: 'slate', perks: ['Ưu đãi 1-2%', 'Hỗ trợ 24/7'] },
-              { level: 'Bạc', target: '10 Lịch hẹn', icon: 'workspace_premium', color: 'blue', perks: ['Giảm giá 5%', 'Quà tặng sinh nhật'] },
-              { level: 'Vàng', target: '20 Lịch hẹn', icon: 'stars', color: 'yellow', active: true, perks: ['Giảm giá 10%', 'Ưu tiên đặt chỗ', 'Tích điểm x2'] },
-              { level: 'Kim cương', target: '50 Lịch hẹn', icon: 'diamond', color: 'teal', perks: ['Giảm giá 15%', 'Dịch vụ miễn phí', 'Hotline VIP'] },
-            ].map((tier) => (
+              { level: 'Đồng', target: 'Mặc định (0đ)', icon: 'license', color: 'slate', perks: ['Ưu đãi cơ bản', 'Tích lũy chi tiêu'] },
+              { level: 'Bạc', target: 'Chi tiêu 500,000đ', icon: 'workspace_premium', color: 'blue', perks: ['Tự động nhận Voucher Bạc', 'Ưu tiên hỗ trợ'] },
+              { level: 'Vàng', target: 'Chi tiêu 1,000,000đ', icon: 'stars', color: 'yellow', perks: ['Tự động nhận Voucher Vàng', 'Ưu tiên đặt chỗ', 'Tích điểm x2'] },
+              { level: 'Kim Cương', target: 'Chi tiêu 5,000,000đ', icon: 'diamond', color: 'teal', perks: ['Tự động nhận Voucher Kim cương', 'Dịch vụ miễn phí', 'Hotline VIP'] },
+            ].map((tier) => {
+              const currentName = fullUserInfo?.currentTier?.name || 'Đồng';
+              const isActive = tier.level.toLowerCase() === currentName.toLowerCase();
+              return (
               <div 
                 key={tier.level}
                 className={`relative p-5 rounded-2xl border transition-all ${
-                  tier.active 
+                  isActive 
                     ? 'border-yellow-500 bg-yellow-50/30 dark:bg-yellow-900/10 shadow-lg' 
                     : 'border-slate-100 dark:border-slate-800 hover:border-slate-300'
                 }`}
               >
-                {tier.active && (
+                {isActive && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-[9px] font-black uppercase px-3 py-1 rounded-full shadow-md z-10 w-max">
                         Cấp hiện tại
                     </div>
@@ -489,7 +685,7 @@ export default function Profile() {
                     </ul>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </main>

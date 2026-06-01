@@ -45,6 +45,18 @@ export default function Payment() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const [myVouchers, setMyVouchers] = useState<any[]>([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    // Fetch user vouchers on mount
+    import('../../services/user.service').then(({ userService }) => {
+      userService.getMyVouchers()
+        .then(data => setMyVouchers(data))
+        .catch(err => console.error("Failed to fetch vouchers", err));
+    });
+  }, []);
 
   if (!booking) {
     return (
@@ -65,8 +77,23 @@ export default function Payment() {
     ? booking.services
     : [{ id: booking.serviceId, name: booking.serviceName, price: booking.servicePrice }];
 
-  const totalPrice = serviceList.reduce((sum, s) => sum + s.price, 0);
-  const depositAmount = Math.ceil(totalPrice * 0.1 / 1000) * 1000; // 10% làm tròn lên 1000đ
+  const rawTotalPrice = serviceList.reduce((sum, s) => sum + s.price, 0);
+  const depositAmount = Math.ceil(rawTotalPrice * 0.1 / 1000) * 1000; // 10% làm tròn lên 1000đ
+
+  // Voucher logic
+  let discountAmount = 0;
+  let totalPrice = rawTotalPrice;
+  if (payMethod === 'payos' && selectedVoucherId) {
+    const voucher = myVouchers.find(v => v.id === selectedVoucherId)?.voucher;
+    if (voucher) {
+      if (voucher.discountType === 'PERCENTAGE') {
+        discountAmount = rawTotalPrice * (voucher.discountValue / 100);
+      } else {
+        discountAmount = voucher.discountValue;
+      }
+      totalPrice = Math.max(0, rawTotalPrice - discountAmount);
+    }
+  }
 
   async function handlePay() {
     if (!agreed || loading) return;
@@ -132,6 +159,7 @@ export default function Payment() {
         note: booking.petNote,
         cageSize: booking.cageSize,
         roomType: booking.roomType,
+        userVoucherId: payMethod === 'payos' && selectedVoucherId ? selectedVoucherId : undefined,
       });
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
@@ -267,6 +295,33 @@ export default function Payment() {
                 </div>
               )}
 
+              {payMethod === 'payos' && myVouchers.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-rose-500">local_activity</span>
+                    Mã giảm giá (Voucher)
+                  </h3>
+                  <select
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1a2b4c] text-slate-700 dark:text-slate-200"
+                    value={selectedVoucherId || ''}
+                    onChange={(e) => setSelectedVoucherId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Không sử dụng voucher</option>
+                    {myVouchers.map(uv => {
+                      const v = uv.voucher;
+                      const disabled = v.minOrderValue && rawTotalPrice < v.minOrderValue;
+                      return (
+                        <option key={uv.id} value={uv.id} disabled={disabled}>
+                          {v.code} - Giảm {v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatVND(v.discountValue)} 
+                          {v.minOrderValue ? ` (Đơn tối thiểu ${formatVND(v.minOrderValue)})` : ''}
+                          {disabled ? ' - Chưa đủ điều kiện' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
               {payMethod === 'cash' && (
                 <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
                   <span className="material-symbols-outlined text-amber-500 mt-0.5">info</span>
@@ -319,6 +374,13 @@ export default function Payment() {
                   </div>
                 ))}
               </div>
+
+              {discountAmount > 0 && payMethod === 'payos' && (
+                <div className="flex justify-between text-rose-500 text-sm font-semibold pt-2">
+                  <span>Voucher giảm giá</span>
+                  <span>-{formatVND(discountAmount)}</span>
+                </div>
+              )}
 
               <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 flex justify-between items-center">
                 <span className="font-bold text-slate-900 dark:text-slate-100">Tổng cộng</span>
@@ -405,6 +467,7 @@ export default function Payment() {
                       paymentMethod: payMethod === 'cash' ? 'CASH' : 'PAYOS',
                       cageSize: booking.cageSize,
                       roomType: booking.roomType,
+                      userVoucherId: payMethod === 'payos' && selectedVoucherId ? selectedVoucherId : undefined,
                     };
                     const result = payMethod === 'cash' 
                       ? await bookingService.initiateCashDeposit(dataPayload)

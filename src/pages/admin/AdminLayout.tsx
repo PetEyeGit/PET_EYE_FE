@@ -7,7 +7,7 @@ import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-d
 import {
   LayoutDashboard, Store, Users, Bell, MessageCircle,
   LogOut, Menu, ChevronRight, Shield, Sparkles, Wallet,
-  Scan, X, Building2, CreditCard, Loader2
+  Scan, X, Building2, CreditCard, Loader2, Ticket
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Quản lý Shop', path: '/admin/shops', icon: Store },
   { label: 'Quản lý Member', path: '/admin/members', icon: Users },
+  { label: 'Quản lý Voucher', path: '/admin/vouchers', icon: Ticket },
   { label: 'Rút tiền', path: '/admin/withdrawals', icon: Wallet },
   { label: 'Thông báo', path: '/admin/notifications', icon: Bell },
   { label: 'Tin nhắn', path: '/admin/messages', icon: MessageCircle },

@@ -226,4 +226,24 @@ export const adminService = {
     const res = await apiClient.get<ApiResponse<AdminUserResponse[]>>(`/chat/${shopId}/customers`);
     return res.data.result ?? [];
   },
+
+  // Vouchers
+  getAllVouchers: async (): Promise<any[]> => {
+    const res = await apiClient.get<ApiResponse<any[]>>('/admin/vouchers');
+    return res.data.result ?? [];
+  },
+
+  createVoucher: async (data: any): Promise<any> => {
+    const res = await apiClient.post<ApiResponse<any>>('/admin/vouchers', data);
+    return res.data.result;
+  },
+
+  updateVoucher: async (id: number, data: any): Promise<any> => {
+    const res = await apiClient.put<ApiResponse<any>>(`/admin/vouchers/${id}`, data);
+    return res.data.result;
+  },
+
+  deleteVoucher: async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/vouchers/${id}`);
+  },
 };

@@ -34,5 +34,19 @@ export const userService = {
 
   changePassword: async (id: number, data: any): Promise<void> => {
     await apiClient.post(`/users/${id}/change-password`, data);
+  },
+
+  acknowledgeTierUpgrade: async (): Promise<void> => {
+    await apiClient.patch('/users/me/acknowledge-upgrade');
+  },
+
+  getPublicVouchers: async (): Promise<any[]> => {
+    const response = await apiClient.get<ApiResponse<any[]>>('/admin/vouchers/public');
+    return response.data.result || [];
+  },
+
+  getMyVouchers: async (): Promise<any[]> => {
+    const response = await apiClient.get<ApiResponse<any[]>>('/users/me/vouchers');
+    return response.data.result || [];
   }
 };
