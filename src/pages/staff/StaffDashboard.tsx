@@ -67,9 +67,10 @@ const LATE_SERVICE_SUGGESTIONS = [
 ];
 
 const guessCategory = (name: string) => {
-    const n = name.toLowerCase();
+    const n = (name || '').toLowerCase();
     if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông') || n.includes('khách sạn') || n.includes('hotel')) return 'BOARDING';
-    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming') || n.includes('vệ sinh') || n.includes('massage')) return 'GROOMING';
+    // broaden grooming detection: include words like 'spa', 'tắm', 'cắt', 'grooming', 'vệ sinh', 'massage', 'kiểu', 'tạo kiểu'
+    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming') || n.includes('vệ sinh') || n.includes('massage') || n.includes('kiểu') || n.includes('tạo kiểu')) return 'GROOMING';
     return 'CLINIC';
 };
 
@@ -414,11 +415,14 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.completeServiceItem(bookingId, serviceId);
-            const { mine } = await refreshTasks();
+            // Immediately merge returned updated booking into local task lists to avoid stale API responses
+            setMyTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
+            setPoolTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
             if (selectedTask?.bookingId === bookingId) {
-                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
-                setSelectedTask(newSelected || updated);
+                setSelectedTask(updated);
             }
+            // Also trigger a background refresh to keep data consistent
+            refreshTasks().catch(() => {});
             toast.success('Đã đánh dấu hoàn thành dịch vụ!');
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Không thể hoàn thành dịch vụ');
@@ -443,9 +447,10 @@ export default function StaffDashboard() {
             await petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
             // Step 2: Mark sub-service as complete
             const updated = await taskService.completeServiceItem(selectedTask.bookingId, pendingClinicServiceId);
-            const { mine } = await refreshTasks();
-            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
-            setSelectedTask(newSelected || updated);
+            setMyTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
+            setPoolTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
+            setSelectedTask(updated);
+            refreshTasks().catch(() => {});
             toast.success('Đã lưu hồ sơ y tế và hoàn thành dịch vụ khám!');
             setIsMedicalModalOpen(false);
             setPendingClinicServiceId(null);
@@ -538,90 +543,95 @@ export default function StaffDashboard() {
         }
     };
 
-    const inProgressTasks = myTasks.filter(t => t.status === 'IN_PROGRESS');
-    const pendingTasks = myTasks.filter(t => t.status === 'CONFIRMED');
+    const getEffectiveStatus = (t: any) => {
+        // If backend provided final status, prefer it
+        if (!t) return undefined;
+        if (t.status === 'COMPLETED' || t.status === 'CANCELLED') return t.status;
+        // If services are present and all are completed, consider booking COMPLETED
+        if (t.services && t.services.length > 0) {
+            const allCompleted = t.services.every((s: any) => !!s.completedAt || (t.completedServiceIds || []).includes(s.serviceId));
+            if (allCompleted) return 'COMPLETED';
+        }
+        return t.status;
+    };
+
+    const inProgressTasks = myTasks.filter(t => getEffectiveStatus(t) === 'IN_PROGRESS');
+    const pendingTasks = myTasks.filter(t => getEffectiveStatus(t) === 'CONFIRMED');
 
     let displayTasks = activeTab === 'mine' ? myTasks : poolTasks;
 
+    // Dev-only: log status vs effectiveStatus when debugging filters
+    if (process.env.NODE_ENV !== 'production' && statusFilter === 'CANCELLED') {
+        try {
+            // eslint-disable-next-line no-console
+            console.debug('StaffDashboard: CANCELLED filter debug', displayTasks.map((t: any) => ({
+                bookingId: t.bookingId,
+                rawStatus: t.status,
+                effectiveStatus: getEffectiveStatus(t),
+                services: (t.services || []).map((s: any) => ({ id: s.serviceId, completedAt: s.completedAt })),
+                completedServiceIds: t.completedServiceIds || []
+            })));
+        } catch (e) { }
+    }
+
     if (statusFilter === 'ACTIVE') {
-        displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(t.status));
+        displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(getEffectiveStatus(t)));
     } else if (statusFilter === 'COMPLETED') {
-        displayTasks = displayTasks.filter(t => t.status === 'COMPLETED');
+        displayTasks = displayTasks.filter(t => getEffectiveStatus(t) === 'COMPLETED');
     } else if (statusFilter === 'CANCELLED') {
-        displayTasks = displayTasks.filter(t => t.status === 'CANCELLED' || t.status === 'CANCEL_REQUESTED');
+        displayTasks = displayTasks.filter(t => getEffectiveStatus(t) === 'CANCELLED' || getEffectiveStatus(t) === 'CANCEL_REQUESTED');
     }
 
     displayTasks = [...displayTasks].sort((a, b) => {
         const order: Record<string, number> = { 'IN_PROGRESS': 1, 'CONFIRMED': 2, 'PENDING_PAYMENT': 3, 'WAITING_REFUND': 4, 'COMPLETED': 5, 'CANCELLED': 6, 'CANCEL_REQUESTED': 6 };
-        const orderA = order[a.status] || 99;
-        const orderB = order[b.status] || 99;
+        const statusA = getEffectiveStatus(a) || a.status;
+        const statusB = getEffectiveStatus(b) || b.status;
+        const orderA = order[statusA] || 99;
+        const orderB = order[statusB] || 99;
 
         if (orderA !== orderB) return orderA - orderB;
         return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
     });
 
-    // Group tasks by bookingId so UI shows one booking entry even if multiple service-items exist.
-    const groupedDisplayTasks = (() => {
-        const map = new Map<number, TaskResponse>();
-        const precedence = ['IN_PROGRESS','CONFIRMED','PENDING_PAYMENT','WAITING_REFUND','COMPLETED','CANCELLED','CANCEL_REQUESTED'];
-
+    // Expand tasks so that if a booking contains multiple services we show one card per service
+    const expandedDisplayTasks = (() => {
+        const out: TaskResponse[] = [];
         for (const t of displayTasks) {
-            const bid = t.bookingId;
-            const existing = map.get(bid);
-            // normalize services array for this task
-            const svcArr: any[] = [];
-            if (t.services && t.services.length) svcArr.push(...t.services);
-            else if ((t as any).serviceId) svcArr.push({ serviceId: (t as any).serviceId, serviceName: (t as any).serviceName });
-
-            if (!existing) {
-                // clone task and ensure services present
-                const cloned: any = { ...t, services: svcArr };
-                map.set(bid, cloned);
+            if (t.services && t.services.length > 1) {
+                for (const svc of t.services) {
+                    const item: any = {
+                        ...t,
+                        // represent this row as a single-service task for UI
+                        serviceId: svc.serviceId,
+                        serviceName: svc.serviceName,
+                        servicePrice: svc.servicePrice,
+                        services: [svc]
+                    };
+                    out.push(item);
+                }
+            } else if (t.services && t.services.length === 1) {
+                // keep as-is but ensure services is present
+                out.push({ ...t, services: t.services });
             } else {
-                // merge services (dedupe by serviceId)
-                const merged = [...(existing.services || []), ...svcArr];
-                const seen = new Map();
-                const deduped: any[] = [];
-                for (const s of merged) {
-                    if (!s) continue;
-                    const id = s.serviceId ?? `${s.serviceName}-${Math.random()}`;
-                    if (!seen.has(id)) { seen.set(id, true); deduped.push(s); }
-                }
-                existing.services = deduped;
-
-                // compute status precedence (choose highest priority)
-                const statuses = [existing.status, t.status];
-                let chosen = statuses[0];
-                for (const st of statuses) {
-                    if (precedence.indexOf(st) < precedence.indexOf(chosen)) chosen = st;
-                }
-                existing.status = chosen;
-
-                // keep earliest appointmentDatetime as representative (or latest?) - keep latest so urgent ones show first
-                try {
-                    if (new Date(t.appointmentDatetime).getTime() > new Date(existing.appointmentDatetime).getTime()) {
-                        existing.appointmentDatetime = t.appointmentDatetime;
-                    }
-                } catch (e) { }
-
-                map.set(bid, existing);
+                out.push(t);
             }
         }
 
-        return Array.from(map.values());
+        return out;
     })();
 
     const isMultiService = !!(selectedTask?.services && selectedTask.services.length > 0);
     const boardingServices = selectedTask?.services
-        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) === 'BOARDING')
+        ? selectedTask.services.filter((s: any) => (s.category || guessCategory(s.serviceName)) === 'BOARDING')
         : [];
     const nonBoardingServices = selectedTask?.services
-        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) !== 'BOARDING')
+        ? selectedTask.services.filter((s: any) => (s.category || guessCategory(s.serviceName)) !== 'BOARDING')
         : [];
     const incompleteNonBoardingServices = nonBoardingServices.filter(
         (s: any) => !(selectedTask?.completedServiceIds || []).includes(s.serviceId)
     );
     const hasIncompleteNonBoarding = selectedTask?.status === 'IN_PROGRESS' && incompleteNonBoardingServices.length > 0;
+    const nonBoardingTaskIndex = selectedTask ? ((selectedTask.cameraEnabled || (selectedTask.serviceName || '').toLowerCase().includes('camera')) ? 2 : 1) : 1;
 
     return (
         <div className="h-[calc(100vh-4rem)] bg-[#f8fafc] dark:bg-background-dark flex overflow-hidden">
@@ -673,10 +683,10 @@ export default function StaffDashboard() {
                             </div>
                             <p className="text-slate-500 font-medium">Không có công việc nào</p>
                         </div>
-                    ) : (
-                        groupedDisplayTasks.map(task => (
-                            <div
-                                key={task.bookingId + "-" + (task.category || "GENERAL")}
+                        ) : (
+                            expandedDisplayTasks.map((task, listIdx) => (
+                                <div
+                                    key={`${task.bookingId}-${task.serviceId || (task.services && task.services[0]?.serviceId) || task.category || 'GENERAL'}-${listIdx}`}
                                 onClick={() => handleSelectTask(task)}
                                 className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId && selectedTask?.category === task.category
                                     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
@@ -688,9 +698,14 @@ export default function StaffDashboard() {
                                         <h3 className="font-bold text-slate-900">{task.petName}</h3>
                                         <p className="text-xs text-slate-500 font-medium mt-1">{task.customerName}</p>
                                     </div>
-                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${STATUS_CONFIG[task.status]?.color || 'bg-slate-50 text-slate-500'}`}>
-                                        {STATUS_CONFIG[task.status]?.label || task.status}
-                                    </span>
+                                    {(() => {
+                                        const displayStatus = getEffectiveStatus(task) || task.status;
+                                        return (
+                                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${STATUS_CONFIG[displayStatus]?.color || 'bg-slate-50 text-slate-500'}`}>
+                                                {STATUS_CONFIG[displayStatus]?.label || displayStatus}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
                                     <ClipboardList size={14} className="text-primary" />
@@ -783,7 +798,7 @@ export default function StaffDashboard() {
                                         ) : (
                                             <>
                                                 {selectedTask.status === 'CONFIRMED' && (
-                                                    (selectedTask.category === 'BOARDING' || guessCategory(selectedTask.serviceName) === 'BOARDING') && (selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) ? (
+                                                    ((selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && (selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) ? (
                                                         <button
                                                             onClick={() => {
                                                                 setRtspInput(rtspInput || selectedTask.rtspLink || '');
@@ -809,7 +824,7 @@ export default function StaffDashboard() {
                                                 )}
                                                 {selectedTask.status === 'IN_PROGRESS' && (
                                                     (() => {
-                                                        const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                        const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
                                                         const checkOutDateStr = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
 
                                                         const getCheckoutTime = () => {
@@ -902,7 +917,7 @@ export default function StaffDashboard() {
                                         >
                                             Nhật ký chăm sóc
                                         </button>
-                                        {guessCategory(selectedTask.serviceName) === 'CLINIC' && (
+                                        {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'CLINIC' && (
                                             <button
                                                 onClick={() => setActiveWorkspaceTab('medical')}
                                                 className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
@@ -924,6 +939,12 @@ export default function StaffDashboard() {
                                                         </h3>
                                                     </div>
                                                     <div className="p-5 space-y-6">
+                                                        {selectedTask?.services && selectedTask.services.length > 0 && (
+                                                            <div className="text-sm text-slate-600">
+                                                                <span className="font-semibold">Dịch vụ: </span>
+                                                                <span className="truncate block md:inline">{selectedTask.services.map((s: any) => s.serviceName).join(', ')}</span>
+                                                            </div>
+                                                        )}
                                                         {isMultiService ? (
                                                             <>
                                                                 {/* Dịch vụ lưu trú */}
@@ -1061,12 +1082,13 @@ export default function StaffDashboard() {
                                                                         <div className="p-5 bg-emerald-50/30 dark:bg-emerald-950/5 rounded-2xl border border-emerald-100/55 dark:border-emerald-900/20 space-y-4">
                                                                             <h5 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-450 flex items-center gap-2">
                                                                                 <ClipboardList size={14} />
-                                                                                Nhiệm vụ 2: Hoàn thành dịch vụ khác
+                                                                                {`Nhiệm vụ ${nonBoardingTaskIndex}: Hoàn thành dịch vụ khác`}
                                                                             </h5>
                                                                             
                                                                             <div className="space-y-3">
                                                                                 {nonBoardingServices.map((svc: any, idx: number) => {
                                                                                     const isCompleted = (selectedTask.completedServiceIds || []).includes(svc.serviceId);
+                                                                                    const cat = svc.category || guessCategory(svc.serviceName);
                                                                                     return (
                                                                                         <div key={idx} className="p-4 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-700 shadow-sm">
                                                                                             <div className="flex items-center gap-3">
@@ -1100,7 +1122,6 @@ export default function StaffDashboard() {
                                                                                                         <button
                                                                                                             type="button"
                                                                                                             onClick={() => {
-                                                                                                                const cat = guessCategory(svc.serviceName);
                                                                                                                 if (cat === 'CLINIC') {
                                                                                                                     handleOpenClinicModal(svc.serviceId);
                                                                                                                 } else {
@@ -1109,12 +1130,12 @@ export default function StaffDashboard() {
                                                                                                             }}
                                                                                                             disabled={updatingId === selectedTask.bookingId}
                                                                                                             className={`px-3 py-1.5 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 ${
-                                                                                                                guessCategory(svc.serviceName) === 'CLINIC'
+                                                                                                                cat === 'CLINIC'
                                                                                                                     ? 'bg-violet-500 hover:bg-violet-600 shadow-violet-500/10'
                                                                                                                     : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10'
                                                                                                             }`}
                                                                                                         >
-                                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : guessCategory(svc.serviceName) === 'CLINIC' ? '📋 Nhập kết quả' : 'Hoàn thành'}
+                                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : cat === 'CLINIC' ? '📋 Nhập kết quả' : 'Hoàn thành'}
                                                                                                         </button>
                                                                                                     )
                                                                                                 )}
@@ -1276,7 +1297,7 @@ export default function StaffDashboard() {
                                                         )}
                                                     </div>
                                                 )}
-                                                {guessCategory(selectedTask.serviceName) === 'BOARDING' ? (
+                                                {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING' ? (
                                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                             <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
@@ -1312,7 +1333,7 @@ export default function StaffDashboard() {
                                                             </div>
                                                             <p className="font-semibold text-slate-800">{selectedTask.roomType || 'Thường'}</p>
                                                         </div>
-                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || guessCategory(selectedTask.serviceName) === 'BOARDING') && !isMultiService && (
+                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && !isMultiService && (
                                                             <>
                                                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                                     <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold text-sm">
@@ -1538,7 +1559,7 @@ export default function StaffDashboard() {
                                             </div>
                                         )}
 
-                                        {activeWorkspaceTab === 'medical' && guessCategory(selectedTask.serviceName) === 'CLINIC' && (
+                                        {activeWorkspaceTab === 'medical' && (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'CLINIC' && (
                                             <div className="space-y-6">
                                                 {selectedTask.status === 'COMPLETED' ? (
                                                     <div className="p-8 text-center bg-slate-50 rounded-3xl border border-slate-100">
@@ -1845,13 +1866,13 @@ export default function StaffDashboard() {
                                         {checkoutType === 'EARLY' ? 'Xác nhận Kết thúc Sớm' : 'Xác nhận Kết thúc Trễ'}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                        {guessCategory(selectedTask.serviceName) === 'BOARDING'
+                                        {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING'
                                             ? 'Thời gian kết thúc lưu trú dự kiến'
                                             : 'Thời gian kết thúc dự kiến'}
                                         : <strong>
                                             {(() => {
                                                 const rawCheckOut = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
-                                                const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
 
                                                 const checkout = rawCheckOut
                                                     ? new Date(rawCheckOut)
@@ -1873,7 +1894,7 @@ export default function StaffDashboard() {
                                     </label>
                                     <div className="space-y-2">
                                         {(() => {
-                                            const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                            const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
                                             const suggestionsList = checkoutType === 'EARLY'
                                                 ? (isBoarding ? EARLY_BOARDING_SUGGESTIONS : EARLY_SERVICE_SUGGESTIONS)
                                                 : (isBoarding ? LATE_BOARDING_SUGGESTIONS : LATE_SERVICE_SUGGESTIONS);
