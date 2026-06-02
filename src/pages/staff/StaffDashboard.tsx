@@ -68,8 +68,8 @@ const LATE_SERVICE_SUGGESTIONS = [
 
 const guessCategory = (name: string) => {
     const n = name.toLowerCase();
-    if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông')) return 'BOARDING';
-    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming')) return 'GROOMING';
+    if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông') || n.includes('khách sạn') || n.includes('hotel')) return 'BOARDING';
+    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming') || n.includes('vệ sinh') || n.includes('massage')) return 'GROOMING';
     return 'CLINIC';
 };
 
@@ -154,6 +154,20 @@ export default function StaffDashboard() {
             toast.error('Không thể kết nối máy chủ');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const refreshTasks = async () => {
+        try {
+            const [mine, pool] = await Promise.all([
+                taskService.getMyTasks(),
+                taskService.getUnassignedTasks().catch(() => []),
+            ]);
+            setMyTasks(mine);
+            setPoolTasks(pool);
+            return { mine, pool };
+        } catch {
+            return { mine: [], pool: [] };
         }
     };
 
@@ -319,8 +333,9 @@ export default function StaffDashboard() {
             setDashboardPreviewUrl(updated.cameraStreamUrl || '');
             setRtspInput(updated.cameraRtspUrl || '');
 
-            setSelectedTask(prev => prev ? { ...prev, rtspLink: updated.cameraRtspUrl } : null);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? { ...t, rtspLink: updated.cameraRtspUrl } : t));
+            const { mine } = await refreshTasks();
+            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
+            setSelectedTask(newSelected || (prev => prev ? { ...prev, rtspLink: updated.cameraRtspUrl } : null));
 
             toast.success('Đã lưu cấu hình camera thành công!');
         } catch (err: any) {
@@ -360,8 +375,11 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.updateStatus(bookingId, nextStatus, rtspLink);
-            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
-            if (selectedTask?.bookingId === bookingId) setSelectedTask(updated);
+            const { mine } = await refreshTasks();
+            if (selectedTask?.bookingId === bookingId) {
+                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
+                setSelectedTask(newSelected || updated);
+            }
             if (nextStatus === 'IN_PROGRESS') {
                 setLocalStartTime(new Date().toISOString());
             }
@@ -394,9 +412,10 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.completeServiceItem(bookingId, serviceId);
-            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
+            const { mine } = await refreshTasks();
             if (selectedTask?.bookingId === bookingId) {
-                setSelectedTask(updated);
+                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
+                setSelectedTask(newSelected || updated);
             }
             toast.success('Đã đánh dấu hoàn thành dịch vụ!');
         } catch (err: any) {
@@ -422,8 +441,9 @@ export default function StaffDashboard() {
             await petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
             // Step 2: Mark sub-service as complete
             const updated = await taskService.completeServiceItem(selectedTask.bookingId, pendingClinicServiceId);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
-            setSelectedTask(updated);
+            const { mine } = await refreshTasks();
+            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
+            setSelectedTask(newSelected || updated);
             toast.success('Đã lưu hồ sơ y tế và hoàn thành dịch vụ khám!');
             setIsMedicalModalOpen(false);
             setPendingClinicServiceId(null);
@@ -438,11 +458,13 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const claimed = await taskService.claimTask(bookingId);
-            setPoolTasks(prev => prev.filter(t => t.bookingId !== bookingId));
-            setMyTasks(prev => [claimed, ...prev]);
+            const { mine } = await refreshTasks();
             toast.success('Đã nhận công việc thành công!');
             setActiveTab('mine');
-            if (selectedTask?.bookingId === bookingId) setSelectedTask(claimed);
+            if (selectedTask?.bookingId === bookingId) {
+                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
+                setSelectedTask(newSelected || claimed);
+            }
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Không thể nhận task');
         } finally {
@@ -455,8 +477,9 @@ export default function StaffDashboard() {
         setIsNoShowProcessing(true);
         try {
             const updated = await taskService.cancelNoShow(selectedTask.bookingId);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
-            setSelectedTask(updated);
+            const { mine } = await refreshTasks();
+            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
+            setSelectedTask(newSelected || updated);
             setIsNoShowModalOpen(false);
             toast.success('Đã hủy đơn do khách không đến');
         } catch (err: any) {
@@ -600,9 +623,9 @@ export default function StaffDashboard() {
                     ) : (
                         displayTasks.map(task => (
                             <div
-                                key={task.bookingId}
+                                key={task.bookingId + "-" + (task.category || "GENERAL")}
                                 onClick={() => handleSelectTask(task)}
-                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId
+                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId && selectedTask?.category === task.category
                                     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                                     }`}
