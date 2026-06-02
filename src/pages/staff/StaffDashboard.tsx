@@ -132,6 +132,8 @@ export default function StaffDashboard() {
     // No-Show states
     const [isNoShowModalOpen, setIsNoShowModalOpen] = useState(false);
     const [isNoShowProcessing, setIsNoShowProcessing] = useState(false);
+    
+    const [isPetDetailsModalOpen, setIsPetDetailsModalOpen] = useState(false);
 
     // Clinic sub-service completion modal
     const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
@@ -721,7 +723,10 @@ export default function StaffDashboard() {
                             {/* Main Info Card */}
                             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-200">
                                 <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
-                                    <div className="flex items-center gap-6">
+                                    <div 
+                                        className="flex items-center gap-6 cursor-pointer hover:bg-slate-50 p-2 -m-2 rounded-2xl transition-colors"
+                                        onClick={() => setIsPetDetailsModalOpen(true)}
+                                    >
                                         <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-100 relative shrink-0 overflow-hidden">
                                             {petDetails?.avatar ? (
                                                 <img src={petDetails.avatar} alt={selectedTask.petName} className="w-full h-full object-cover" />
@@ -883,31 +888,29 @@ export default function StaffDashboard() {
 
                             {/* Workspace Tabs */}
                             {selectedTask && (
-                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                    {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
-                                        <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+                                    <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
+                                        <button
+                                            onClick={() => setActiveWorkspaceTab('info')}
+                                            className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                        >
+                                            Thông tin chung
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveWorkspaceTab('logs')}
+                                            className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                        >
+                                            Nhật ký chăm sóc
+                                        </button>
+                                        {guessCategory(selectedTask.serviceName) === 'CLINIC' && (
                                             <button
-                                                onClick={() => setActiveWorkspaceTab('info')}
-                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                                onClick={() => setActiveWorkspaceTab('medical')}
+                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
-                                                Thông tin chung
+                                                Hồ sơ y tế
                                             </button>
-                                            <button
-                                                onClick={() => setActiveWorkspaceTab('logs')}
-                                                className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                                            >
-                                                Nhật ký chăm sóc
-                                            </button>
-                                            {guessCategory(selectedTask.serviceName) === 'CLINIC' && (
-                                                <button
-                                                    onClick={() => setActiveWorkspaceTab('medical')}
-                                                    className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                                                >
-                                                    Hồ sơ y tế
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
 
                                     <div className="p-4 lg:p-6">
                                         {activeWorkspaceTab === 'info' && (
@@ -2131,6 +2134,151 @@ export default function StaffDashboard() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Pet Details Modal */}
+            <AnimatePresence>
+                {isPetDetailsModalOpen && selectedTask && petDetails && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsPetDetailsModalOpen(false)}
+                            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                        >
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                                <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                                    <ClipboardList className="text-primary" /> Thông tin tổng hợp
+                                </h2>
+                                <button
+                                    onClick={() => setIsPetDetailsModalOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Left Column: Pet Info */}
+                                    <div className="space-y-6">
+                                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                                            <Heart className="text-rose-500" size={18} /> Hồ sơ thú cưng
+                                        </h3>
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center text-4xl shadow-inner overflow-hidden border border-slate-200 shrink-0">
+                                                {petDetails.avatar ? <img src={petDetails.avatar} alt="pet" className="w-full h-full object-cover" /> : '🐾'}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{petDetails.name}</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.species} - {petDetails.breed}</span>
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.weight}kg</span>
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.gender === 'MALE' ? 'Đực' : petDetails.gender === 'FEMALE' ? 'Cái' : 'Chưa rõ'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {petDetails.color && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Màu lông</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.color}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.favoriteFood && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thức ăn yêu thích</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.favoriteFood}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.hobbies && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thói quen / Sở thích</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.hobbies}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.walkTime && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thời gian vận động</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.walkTime}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {petDetails.allergies && (
+                                            <div className="p-4 bg-rose-50 dark:bg-rose-950/20 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                                                <p className="text-[10px] font-bold text-rose-500 uppercase mb-1 flex items-center gap-1"><AlertCircle size={12}/> Dị ứng</p>
+                                                <p className="font-bold text-rose-700 dark:text-rose-400">{petDetails.allergies}</p>
+                                            </div>
+                                        )}
+
+                                        {petDetails.healthNote && (
+                                            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                                <p className="text-[10px] font-bold text-amber-600 uppercase mb-1 flex items-center gap-1"><Syringe size={12}/> Ghi chú sức khỏe</p>
+                                                <p className="font-semibold text-amber-800 dark:text-amber-500">{petDetails.healthNote}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Right Column: Task/Service Details */}
+                                    <div className="space-y-4 lg:border-l lg:border-slate-100 lg:dark:border-slate-800 lg:pl-8">
+                                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                                            <CheckCircle2 className="text-emerald-500" size={18} /> Dịch vụ cần thực hiện
+                                        </h3>
+                                        
+                                        <div className="space-y-3">
+                                            {selectedTask.services && selectedTask.services.length > 0 ? (
+                                                selectedTask.services.map((svc: any, idx: number) => (
+                                                    <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                                <Sparkles size={18} className="text-primary" />
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-bold text-slate-800 dark:text-slate-200">{svc.serviceName}</span>
+                                                                <p className="text-xs text-slate-400 font-semibold mt-0.5">Mã dịch vụ: #{svc.serviceId}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-sm font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(svc.servicePrice || 0)}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                            <Sparkles size={18} className="text-primary" />
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold text-slate-800 dark:text-slate-200">{selectedTask.serviceName}</span>
+                                                            <p className="text-xs text-slate-400 font-semibold mt-0.5">Mã dịch vụ: #{selectedTask.serviceId}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTask.servicePrice || 0)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-6 p-5 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                                            <p className="text-xs font-bold text-blue-800 dark:text-blue-400 mb-2 uppercase">Ghi chú từ khách hàng</p>
+                                            <p className="text-sm text-blue-900 dark:text-blue-300">
+                                                {selectedTask.note || 'Không có ghi chú thêm.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}
