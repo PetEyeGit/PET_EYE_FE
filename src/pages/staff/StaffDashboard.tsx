@@ -558,6 +558,57 @@ export default function StaffDashboard() {
         return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
     });
 
+    // Group tasks by bookingId so UI shows one booking entry even if multiple service-items exist.
+    const groupedDisplayTasks = (() => {
+        const map = new Map<number, TaskResponse>();
+        const precedence = ['IN_PROGRESS','CONFIRMED','PENDING_PAYMENT','WAITING_REFUND','COMPLETED','CANCELLED','CANCEL_REQUESTED'];
+
+        for (const t of displayTasks) {
+            const bid = t.bookingId;
+            const existing = map.get(bid);
+            // normalize services array for this task
+            const svcArr: any[] = [];
+            if (t.services && t.services.length) svcArr.push(...t.services);
+            else if ((t as any).serviceId) svcArr.push({ serviceId: (t as any).serviceId, serviceName: (t as any).serviceName });
+
+            if (!existing) {
+                // clone task and ensure services present
+                const cloned: any = { ...t, services: svcArr };
+                map.set(bid, cloned);
+            } else {
+                // merge services (dedupe by serviceId)
+                const merged = [...(existing.services || []), ...svcArr];
+                const seen = new Map();
+                const deduped: any[] = [];
+                for (const s of merged) {
+                    if (!s) continue;
+                    const id = s.serviceId ?? `${s.serviceName}-${Math.random()}`;
+                    if (!seen.has(id)) { seen.set(id, true); deduped.push(s); }
+                }
+                existing.services = deduped;
+
+                // compute status precedence (choose highest priority)
+                const statuses = [existing.status, t.status];
+                let chosen = statuses[0];
+                for (const st of statuses) {
+                    if (precedence.indexOf(st) < precedence.indexOf(chosen)) chosen = st;
+                }
+                existing.status = chosen;
+
+                // keep earliest appointmentDatetime as representative (or latest?) - keep latest so urgent ones show first
+                try {
+                    if (new Date(t.appointmentDatetime).getTime() > new Date(existing.appointmentDatetime).getTime()) {
+                        existing.appointmentDatetime = t.appointmentDatetime;
+                    }
+                } catch (e) { }
+
+                map.set(bid, existing);
+            }
+        }
+
+        return Array.from(map.values());
+    })();
+
     const isMultiService = !!(selectedTask?.services && selectedTask.services.length > 0);
     const boardingServices = selectedTask?.services
         ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) === 'BOARDING')
@@ -621,7 +672,7 @@ export default function StaffDashboard() {
                             <p className="text-slate-500 font-medium">Không có công việc nào</p>
                         </div>
                     ) : (
-                        displayTasks.map(task => (
+                        groupedDisplayTasks.map(task => (
                             <div
                                 key={task.bookingId + "-" + (task.category || "GENERAL")}
                                 onClick={() => handleSelectTask(task)}

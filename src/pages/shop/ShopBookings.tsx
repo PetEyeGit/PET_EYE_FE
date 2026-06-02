@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, isToday, subMonths, addMonths } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { bookingService } from '../../services/booking.service';
+import { careLogService } from '../../services/care-log.service';
+import toast from 'react-hot-toast';
+import StaffAssignmentSelect from '../../components/StaffAssignmentSelect';
 import { 
     Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle, 
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
@@ -9,116 +17,17 @@ import {
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
-import { bookingService } from '../../services/booking.service';
-import { careLogService } from '../../services/care-log.service';
-import { BookingResponse } from '../../types/api';
-import toast from 'react-hot-toast';
-import { 
-    format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
-    eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths,
-    isToday, parseISO 
-} from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { motion, AnimatePresence } from 'motion/react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 
+// Constants
 const STATUS_CONFIG: Record<string, any> = {
-  PENDING_PAYMENT: { label: 'Chờ thanh toán', icon: AlertCircle, className: 'bg-slate-100 text-slate-500', color: 'bg-amber-500' },
-  WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', icon: Info, className: 'bg-purple-100 text-purple-700', color: 'bg-purple-500' },
-  CONFIRMED: { label: 'Chờ xử lý', icon: Clock, className: 'bg-orange-100 text-orange-700', color: 'bg-blue-500' },
-  IN_PROGRESS: { label: 'Đang làm', icon: Loader2, className: 'bg-blue-100 text-blue-700', color: 'bg-indigo-500' },
-  CANCEL_REQUESTED: { label: 'Yêu cầu hủy', icon: AlertCircle, className: 'bg-orange-100 text-orange-700', color: 'bg-orange-500' },
-  WAITING_REFUND: { label: 'Đợi hoàn tiền', icon: Clock, className: 'bg-pink-100 text-pink-700', color: 'bg-pink-500' },
-  COMPLETED: { label: 'Hoàn thành', icon: CheckCircle, className: 'bg-green-100 text-green-700', color: 'bg-emerald-500' },
-  CANCELLED: { label: 'Đã hủy', icon: XCircle, className: 'bg-red-100 text-red-700', color: 'bg-red-500' },
+    CONFIRMED: { label: 'Chờ xử lý', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
+    IN_PROGRESS: { label: 'Đang làm', color: 'text-blue-600 bg-blue-50 border-blue-100', icon: Clock },
+    COMPLETED: { label: 'Hoàn thành', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', icon: CheckCircle },
+    CANCELLED: { label: 'Đã hủy', color: 'text-rose-600 bg-rose-50 border-rose-100', icon: X },
+    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
+    WAITING_REFUND: { label: 'Chờ hoàn tiền', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
+    WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', icon: AlertCircle }
 };
-
-const CARE_LOG_TYPES = [
-  { id: 'FEEDING', label: 'Cho ăn', icon: Utensils, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20 dark:text-orange-400' },
-  { id: 'CLEANING', label: 'Vệ sinh', icon: Activity, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400' },
-  { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-400' },
-  { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400' },
-];
-
-interface StaffAssignmentSelectProps {
-    bookingId: number;
-    status: string;
-    currentStaffId: number | null;
-    staffList: StaffResponse[];
-    updatingId: number | null;
-    onAssign: (bookingId: number, staffId: number | 'unassign') => void;
-    selectClassName?: string;
-}
-
-function StaffAssignmentSelect({
-    bookingId,
-    status,
-    currentStaffId,
-    staffList,
-    updatingId,
-    onAssign,
-    selectClassName
-}: StaffAssignmentSelectProps) {
-    const { data: pendingRequest, isLoading } = useQuery({
-        queryKey: ['pendingStaffChangeRequest', bookingId],
-        queryFn: () => taskService.getPendingStaffChangeRequest(bookingId),
-        enabled: !!bookingId && (status === 'WAITING_SHOP_APPROVAL' || status === 'CONFIRMED' || status === 'IN_PROGRESS'),
-    });
-
-    const { data: changeHistory } = useQuery({
-        queryKey: ['staffChangeHistory', bookingId],
-        queryFn: () => taskService.getStaffChangeHistory(bookingId),
-        enabled: !!bookingId,
-    });
-
-    const acceptedRequests = changeHistory?.filter((req: any) => req.status === 'ACCEPTED') || [];
-    const hasAcceptedChange = acceptedRequests.length > 0;
-
-    const isPending = !!pendingRequest;
-    const isCompletedOrCancelled = status === 'COMPLETED' || status === 'CANCELLED' || status === 'WAITING_REFUND' || status === 'IN_PROGRESS';
-    const isDisabled = updatingId === bookingId || isCompletedOrCancelled || isPending || isLoading;
-    const selectClass = selectClassName || "w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[11px] font-bold text-[#1a2b4c] dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-900";
-
-    return (
-        <div className="space-y-1.5 w-full">
-            <div className="relative group/select">
-                <select 
-                    disabled={isDisabled}
-                    value={isPending ? (pendingRequest.proposedStaff?.id || '') : (currentStaffId || '')} 
-                    onChange={(e) => onAssign(bookingId, e.target.value === '' ? 'unassign' : Number(e.target.value))}
-                    className={selectClass}
-                >
-                    {isPending ? (
-                        <option value={pendingRequest.proposedStaff?.id}>
-                            {pendingRequest.proposedStaff?.fullName} (Đang chờ duyệt)
-                        </option>
-                    ) : (
-                        <>
-                            <option value="">Chưa giao việc</option>
-                            {staffList.map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}
-                        </>
-                    )}
-                </select>
-                <ChevronDown size={selectClassName ? 10 : 12} className={`absolute ${selectClassName ? 'right-2.5' : 'right-3'} top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none group-hover/select:translate-y-[-40%] transition-transform`} />
-            </div>
-            
-            {isPending && (
-                <div className="flex items-center gap-1.5 text-[9px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30 leading-normal">
-                    <Clock size={10} className="animate-pulse shrink-0" />
-                    <span>Đang chờ khách duyệt đổi từ <strong>{pendingRequest.oldStaff?.fullName || 'Chưa giao'}</strong> sang <strong>{pendingRequest.proposedStaff?.fullName}</strong></span>
-                </div>
-            )}
-
-            {!isPending && hasAcceptedChange && (
-                <div className="flex items-center gap-1.5 text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 leading-normal">
-                    <CheckCircle size={10} className="shrink-0 text-emerald-500" />
-                    <span>Đã đổi: {acceptedRequests.map((r: any) => `${r.oldStaff?.fullName || 'Chưa giao'} ➔ ${r.proposedStaff?.fullName}`).join(', ')}</span>
-                </div>
-            )}
-        </div>
-    );
-}
-
 
 interface BookingListItemProps {
     booking: any;
@@ -129,14 +38,13 @@ interface BookingListItemProps {
     setSelectedBooking: (booking: any) => void;
 }
 
-function BookingListItem({
-    booking,
-    staffList,
-    updatingId,
-    onAssign,
-    handleUpdateStatus,
-    setSelectedBooking
-}: BookingListItemProps) {
+const CARE_LOG_TYPES = [
+    { id: 'FEEDING', label: 'Cho ăn', icon: Utensils, color: 'text-orange-500 bg-orange-50' },
+    { id: 'CLEANING', label: 'Vệ sinh', icon: Activity, color: 'text-blue-500 bg-blue-50' },
+    { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
+    { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
+];
+function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdateStatus, setSelectedBooking }: BookingListItemProps) {
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
         queryFn: () => taskService.getPendingStaffChangeRequest(booking.bookingId),
@@ -146,28 +54,24 @@ function BookingListItem({
     const isPending = !!pendingRequest;
     const cfg = STATUS_CONFIG[booking.status] || STATUS_CONFIG.CONFIRMED;
     const StatusIcon = cfg.icon;
+    const totalServices = booking.services?.length ?? (booking.serviceId ? 1 : 0);
+    const completedServices = (booking.completedServiceIds && booking.completedServiceIds.length) || (booking.services ? booking.services.filter((s: any) => s.completedAt).length : 0);
 
     return (
-        <div 
-            className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 group relative"
-        >
+        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 group relative">
             <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-5">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-[#1a2b4c] dark:text-indigo-400 font-black text-lg">
-                            #{booking.bookingId.toString().slice(-3)}
-                        </div>
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-[#1a2b4c] dark:text-indigo-400 font-black text-lg">#{(booking.bookingId || '').toString().slice(-3)}</div>
                         <div>
-                            <div className="flex items-center gap-2 mb-0.5">
+                            <div className="flex items-center gap-2 mb-1">
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white">Đơn hàng #{booking.bookingId}</h3>
                                 <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cfg.className}`}>
                                     <StatusIcon size={10} className={booking.status === 'IN_PROGRESS' ? 'animate-spin' : ''} />
                                     {cfg.label}
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-500 font-bold flex items-center gap-2">
-                                {booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}
-                            </p>
+                            <p className="text-xs text-slate-500 font-bold">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
                         </div>
                     </div>
 
@@ -184,9 +88,7 @@ function BookingListItem({
                                 <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><Clock size={14} /></div>
                                 <div>
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Thời gian</p>
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                        {format(parseISO(booking.appointmentDatetime), "eee, dd/MM - HH:mm", { locale: vi })}
-                                    </p>
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{format(parseISO(booking.appointmentDatetime), "eee, dd/MM - HH:mm", { locale: vi })}</p>
                                 </div>
                             </div>
                         </div>
@@ -203,14 +105,7 @@ function BookingListItem({
                                 <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400"><UserCheck size={14} /></div>
                                 <div className="flex-1">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Phụ trách</p>
-                                    <StaffAssignmentSelect 
-                                        bookingId={booking.bookingId}
-                                        status={booking.status}
-                                        currentStaffId={booking.staffId}
-                                        staffList={staffList}
-                                        updatingId={updatingId}
-                                        onAssign={onAssign}
-                                    />
+                                    <StaffAssignmentSelect bookingId={booking.bookingId} status={booking.status} currentStaffId={booking.staffId} staffList={staffList} updatingId={updatingId} onAssign={onAssign} />
                                 </div>
                             </div>
                         </div>
@@ -218,33 +113,19 @@ function BookingListItem({
                 </div>
 
                 <div className="lg:w-48 flex flex-col justify-center gap-2">
-                    <button
-                        onClick={() => setSelectedBooking(booking)}
-                        className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10"
-                    >
-                        <Info size={12} />
-                        Xem chi tiết
+                    <button onClick={() => setSelectedBooking(booking)} className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10">
+                        <Info size={12} /> Xem chi tiết
                     </button>
 
                     {booking.status === 'WAITING_SHOP_APPROVAL' && (
                         <div className="flex flex-col gap-2">
                             {!isPending && (
-                                <button
-                                    disabled={updatingId === booking.bookingId}
-                                    onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')}
-                                    className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
-                                >
-                                    {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                    Duyệt đơn
+                                <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')} className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                                    {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
-                            <button
-                                disabled={updatingId === booking.bookingId}
-                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
-                                className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-                            >
-                                <XCircle size={12} />
-                                Từ chối
+                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2">
+                                <XCircle size={12} /> Từ chối
                             </button>
                         </div>
                     )}
@@ -255,18 +136,12 @@ function BookingListItem({
                                 <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 mb-2">Lý do hủy</p>
                                 <p className="text-xs font-bold text-slate-700 dark:text-orange-200">{booking.cancellationReason || 'Khách hàng yêu cầu hủy lịch'}</p>
                             </div>
-                            <button
-                                disabled={updatingId === booking.bookingId}
-                                onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')}
-                                className="w-full py-3 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-2"
-                            >
-                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                Duyệt hủy lịch
+                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className="w-full py-3 bg-red-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center justify-center gap-2">
+                                {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt hủy lịch
                             </button>
                         </div>
                     )}
 
-                    {/* Removed CONFIRMED and IN_PROGRESS actions as requested */}
                     {booking.status === 'COMPLETED' && (
                         <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
                             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
@@ -429,9 +304,64 @@ export default function ShopBookings() {
         const matchesSearch =
             b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            b.bookingId.toString().includes(searchTerm);
+            (b.bookingId || (b as any).id)?.toString().includes(searchTerm);
         return matchesFilter && matchesSearch;
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Group filteredList by bookingId to avoid duplicate booking cards when multiple service-items exist
+    const groupedFilteredList = (() => {
+        const map = new Map<number, any>();
+        const precedence = ['IN_PROGRESS','CONFIRMED','PENDING_PAYMENT','WAITING_REFUND','COMPLETED','CANCELLED','CANCEL_REQUESTED'];
+
+        for (const item of filteredList) {
+            const bid = item.bookingId || (item as any).id;
+            const existing = map.get(bid);
+
+            const svcArr: any[] = [];
+            if (item.services && item.services.length) svcArr.push(...item.services);
+            else if (item.serviceId) svcArr.push({ serviceId: item.serviceId, serviceName: item.serviceName, servicePrice: item.servicePrice });
+
+            if (!existing) {
+                const cloned = { ...item, bookingId: bid, services: svcArr, completedServiceIds: item.completedServiceIds || [] };
+                map.set(bid, cloned);
+            } else {
+                // merge services
+                const merged = [...(existing.services || []), ...svcArr];
+                const seen = new Map();
+                const deduped: any[] = [];
+                for (const s of merged) {
+                    if (!s) continue;
+                    const id = s.serviceId ?? `${s.serviceName}-${s.servicePrice ?? ''}`;
+                    if (!seen.has(id)) { seen.set(id, true); deduped.push(s); }
+                }
+                existing.services = deduped;
+
+                // compute status with precedence
+                const statuses = [existing.status, item.status];
+                let chosen = statuses[0];
+                for (const st of statuses) {
+                    if (precedence.indexOf(st) < precedence.indexOf(chosen)) chosen = st;
+                }
+                existing.status = chosen;
+
+                // representative appointmentDatetime: keep the latest
+                try {
+                    if (new Date(item.appointmentDatetime).getTime() > new Date(existing.appointmentDatetime).getTime()) {
+                        existing.appointmentDatetime = item.appointmentDatetime;
+                    }
+                } catch (e) {}
+
+                // merge completedServiceIds
+                const existingCompleted = new Set<number>((existing.completedServiceIds) || []);
+                (item.completedServiceIds || []).forEach((id: number) => existingCompleted.add(id));
+                existing.completedServiceIds = Array.from(existingCompleted);
+
+                map.set(bid, existing);
+            }
+        }
+
+        return Array.from(map.values());
+    })();
 
     // Calendar Helpers
     const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
@@ -517,7 +447,7 @@ export default function ShopBookings() {
                                         <Loader2 size={40} className="animate-spin text-[#1a2b4c]" />
                                         <p className="text-slate-400 font-bold">Đang đồng bộ dữ liệu...</p>
                                     </div>
-                                ) : filteredList.map((booking) => (
+                                ) : groupedFilteredList.map((booking) => (
                                     <BookingListItem 
                                         key={booking.bookingId}
                                         booking={booking}
