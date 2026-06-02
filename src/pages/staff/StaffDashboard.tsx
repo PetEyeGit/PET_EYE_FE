@@ -133,6 +133,14 @@ export default function StaffDashboard() {
     const [isNoShowModalOpen, setIsNoShowModalOpen] = useState(false);
     const [isNoShowProcessing, setIsNoShowProcessing] = useState(false);
 
+    // Clinic sub-service completion modal
+    const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
+    const [pendingClinicServiceId, setPendingClinicServiceId] = useState<number | null>(null);
+    const [clinicMedicalForm, setClinicMedicalForm] = useState<PetMedicalRecordRequest>({
+        diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString()
+    });
+    const [submittingClinicMedical, setSubmittingClinicMedical] = useState(false);
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -382,6 +390,50 @@ export default function StaffDashboard() {
         }
     };
 
+    const handleCompleteServiceItem = async (bookingId: number, serviceId: number) => {
+        setUpdatingId(bookingId);
+        try {
+            const updated = await taskService.completeServiceItem(bookingId, serviceId);
+            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
+            if (selectedTask?.bookingId === bookingId) {
+                setSelectedTask(updated);
+            }
+            toast.success('Đã đánh dấu hoàn thành dịch vụ!');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Không thể hoàn thành dịch vụ');
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const handleOpenClinicModal = (serviceId: number) => {
+        setPendingClinicServiceId(serviceId);
+        setClinicMedicalForm({ diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString() });
+        setIsMedicalModalOpen(true);
+    };
+
+    const handleSubmitClinicMedical = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedTask || !pendingClinicServiceId || !clinicMedicalForm.diagnosis) return;
+
+        setSubmittingClinicMedical(true);
+        try {
+            // Step 1: Save medical record
+            await petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
+            // Step 2: Mark sub-service as complete
+            const updated = await taskService.completeServiceItem(selectedTask.bookingId, pendingClinicServiceId);
+            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
+            setSelectedTask(updated);
+            toast.success('Đã lưu hồ sơ y tế và hoàn thành dịch vụ khám!');
+            setIsMedicalModalOpen(false);
+            setPendingClinicServiceId(null);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Không thể lưu hồ sơ y tế');
+        } finally {
+            setSubmittingClinicMedical(false);
+        }
+    };
+
     const handleClaimTask = async (bookingId: number) => {
         setUpdatingId(bookingId);
         try {
@@ -451,7 +503,7 @@ export default function StaffDashboard() {
 
         setSubmittingMedical(true);
         try {
-            await petMedicalService.addMedicalRecord(selectedTask.petId, medicalForm);
+            await petMedicalService.addMedicalRecord(selectedTask.bookingId, medicalForm);
             toast.success('Đã lưu hồ sơ y tế thành công!');
             setActiveWorkspaceTab('info');
         } catch {
@@ -482,6 +534,18 @@ export default function StaffDashboard() {
         if (orderA !== orderB) return orderA - orderB;
         return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
     });
+
+    const isMultiService = !!(selectedTask?.services && selectedTask.services.length > 0);
+    const boardingServices = selectedTask?.services
+        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) === 'BOARDING')
+        : [];
+    const nonBoardingServices = selectedTask?.services
+        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) !== 'BOARDING')
+        : [];
+    const incompleteNonBoardingServices = nonBoardingServices.filter(
+        (s: any) => !(selectedTask?.completedServiceIds || []).includes(s.serviceId)
+    );
+    const hasIncompleteNonBoarding = selectedTask?.status === 'IN_PROGRESS' && incompleteNonBoardingServices.length > 0;
 
     return (
         <div className="h-[calc(100vh-4rem)] bg-[#f8fafc] dark:bg-background-dark flex overflow-hidden">
@@ -601,10 +665,10 @@ export default function StaffDashboard() {
                                                         <span>{petDetails.weight}kg</span>
                                                         <span className="w-1 h-1 bg-slate-300 rounded-full" />
                                                         <span>{petDetails.gender === 'MALE' ? 'Đực' : petDetails.gender === 'FEMALE' ? 'Cái' : 'Chưa rõ'}</span>
-                                                        {(petDetails.birthDate || petDetails.dob) && (
+                                                        {petDetails.dob && (
                                                             <>
                                                                 <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                                                                <span>{new Date().getFullYear() - new Date(petDetails.birthDate || petDetails.dob).getFullYear()} tuổi</span>
+                                                                <span>{new Date().getFullYear() - new Date(petDetails.dob).getFullYear()} tuổi</span>
                                                             </>
                                                         )}
                                                     </span>
@@ -692,26 +756,38 @@ export default function StaffDashboard() {
                                                         }
 
                                                         return (
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (isBeforeCheckOut) {
-                                                                        setCheckoutType('EARLY');
-                                                                        setCheckoutReason('');
-                                                                        setIsCheckoutModalOpen(true);
-                                                                    } else if (isAfterCheckOut) {
-                                                                        setCheckoutType('LATE');
-                                                                        setCheckoutReason('');
-                                                                        setIsCheckoutModalOpen(true);
-                                                                    } else {
-                                                                        handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
-                                                                    }
-                                                                }}
-                                                                disabled={updatingId === selectedTask.bookingId}
-                                                                className="w-full py-3 bg-emerald-500 hover:bg-emerald-650 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                                                            >
-                                                                {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                                                {isBoarding ? 'Kết thúc lưu trú' : 'Hoàn thành'}
-                                                            </button>
+                                                            <div className="space-y-2">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (hasIncompleteNonBoarding) return;
+                                                                        if (isBeforeCheckOut) {
+                                                                            setCheckoutType('EARLY');
+                                                                            setCheckoutReason('');
+                                                                            setIsCheckoutModalOpen(true);
+                                                                        } else if (isAfterCheckOut) {
+                                                                            setCheckoutType('LATE');
+                                                                            setCheckoutReason('');
+                                                                            setIsCheckoutModalOpen(true);
+                                                                        } else {
+                                                                            handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
+                                                                        }
+                                                                    }}
+                                                                    disabled={updatingId === selectedTask.bookingId || hasIncompleteNonBoarding}
+                                                                    className={`w-full py-3 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 ${
+                                                                        hasIncompleteNonBoarding
+                                                                            ? 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none'
+                                                                            : 'bg-emerald-500 hover:bg-emerald-650 text-white shadow-emerald-500/20 hover:scale-[1.02]'
+                                                                    }`}
+                                                                >
+                                                                    {updatingId === selectedTask.bookingId ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                                                    {isBoarding ? 'Kết thúc lưu trú' : 'Hoàn thành'}
+                                                                </button>
+                                                                {hasIncompleteNonBoarding && (
+                                                                    <p className="text-[10px] text-rose-500 font-bold text-center flex items-center justify-center gap-1 mt-1">
+                                                                        ⚠️ Hoàn thành tất cả dịch vụ khác trước
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         );
                                                     })()
                                                 )}
@@ -732,36 +808,268 @@ export default function StaffDashboard() {
                             </div>
 
                             {/* Workspace Tabs */}
-                            {activeTab === 'mine' && selectedTask.status !== 'CONFIRMED' && (
+                            {selectedTask && (
                                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                    <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
-                                        <button
-                                            onClick={() => setActiveWorkspaceTab('info')}
-                                            className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                                        >
-                                            Thông tin chung
-                                        </button>
-                                        {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
+                                    {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
+                                        <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
+                                            <button
+                                                onClick={() => setActiveWorkspaceTab('info')}
+                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                            >
+                                                Thông tin chung
+                                            </button>
                                             <button
                                                 onClick={() => setActiveWorkspaceTab('logs')}
                                                 className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
                                                 Nhật ký chăm sóc
                                             </button>
-                                        )}
-                                        {guessCategory(selectedTask.serviceName) === 'CLINIC' && (selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
-                                            <button
-                                                onClick={() => setActiveWorkspaceTab('medical')}
-                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                                            >
-                                                Hồ sơ y tế
-                                            </button>
-                                        )}
-                                    </div>
+                                            {guessCategory(selectedTask.serviceName) === 'CLINIC' && (
+                                                <button
+                                                    onClick={() => setActiveWorkspaceTab('medical')}
+                                                    className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                                >
+                                                    Hồ sơ y tế
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="p-4 lg:p-6">
                                         {activeWorkspaceTab === 'info' && (
                                             <div className="space-y-6">
+                                                {/* Danh sách dịch vụ cần làm */}
+                                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                                                        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                                            <ClipboardList size={16} className="text-primary" />
+                                                            Dịch vụ cần thực hiện
+                                                        </h3>
+                                                    </div>
+                                                    <div className="p-5 space-y-6">
+                                                        {isMultiService ? (
+                                                            <>
+                                                                {/* Dịch vụ lưu trú */}
+                                                                {boardingServices.length > 0 && (
+                                                                    <div className="space-y-3">
+                                                                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-405">Dịch vụ lưu trú</h4>
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                            {boardingServices.map((svc: any, idx: number) => (
+                                                                                <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50 hover:border-primary/20 transition-all">
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                                                            <Sparkles size={16} className="text-primary animate-pulse" />
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{svc.serviceName}</span>
+                                                                                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Dịch vụ #{svc.serviceId}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <span className="text-xs font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(svc.servicePrice || 0)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+
+                                                                        {/* Nhiệm vụ 1: Cấu hình camera */}
+                                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) && (
+                                                                            <div className="mt-4 p-5 bg-indigo-50/50 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <h5 className="font-bold text-xs uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                                                                                        <Camera size={14} />
+                                                                                        Nhiệm vụ 1: Cấu hình camera
+                                                                                    </h5>
+                                                                                    {bookingDetails?.cameraConfiguredAt && (
+                                                                                        <span className="text-[10px] bg-emerald-105 text-emerald-800 px-2 py-1 rounded-md font-bold">
+                                                                                            Đã cấu hình
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                
+                                                                                {/* Camera Player & Controls inside Nhiệm vụ 1 */}
+                                                                                <div className="w-full bg-slate-900 rounded-2xl overflow-hidden relative flex items-center justify-center min-h-[200px] border border-slate-800 shadow-inner">
+                                                                                    {dashboardPreviewUrl ? (
+                                                                                        isCheckingStream ? (
+                                                                                            <div className="text-center p-6 text-slate-400 space-y-3 z-10">
+                                                                                                <Loader2 size={32} className="mx-auto text-blue-500 animate-spin" />
+                                                                                                <p className="text-xs font-semibold">Đang kết nối tới camera...</p>
+                                                                                            </div>
+                                                                                        ) : streamError ? (
+                                                                                            <div className="text-center p-6 text-slate-400 space-y-3 z-10">
+                                                                                                <AlertCircle size={32} className="mx-auto text-slate-500" />
+                                                                                                <p className="text-xs">Không thể tải luồng video.</p>
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={() => {
+                                                                                                        setStreamError(false);
+                                                                                                        setIsCheckingStream(true);
+                                                                                                        checkStreamReady(dashboardPreviewUrl).then(ready => {
+                                                                                                            setIsCheckingStream(false);
+                                                                                                            if (ready) setIsStreamReady(true);
+                                                                                                            else setStreamError(true);
+                                                                                                        });
+                                                                                                    }}
+                                                                                                    className="px-2 py-1 bg-slate-700 text-white rounded-lg text-[10px] hover:bg-slate-600 transition-colors"
+                                                                                                >
+                                                                                                    Thử lại
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        ) : isStreamReady ? (
+                                                                                            <HLSPlayer
+                                                                                                streamUrl={dashboardPreviewUrl}
+                                                                                                isMuted={isMuted}
+                                                                                                onError={() => setStreamError(true)}
+                                                                                            />
+                                                                                        ) : null
+                                                                                    ) : (
+                                                                                        <div className="flex flex-col items-center justify-center text-slate-600 gap-2">
+                                                                                            <Camera size={36} className="opacity-25 text-slate-500" />
+                                                                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Chưa cấu hình RTSP</p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                {selectedTask.status === 'IN_PROGRESS' && (
+                                                                                    <div className="flex gap-2 flex-wrap">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={workspaceRtspInput}
+                                                                                            onChange={e => setWorkspaceRtspInput(e.target.value)}
+                                                                                            placeholder="Nhập đường dẫn RTSP..."
+                                                                                            className="flex-1 min-w-[180px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 transition-all shadow-inner text-slate-900 dark:text-white"
+                                                                                        />
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={handleConfigureDashboardPreview}
+                                                                                            disabled={!workspaceRtspInput.trim() || isCheckingStream}
+                                                                                            className="px-3 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-50 text-xs"
+                                                                                        >
+                                                                                            {isCheckingStream ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+                                                                                            Kiểm tra
+                                                                                        </button>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={handleSaveDashboardConfig}
+                                                                                            disabled={updatingId === selectedTask.bookingId || !workspaceRtspInput.trim() || workspaceRtspInput === selectedTask.rtspLink}
+                                                                                            className="px-3 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap shadow-md shadow-blue-500/20 disabled:opacity-50 text-xs"
+                                                                                        >
+                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                                                                            Lưu cấu hình
+                                                                                        </button>
+                                                                                        {bookingDetails?.cameraStreamUrl && (
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={handleDeleteCamera}
+                                                                                                disabled={isStoppingCamera}
+                                                                                                className="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap disabled:opacity-50 text-xs"
+                                                                                            >
+                                                                                                {isStoppingCamera ? <Loader2 size={12} className="animate-spin" /> : <VideoOff size={12} />}
+                                                                                                Dừng Camera
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Dịch vụ khác */}
+                                                                {nonBoardingServices.length > 0 && (
+                                                                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                                                                        <h4 className="font-bold text-xs uppercase tracking-wider text-slate-405">Dịch vụ khác</h4>
+                                                                        
+                                                                        {/* Nhiệm vụ 2: Hoàn thành dịch vụ khác */}
+                                                                        <div className="p-5 bg-emerald-50/30 dark:bg-emerald-950/5 rounded-2xl border border-emerald-100/55 dark:border-emerald-900/20 space-y-4">
+                                                                            <h5 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-450 flex items-center gap-2">
+                                                                                <ClipboardList size={14} />
+                                                                                Nhiệm vụ 2: Hoàn thành dịch vụ khác
+                                                                            </h5>
+                                                                            
+                                                                            <div className="space-y-3">
+                                                                                {nonBoardingServices.map((svc: any, idx: number) => {
+                                                                                    const isCompleted = (selectedTask.completedServiceIds || []).includes(svc.serviceId);
+                                                                                    return (
+                                                                                        <div key={idx} className="p-4 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-700 shadow-sm">
+                                                                                            <div className="flex items-center gap-3">
+                                                                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                                                                    {isCompleted ? '✓' : idx + 1}
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <span className={`text-sm font-bold ${isCompleted ? 'line-through text-slate-400' : 'text-slate-850 dark:text-slate-200'}`}>
+                                                                                                        {svc.serviceName}
+                                                                                                    </span>
+                                                                                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Mã dịch vụ: #{svc.serviceId}</p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-3">
+                                                                                                <span className="text-xs font-black text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
+                                                                                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(svc.servicePrice || 0)}
+                                                                                                </span>
+                                                                                                {selectedTask.status === 'IN_PROGRESS' && (
+                                                                                                    isCompleted ? (
+                                                                                                        <div className="flex flex-col items-end gap-1">
+                                                                                                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/50">
+                                                                                                                <CheckCircle2 size={12} /> Đã xong
+                                                                                                            </span>
+                                                                                                            {svc.completedAt && (
+                                                                                                                <span className="text-[10px] text-slate-400 font-semibold">
+                                                                                                                    {format(parseISO(svc.completedAt), 'HH:mm - dd/MM', { locale: vi })}
+                                                                                                                </span>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    ) : (
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            onClick={() => {
+                                                                                                                const cat = guessCategory(svc.serviceName);
+                                                                                                                if (cat === 'CLINIC') {
+                                                                                                                    handleOpenClinicModal(svc.serviceId);
+                                                                                                                } else {
+                                                                                                                    handleCompleteServiceItem(selectedTask.bookingId, svc.serviceId);
+                                                                                                                }
+                                                                                                            }}
+                                                                                                            disabled={updatingId === selectedTask.bookingId}
+                                                                                                            className={`px-3 py-1.5 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 ${
+                                                                                                                guessCategory(svc.serviceName) === 'CLINIC'
+                                                                                                                    ? 'bg-violet-500 hover:bg-violet-600 shadow-violet-500/10'
+                                                                                                                    : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10'
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : guessCategory(svc.serviceName) === 'CLINIC' ? '📋 Nhập kết quả' : 'Hoàn thành'}
+                                                                                                        </button>
+                                                                                                    )
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            // Single service fallback
+                                                            <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50 hover:border-primary/20 transition-all">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                                        <Sparkles size={16} className="text-primary" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedTask.serviceName}</span>
+                                                                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Dịch vụ #{selectedTask.serviceId}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-xs font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTask.servicePrice || 0)}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
                                                 {/* Pet Profile Details */}
                                                 {petDetails && (
                                                     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -927,7 +1235,7 @@ export default function StaffDashboard() {
                                                             </div>
                                                             <p className="font-semibold text-slate-800">{selectedTask.roomType || 'Thường'}</p>
                                                         </div>
-                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || guessCategory(selectedTask.serviceName) === 'BOARDING') && (
+                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || guessCategory(selectedTask.serviceName) === 'BOARDING') && !isMultiService && (
                                                             <>
                                                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                                     <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold text-sm">
@@ -1620,6 +1928,135 @@ export default function StaffDashboard() {
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Nhập hồ sơ y tế - Dịch vụ khám */}
+            <AnimatePresence>
+                {isMedicalModalOpen && selectedTask && (
+                    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                            onClick={() => !submittingClinicMedical && setIsMedicalModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+                        >
+                            {/* Header */}
+                            <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                                    <Syringe className="text-violet-600 dark:text-violet-400" size={22} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nhập kết quả khám bệnh</h3>
+                                    <p className="text-sm text-slate-500 mt-0.5">
+                                        Bé <strong>{selectedTask.petName}</strong> — Lưu hồ sơ y tế trước khi hoàn thành dịch vụ
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsMedicalModalOpen(false)}
+                                    disabled={submittingClinicMedical}
+                                    className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-slate-100 disabled:opacity-50"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Form */}
+                            <form onSubmit={handleSubmitClinicMedical} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                {/* Chẩn đoán */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Chẩn đoán <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={clinicMedicalForm.diagnosis}
+                                        onChange={e => setClinicMedicalForm({ ...clinicMedicalForm, diagnosis: e.target.value })}
+                                        placeholder="Kết luận chẩn đoán của bác sĩ..."
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:bg-white dark:focus:bg-slate-750 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all"
+                                    />
+                                </div>
+
+                                {/* Triệu chứng */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Triệu chứng lâm sàng</label>
+                                    <textarea
+                                        value={clinicMedicalForm.symptoms}
+                                        onChange={e => setClinicMedicalForm({ ...clinicMedicalForm, symptoms: e.target.value })}
+                                        placeholder="Mô tả các triệu chứng quan sát được..."
+                                        rows={3}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all resize-none"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Đơn thuốc */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn thuốc / Thuốc sử dụng</label>
+                                        <textarea
+                                            value={clinicMedicalForm.prescription}
+                                            onChange={e => setClinicMedicalForm({ ...clinicMedicalForm, prescription: e.target.value })}
+                                            placeholder="Liệt kê các loại thuốc đã dùng, liều lượng..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Hướng điều trị */}
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Hướng điều trị</label>
+                                        <textarea
+                                            value={clinicMedicalForm.treatment}
+                                            onChange={e => setClinicMedicalForm({ ...clinicMedicalForm, treatment: e.target.value })}
+                                            placeholder="Phương pháp và lộ trình điều trị..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all resize-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Ghi chú thêm */}
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">Ghi chú thêm</label>
+                                    <textarea
+                                        value={clinicMedicalForm.notes}
+                                        onChange={e => setClinicMedicalForm({ ...clinicMedicalForm, notes: e.target.value })}
+                                        placeholder="Các lưu ý đặc biệt, dặn dò cho chủ nuôi..."
+                                        rows={2}
+                                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:bg-white focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all resize-none"
+                                    />
+                                </div>
+
+                                {/* Footer buttons */}
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsMedicalModalOpen(false)}
+                                        disabled={submittingClinicMedical}
+                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                                    >
+                                        Huỷ bỏ
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={submittingClinicMedical || !clinicMedicalForm.diagnosis.trim()}
+                                        className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 disabled:opacity-50"
+                                    >
+                                        {submittingClinicMedical ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                        {submittingClinicMedical ? 'Đang lưu...' : 'Lưu & Hoàn thành dịch vụ'}
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}

@@ -108,7 +108,7 @@ export default function StaffMessages() {
               </div>
               <div className="flex-1 text-left">
                 <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Chủ cửa hàng</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{myShop.name}</p>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">{myShop.shopName}</p>
               </div>
             </button>
           )}

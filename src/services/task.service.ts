@@ -35,10 +35,14 @@ export interface TaskResponse {
   accountHolder?: string;
   createdAt: string;
   updatedAt?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  completedServiceIds?: number[];
   services?: {
     serviceId: number;
     serviceName: string;
     servicePrice: number;
+    completedAt?: string;
   }[];
 }
 
@@ -132,6 +136,14 @@ export const taskService = {
   cancelNoShow: async (bookingId: number): Promise<TaskResponse> => {
     const response = await apiClient.put<ApiResponse<TaskResponse>>(
       `/tasks/${bookingId}/no-show`
+    );
+    return response.data.result!;
+  },
+
+  /** PUT /tasks/:bookingId/complete-service/:serviceId — Staff/Owner: complete sub-service item */
+  completeServiceItem: async (bookingId: number, serviceId: number): Promise<TaskResponse> => {
+    const response = await apiClient.put<ApiResponse<TaskResponse>>(
+      `/tasks/${bookingId}/complete-service/${serviceId}`
     );
     return response.data.result!;
   },
