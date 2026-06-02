@@ -506,7 +506,8 @@ export default function HomePage() {
                                             />
                                             <div className="absolute top-6 left-6">
                                                 <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg border border-white/20 ${service.category?.toUpperCase() === 'CLINIC' ? 'bg-blue-500/80 text-white' :
-                                                    (service.category?.toUpperCase() === 'SPA' || service.category?.toUpperCase() === 'GROOMING') ? 'bg-pink-500/80 text-white' :
+                                                    service.category?.toUpperCase() === 'SPA' ? 'bg-pink-500/80 text-white' :
+                                                    service.category?.toUpperCase() === 'GROOMING' ? 'bg-purple-500/80 text-white' :
                                                         'bg-orange-500/80 text-white'
                                                     }`}>
                                                     {service.category}

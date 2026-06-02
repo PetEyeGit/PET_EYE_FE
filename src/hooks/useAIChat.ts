@@ -34,6 +34,7 @@ export interface UseAIChatOptions {
 
 export interface UseAIChatReturn {
   messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isLoading: boolean;
   sendMessage: (text: string) => Promise<void>;
   clearHistory: () => Promise<void>;
@@ -140,7 +141,7 @@ export function useAIChat({ agentType, welcomeMessage }: UseAIChatOptions): UseA
     setHistoryLoaded(false);
   }, [agentType, welcomeMessage]);
 
-  return { messages, isLoading, sendMessage, clearHistory, historyLoaded };
+  return { messages, setMessages, isLoading, sendMessage, clearHistory, historyLoaded };
 }
 
 function safeParseJson(json: string): unknown {

@@ -70,6 +70,11 @@ export interface AdminUserResponse {
   roles: { name: string }[];
   isActive?: boolean;
   active?: boolean; // field thực tế BE trả về
+  currentTier?: {
+    id: number;
+    name: string;
+    requiredSpending: number;
+  };
 }
 
 export interface PagedResponse<T> {

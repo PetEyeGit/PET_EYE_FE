@@ -23,10 +23,17 @@ export default function Legal() {
 
       <section>
         <h3 className="text-2xl font-bold text-slate-900 mb-4">2. Dành cho Người dùng (Khách hàng)</h3>
-        <ul className="list-disc pl-6 space-y-2">
+        <ul className="list-disc pl-6 space-y-3">
           <li>Bạn cam kết cung cấp thông tin chính xác khi đặt lịch hẹn hoặc sử dụng dịch vụ trên nền tảng.</li>
           <li>PetEye không chịu trách nhiệm trực tiếp về chất lượng dịch vụ của từng cơ sở thú y, tuy nhiên chúng tôi sẽ hỗ trợ giải quyết khiếu nại dựa trên bằng chứng minh bạch (ví dụ: qua camera).</li>
           <li>Việc hủy lịch cần tuân thủ quy định thời gian của từng cơ sở để tránh phí phạt.</li>
+          <li>
+            <strong>Quy định về việc đi trễ:</strong> Nếu khách hàng đến trễ quá 15 phút so với giờ hẹn, lịch đặt sẽ tự động bị hủy bởi nhân viên cơ sở. Trong trường hợp này:
+            <ul className="list-[circle] pl-6 mt-2 space-y-1 text-sm">
+              <li><strong>Đối với đơn thanh toán trả trước (100%):</strong> Khách hàng sẽ bị trừ phí hoa hồng của nền tảng và 50% phí đền bù cho Shop dựa trên giá trị đơn hàng, số tiền còn lại sẽ được hoàn trả.</li>
+              <li><strong>Đối với đơn thanh toán tại quầy:</strong> Khách hàng sẽ bị trừ/thu phí hoa hồng của nền tảng. Về phần tiền đền bù thiệt hại cho lịch hẹn trống, khách hàng sẽ tự thỏa thuận và thanh toán trực tiếp với Shop.</li>
+            </ul>
+          </li>
         </ul>
       </section>
 

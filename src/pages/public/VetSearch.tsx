@@ -157,7 +157,7 @@ export default function VetSearch() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative inline-flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[24px] mb-10 overflow-hidden"
+          className="relative inline-flex bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-1.5 rounded-[24px] mb-10 overflow-hidden shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50"
         >
           {SHOP_TYPE_TABS.map((tab) => {
             const isActive = activeService === tab.value;

@@ -108,6 +108,7 @@ export default function AdminMembers() {
                   <th className="px-6 py-3 text-left hidden md:table-cell">Email</th>
                   <th className="px-6 py-3 text-left hidden lg:table-cell">Số điện thoại</th>
                   <th className="px-6 py-3 text-left">Vai trò</th>
+                  <th className="px-6 py-3 text-left">Hạng</th>
                   <th className="px-6 py-3 text-left">Trạng thái</th>
                   <th className="px-6 py-3 text-right">Thao tác</th>
                 </tr>
@@ -136,6 +137,15 @@ export default function AdminMembers() {
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLOR[role] ?? ROLE_COLOR.USER}`}>
                           {ROLE_LABEL[role] ?? role}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {m.currentTier ? (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                            {m.currentTier.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -192,6 +202,11 @@ export default function AdminMembers() {
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ROLE_COLOR[detail.roles?.[0]?.name ?? 'USER']}`}>
                       {ROLE_LABEL[detail.roles?.[0]?.name ?? 'USER']}
                     </span>
+                    {detail.currentTier && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                        Hạng {detail.currentTier.name}
+                      </span>
+                    )}
                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${detail.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {detail.isActive !== false ? 'Hoạt động' : 'Đã khóa'}
                     </span>
