@@ -142,6 +142,9 @@ export default function StaffDashboard() {
     const [clinicMedicalForm, setClinicMedicalForm] = useState<PetMedicalRecordRequest>({
         diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString()
     });
+    const [vaccinationForm, setVaccinationForm] = useState({
+        hasVaccination: false, name: '', drug: '', date: new Date().toISOString(), status: 'done'
+    });
     const [submittingClinicMedical, setSubmittingClinicMedical] = useState(false);
 
     const loadData = async () => {
@@ -374,7 +377,7 @@ export default function StaffDashboard() {
         }
     };
 
-    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus, rtspLink?: string) => {
+    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus, rtspLink?: string): Promise<boolean> => {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.updateStatus(bookingId, nextStatus, rtspLink);
@@ -398,6 +401,7 @@ export default function StaffDashboard() {
 
             toast.success(nextStatus === 'IN_PROGRESS' ? 'Đã bắt đầu công việc' : 'Đã hoàn thành công việc!');
             setIsCameraModalOpen(false);
+            return true;
         } catch (err: any) {
             const code = err?.response?.data?.code;
             if (code === 5016) {
@@ -406,6 +410,7 @@ export default function StaffDashboard() {
             } else {
                 toast.error(err?.response?.data?.message || 'Thao tác thất bại');
             }
+            return false;
         } finally {
             setUpdatingId(null);
         }
@@ -434,6 +439,7 @@ export default function StaffDashboard() {
     const handleOpenClinicModal = (serviceId: number) => {
         setPendingClinicServiceId(serviceId);
         setClinicMedicalForm({ diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString() });
+        setVaccinationForm({ hasVaccination: false, name: '', drug: '', date: new Date().toISOString(), status: 'done' });
         setIsMedicalModalOpen(true);
     };
 
@@ -443,8 +449,21 @@ export default function StaffDashboard() {
 
         setSubmittingClinicMedical(true);
         try {
-            // Step 1: Save medical record
-            await petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
+            // Step 1: Save medical record & optional vaccination
+            const medicalPromise = petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
+            
+            const promises: Promise<any>[] = [medicalPromise];
+            if (vaccinationForm.hasVaccination && vaccinationForm.name.trim()) {
+                promises.push(petMedicalService.addVaccination(selectedTask.bookingId, {
+                    name: vaccinationForm.name,
+                    drug: vaccinationForm.drug,
+                    date: vaccinationForm.date,
+                    status: vaccinationForm.status
+                }));
+            }
+            
+            await Promise.all(promises);
+            
             // Step 2: Mark sub-service as complete
             const updated = await taskService.completeServiceItem(selectedTask.bookingId, pendingClinicServiceId);
             setMyTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
@@ -1943,20 +1962,32 @@ export default function StaffDashboard() {
                                                 toast.error(checkoutType === 'EARLY' ? 'Vui lòng nhập hoặc chọn lý do kết thúc sớm.' : 'Vui lòng nhập hoặc chọn lý do kết thúc trễ.');
                                                 return;
                                             }
-                                            setIsCheckoutModalOpen(false);
-                                            const prefix = checkoutType === 'EARLY' ? '[Kết thúc sớm]' : '[Kết thúc trễ]';
-                                            try {
-                                                await careLogService.addLog(selectedTask.bookingId, {
-                                                    type: 'CLEANING',
-                                                    note: `${prefix} Lý do: ${checkoutReason}`,
-                                                    imageUrl: ''
-                                                });
-                                                const logs = await careLogService.getLogs(selectedTask.bookingId);
-                                                setCareLogs(logs);
-                                            } catch (e) {
-                                                console.error('Failed to log checkout reason:', e);
+                                            
+                                            // 1. Try to update status first
+                                            const success = await handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
+                                            
+                                            if (success) {
+                                                // 2. Only add log if status update succeeded
+                                                const prefix = checkoutType === 'EARLY' ? '[Kết thúc sớm]' : '[Kết thúc trễ]';
+                                                try {
+                                                    await careLogService.addLog(selectedTask.bookingId, {
+                                                        type: 'CLEANING', // Use CLEANING or default type for now
+                                                        note: `${prefix} Lý do: ${checkoutReason}`,
+                                                        imageUrl: ''
+                                                    });
+                                                    const logs = await careLogService.getLogs(selectedTask.bookingId);
+                                                    setCareLogs(logs);
+                                                } catch (e) {
+                                                    console.error('Failed to log checkout reason:', e);
+                                                }
+                                                // 3. Clear reason and close modal
+                                                setCheckoutReason('');
+                                                setIsCheckoutModalOpen(false);
+                                            } else {
+                                                // If failed (e.g. missing medical record), close modal but KEEP reason
+                                                // so user doesn't have to retype after filling medical record
+                                                setIsCheckoutModalOpen(false);
                                             }
-                                            handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
                                         }}
                                         className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
                                     >
@@ -2135,6 +2166,61 @@ export default function StaffDashboard() {
                                     />
                                 </div>
 
+                                {/* Tiêm ngừa */}
+                                <div className="p-4 bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 rounded-2xl">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="hasVaccination"
+                                            checked={vaccinationForm.hasVaccination}
+                                            onChange={e => setVaccinationForm({ ...vaccinationForm, hasVaccination: e.target.checked })}
+                                            className="w-5 h-5 rounded text-violet-600 focus:ring-violet-500 border-slate-300 cursor-pointer"
+                                        />
+                                        <label htmlFor="hasVaccination" className="text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+                                            Có thực hiện tiêm ngừa trong lần khám này
+                                        </label>
+                                    </div>
+                                    
+                                    <AnimatePresence>
+                                        {vaccinationForm.hasVaccination && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-violet-100 dark:border-violet-900/30">
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                            Tên Vắc xin / Bệnh phòng ngừa <span className="text-red-500">*</span>
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            required={vaccinationForm.hasVaccination}
+                                                            value={vaccinationForm.name}
+                                                            onChange={e => setVaccinationForm({ ...vaccinationForm, name: e.target.value })}
+                                                            placeholder="VD: Dại, Care, Parvo..."
+                                                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                            Tên Thuốc / Hãng sản xuất
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={vaccinationForm.drug}
+                                                            onChange={e => setVaccinationForm({ ...vaccinationForm, drug: e.target.value })}
+                                                            placeholder="VD: Zoetis, Nobivac..."
+                                                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
                                 {/* Footer buttons */}
                                 <div className="flex gap-3 pt-2">
                                     <button
@@ -2147,7 +2233,7 @@ export default function StaffDashboard() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={submittingClinicMedical || !clinicMedicalForm.diagnosis.trim()}
+                                        disabled={submittingClinicMedical || !clinicMedicalForm.diagnosis.trim() || (vaccinationForm.hasVaccination && !vaccinationForm.name.trim())}
                                         className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 disabled:opacity-50"
                                     >
                                         {submittingClinicMedical ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
