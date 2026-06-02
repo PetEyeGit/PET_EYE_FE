@@ -106,6 +106,82 @@
       radial-gradient(at 50% 0%, hsla(240,100%,20%,1) 0, transparent 60%), 
       radial-gradient(at 100% 0%, hsla(260,100%,15%,1) 0, transparent 60%);
   }
+
+  /* ── Gift Box Celebration ── */
+  @keyframes gift-wiggle {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    15% { transform: rotate(-6deg) scale(1.04); }
+    30% { transform: rotate(6deg) scale(1.04); }
+    45% { transform: rotate(-4deg) scale(1.02); }
+    60% { transform: rotate(4deg) scale(1.02); }
+    75% { transform: rotate(-2deg) scale(1.01); }
+    90% { transform: rotate(2deg) scale(1.01); }
+  }
+  .animate-gift-wiggle {
+    animation: gift-wiggle 1.8s ease-in-out infinite;
+  }
+  .animate-gift-wiggle:hover {
+    animation: gift-wiggle 0.5s ease-in-out;
+  }
+
+  @keyframes gift-lid-open {
+    0% { transform: translateY(0) rotateX(0deg); opacity: 1; }
+    40% { transform: translateY(-60px) rotateX(-30deg); opacity: 1; }
+    100% { transform: translateY(-120px) rotateX(-60deg); opacity: 0; }
+  }
+  .animate-lid-open {
+    animation: gift-lid-open 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes gift-body-burst {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.08); }
+    100% { transform: scale(0.6); opacity: 0; }
+  }
+  .animate-body-burst {
+    animation: gift-body-burst 0.9s 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes confetti-pop {
+    0% { transform: translate(0, 0) rotate(0deg) scale(0); opacity: 1; }
+    20% { transform: scale(1); opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes reward-reveal {
+    0% { transform: translateY(40px) scale(0.8); opacity: 0; }
+    60% { transform: translateY(-6px) scale(1.03); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  .animate-reward-reveal {
+    animation: reward-reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes sparkle-float {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
+    50% { transform: translateY(-12px) scale(1.3); opacity: 1; }
+  }
+  .animate-sparkle {
+    animation: sparkle-float 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(250, 204, 21, 0.3), 0 0 60px rgba(250, 204, 21, 0.1); }
+    50% { box-shadow: 0 0 40px rgba(250, 204, 21, 0.5), 0 0 80px rgba(250, 204, 21, 0.2); }
+  }
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes celebrate-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .animate-celebrate-bg {
+    background-size: 200% 200%;
+    animation: celebrate-bg 4s ease infinite;
+  }
 }
 
 @media print {

@@ -446,7 +446,113 @@ export default function AdminWithdrawals() {
   const pendingCount  = withdrawals.filter(w => w.status === 'PENDING').length;
   const payingCount   = withdrawals.filter(w => w.status === 'PAYING').length;
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  const filteredUsers = filtered.filter(w => w.type === 'REFUND');
+  const filteredShops = filtered.filter(w => w.type !== 'REFUND');
+
+  const renderItem = (w: any) => {
+    const meta = STATUS_META[w.status] ?? STATUS_META.PENDING;
+    const isPaying = w.status === 'PAYING';
+    return (
+      <div
+        key={w.id}
+        className={`flex items-start gap-4 px-6 py-5 transition-colors ${isPaying ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}
+      >
+        {/* Icon */}
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
+          w.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+          : w.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-500/20 text-red-500'
+          : w.status === 'PAYING'   ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+          : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+        }`}>
+          <ArrowDownToLine className="w-4 h-4" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${meta.color}`}>
+              {meta.icon}{meta.label}
+            </span>
+            <span className="text-xs font-bold text-slate-400 font-mono">#{w.id}</span>
+          </div>
+          <p className="text-sm font-black text-slate-900 dark:text-white mb-0.5">{w.shopName}</p>
+          <p className="text-lg font-black text-teal-600 dark:text-teal-400 mb-1">{formatVND(w.amount)}</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-slate-500 flex items-center gap-1"><Building2 className="w-3 h-3" />{w.bankName}</span>
+            <span className="text-xs text-slate-500 flex items-center gap-1"><CreditCard className="w-3 h-3" />{w.bankAccount}</span>
+            <span className="text-xs text-slate-500 flex items-center gap-1"><User className="w-3 h-3" />{w.accountHolder}</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <p className="text-xs text-slate-400">{formatDate(w.createdAt)}</p>
+          {/* Countdown hết hạn cho PAYING */}
+          {w.status === 'PAYING' && (() => {
+            try {
+              const expireAt = new Date(parseISO(w.createdAt.replace(' ', 'T')).getTime() + 24 * 60 * 60 * 1000);
+              const h = differenceInHours(expireAt, new Date());
+              const m = differenceInMinutes(expireAt, new Date()) % 60;
+              if (h < 0) return <p className="text-[10px] text-red-400 font-bold">Đã hết hạn</p>;
+              return (
+                <p className={`text-[10px] font-bold ${h < 4 ? 'text-red-500' : 'text-amber-500'}`}>
+                  ⏱ Hết hạn sau {h}h {m}m
+                </p>
+              );
+            } catch { return null; }
+          })()}
+          {w.status === 'EXPIRED' && (
+            <p className="text-[10px] text-slate-400 italic">Đã hoàn tiền về shop</p>
+          )}
+          {w.status === 'PENDING' && (
+            <button
+              onClick={() => setSelectedRequest(w)}
+              className="flex items-center gap-1 text-xs font-bold text-[#1a2b4c] dark:text-teal-400 hover:underline"
+            >
+              Xem & Duyệt <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {w.status === 'PAYING' && w.checkoutUrl && (
+            <button
+              onClick={() => setPayosModal({ request: w, checkoutUrl: w.checkoutUrl! })}
+              className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Tiếp tục chuyển <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {(w.status === 'APPROVED' || w.status === 'REJECTED') && (
+            <button
+              onClick={() => setSelectedRequest(w)}
+              className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:underline"
+            >
+              Chi tiết <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderListState = (list: any[], emptyText: string) => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span className="text-sm font-medium">Đang tải...</span>
+        </div>
+      );
+    }
+    if (list.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
+          <ArrowDownToLine className="w-10 h-10 opacity-30 mb-3" />
+          <p className="font-bold">{emptyText}</p>
+          <p className="text-sm mt-1">Thử thay đổi bộ lọc hoặc tìm kiếm.</p>
+        </div>
+      );
+    }
+    return <div className="divide-y divide-slate-50 dark:divide-slate-700/50">{list.map(renderItem)}</div>;
+  };
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -564,106 +670,23 @@ export default function AdminWithdrawals() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <span className="text-sm font-medium">Đang tải...</span>
+      {/* Lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* User Column */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20">
+            <h3 className="font-black text-slate-800 dark:text-slate-200">Yêu cầu hoàn tiền (User)</h3>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
-            <ArrowDownToLine className="w-10 h-10 opacity-30 mb-3" />
-            <p className="font-bold">Không có yêu cầu nào</p>
-            <p className="text-sm mt-1">Thử thay đổi bộ lọc hoặc tìm kiếm.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
-            {filtered.map(w => {
-              const meta = STATUS_META[w.status] ?? STATUS_META.PENDING;
-              const isPaying = w.status === 'PAYING';
-              return (
-                <div
-                  key={w.id}
-                  className={`flex items-start gap-4 px-6 py-5 transition-colors ${isPaying ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}
-                >
-                  {/* Icon */}
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
-                    w.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                    : w.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-500/20 text-red-500'
-                    : w.status === 'PAYING'   ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                    : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                  }`}>
-                    <ArrowDownToLine className="w-4 h-4" />
-                  </div>
+          {renderListState(filteredUsers, 'Không có yêu cầu hoàn tiền nào')}
+        </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${meta.color}`}>
-                        {meta.icon}{meta.label}
-                      </span>
-                      <span className="text-xs font-bold text-slate-400 font-mono">#{w.id}</span>
-                    </div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white mb-0.5">{w.shopName}</p>
-                    <p className="text-lg font-black text-teal-600 dark:text-teal-400 mb-1">{formatVND(w.amount)}</p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-xs text-slate-500 flex items-center gap-1"><Building2 className="w-3 h-3" />{w.bankName}</span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1"><CreditCard className="w-3 h-3" />{w.bankAccount}</span>
-                      <span className="text-xs text-slate-500 flex items-center gap-1"><User className="w-3 h-3" />{w.accountHolder}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <p className="text-xs text-slate-400">{formatDate(w.createdAt)}</p>
-                    {/* Countdown hết hạn cho PAYING */}
-                    {w.status === 'PAYING' && (() => {
-                      try {
-                        const expireAt = new Date(parseISO(w.createdAt.replace(' ', 'T')).getTime() + 24 * 60 * 60 * 1000);
-                        const h = differenceInHours(expireAt, new Date());
-                        const m = differenceInMinutes(expireAt, new Date()) % 60;
-                        if (h < 0) return <p className="text-[10px] text-red-400 font-bold">Đã hết hạn</p>;
-                        return (
-                          <p className={`text-[10px] font-bold ${h < 4 ? 'text-red-500' : 'text-amber-500'}`}>
-                            ⏱ Hết hạn sau {h}h {m}m
-                          </p>
-                        );
-                      } catch { return null; }
-                    })()}
-                    {w.status === 'EXPIRED' && (
-                      <p className="text-[10px] text-slate-400 italic">Đã hoàn tiền về shop</p>
-                    )}
-                    {w.status === 'PENDING' && (
-                      <button
-                        onClick={() => setSelectedRequest(w)}
-                        className="flex items-center gap-1 text-xs font-bold text-[#1a2b4c] dark:text-teal-400 hover:underline"
-                      >
-                        Xem & Duyệt <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {w.status === 'PAYING' && w.checkoutUrl && (
-                      <button
-                        onClick={() => setPayosModal({ request: w, checkoutUrl: w.checkoutUrl! })}
-                        className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Tiếp tục chuyển <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {(w.status === 'APPROVED' || w.status === 'REJECTED') && (
-                      <button
-                        onClick={() => setSelectedRequest(w)}
-                        className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:underline"
-                      >
-                        Chi tiết <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {/* Shop Column */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20">
+            <h3 className="font-black text-slate-800 dark:text-slate-200">Yêu cầu rút tiền (Shop)</h3>
           </div>
-        )}
+          {renderListState(filteredShops, 'Không có yêu cầu rút tiền nào')}
+        </div>
       </div>
 
       {/* Detail Modal */}

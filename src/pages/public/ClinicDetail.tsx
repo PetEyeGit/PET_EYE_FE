@@ -638,7 +638,7 @@ export default function ClinicDetail() {
         {/* Clinic Header */}
         <div className="flex flex-wrap justify-between items-start gap-4 pb-5">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl md:text-5xl font-black leading-tight tracking-tight bg-gradient-to-r from-primary to-secondary text-transparent bg-clip-text">
+            <h1 className="text-slate-900 dark:text-slate-100 text-2xl md:text-4xl font-black leading-tight tracking-tight">
               {shop?.shopName ?? 'Đang tải...'}
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
@@ -1306,24 +1306,6 @@ export default function ClinicDetail() {
                             <span>Dịch vụ đã chọn</span>
                             <span className="bg-[#1a2b4c] text-white px-2 py-0.5 rounded-full">{selectedServiceIds.length + (isHotelSelected ? 1 : 0)}</span>
                           </div>
-
-                          {/* Liệt kê tên các dịch vụ đã chọn */}
-                          <div className="flex flex-col gap-1 mb-3">
-                            {isHotelSelected && boardingService && (
-                              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
-                                • {boardingService.serviceName}
-                              </div>
-                            )}
-                            {selectedServiceIds.map(id => {
-                              const svc = apiServices.find((s: ServiceResponse) => s.id === id);
-                              return svc ? (
-                                <div key={id} className="text-xs font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">
-                                  • {svc.serviceName}
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-
                           {/* Hiển thị tổng thời gian nếu có dịch vụ thường */}
                           {selectedServiceIds.length > 0 && (
                             <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400 mb-2">

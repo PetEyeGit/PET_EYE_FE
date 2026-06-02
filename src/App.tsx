@@ -63,6 +63,7 @@ import AdminWithdrawals from './pages/admin/AdminWithdrawals';
 import ShopWallet from './pages/shop/ShopWallet';
 import AdminVouchers from './pages/admin/AdminVouchers';
 import Chatbot from './components/Chatbot';
+import GiftBoxCelebration from './components/GiftBoxCelebration';
 
 // Routes where the global Navbar + Footer should be hidden
 const SHOP_ROUTES_PREFIX = '/shop';
@@ -189,6 +190,9 @@ function AppLayout() {
       </main>
 
       {shouldShowCustomerNav && <Footer />}
+
+      {/* Gift Box Celebration — hiển thị khi user thăng hạng */}
+      {user && !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && <GiftBoxCelebration />}
 
       {/* Chatbot — hiển thị cho tất cả customer pages (kể cả /home) */}
       {!isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && <Chatbot />}
