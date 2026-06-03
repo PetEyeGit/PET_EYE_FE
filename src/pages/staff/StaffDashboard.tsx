@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Clock, CheckCircle2, Search, Filter, Camera, Zap, Heart, User, Plus, LayoutGrid, X,
     Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save, PlayCircle, MonitorPlay,
-    StopCircle, VideoOff, UserX, XCircle
+    StopCircle, VideoOff, UserX, XCircle, MessageCircle
 } from 'lucide-react';
 import type { BookingResponse } from '../../types/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,6 +20,8 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import HLSPlayer from '../../components/HLSPlayer';
 import { checkStreamReady, resolveStreamUrl } from '../../utils/streamHelper';
+import { useShopChat } from '../../hooks/useShopChat';
+import ConversationThread from '../../components/chat/shared/ConversationThread';
 
 // Constants
 const STATUS_CONFIG = {
@@ -77,6 +79,48 @@ const guessCategory = (name: string) => {
 const formatTime = (iso: string) => format(parseISO(iso), 'HH:mm', { locale: vi });
 const formatDate = (iso: string) => format(parseISO(iso), 'dd/MM/yyyy', { locale: vi });
 
+const StaffChatTab = ({ bookingDetails, user, selectedTask }: { bookingDetails: BookingResponse | null, user: any, selectedTask: TaskResponse | null }) => {
+    const shopId = bookingDetails?.shopId || selectedTask?.shopId || null;
+    const customerEmail = bookingDetails?.customerEmail || selectedTask?.customerEmail;
+
+    const [input, setInput] = useState('');
+    const { messages, connected, sendMessage } = useShopChat(
+        shopId,
+        user?.token,
+        'CUSTOMER_CHAT',
+        customerEmail
+    );
+
+    if (!shopId || !customerEmail) {
+        return (
+            <div className="flex justify-center items-center py-10 flex-col gap-3">
+                <Loader2 className="animate-spin text-slate-400 w-6 h-6" />
+                <p className="text-xs text-slate-500">Đang tải thông tin kết nối...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-[600px] max-h-[70vh] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm flex flex-col">
+            <ConversationThread
+                messages={messages}
+                currentUserEmail={user?.email}
+                connected={connected}
+                input={input}
+                setInput={setInput}
+                onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
+                hideHeader={false}
+                headerInfo={{
+                    title: `Trò chuyện với ${bookingDetails?.customerName || 'Khách hàng'}`,
+                    subtitle: bookingDetails?.customerEmail,
+                    icon: <MessageCircle size={20} className="text-primary" />,
+                    showStatus: true
+                }}
+            />
+        </div>
+    );
+};
+
 export default function StaffDashboard() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -92,7 +136,7 @@ export default function StaffDashboard() {
     const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
 
     // Workspace states
-    const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'info' | 'logs' | 'medical'>('info');
+    const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'info' | 'logs' | 'medical' | 'chat'>('info');
 
     // Care log states
     const [careLogs, setCareLogs] = useState<CareLogResponse[]>([]);
@@ -944,9 +988,20 @@ export default function StaffDashboard() {
                                                 Hồ sơ y tế
                                             </button>
                                         )}
+                                        {((selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && (
+                                            <button
+                                                onClick={() => setActiveWorkspaceTab('chat')}
+                                                className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                            >
+                                                Trò chuyện
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="p-4 lg:p-6">
+                                        {activeWorkspaceTab === 'chat' && (
+                                            <StaffChatTab bookingDetails={bookingDetails} user={user} selectedTask={selectedTask} />
+                                        )}
                                         {activeWorkspaceTab === 'info' && (
                                             <div className="space-y-6">
                                                 {/* Danh sách dịch vụ cần làm */}

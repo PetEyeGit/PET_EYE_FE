@@ -135,7 +135,7 @@ export default function CameraView() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     
     const { user } = useAuth();
-    const token = localStorage.getItem('token') || undefined;
+    const token = user?.token;
 
     // Real data states
     const [realLogs, setRealLogs] = useState<CareLogResponse[]>([]);
