@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { NearbyShopResponse, DirectionsResponse } from '../services/clinic.service';
 
 // Goong Map types
@@ -56,7 +56,10 @@ export default function ShopMap({
     };
   }, []);
 
-  // Initialize map
+  // Initialize map — only runs once when script is loaded
+  const userLocRef = useRef(userLocation);
+  userLocRef.current = userLocation;
+
   useEffect(() => {
     if (!scriptLoaded || !mapContainer.current || map.current) return;
 
@@ -66,16 +69,16 @@ export default function ShopMap({
     map.current = new goongjs.Map({
       container: mapContainer.current,
       style: 'https://tiles.goong.io/assets/goong_map_web.json',
-      center: [userLocation.lng, userLocation.lat],
+      center: [userLocRef.current.lng, userLocRef.current.lat],
       zoom: 13,
     });
 
     map.current.on('load', () => {
       setMapLoaded(true);
-      // Ensure map resizes correctly
+      // Single resize after map is ready
       setTimeout(() => {
         if (map.current) map.current.resize();
-      }, 500);
+      }, 300);
     });
 
     return () => {
@@ -84,30 +87,31 @@ export default function ShopMap({
         map.current = null;
       }
     };
-  }, [scriptLoaded, userLocation]);
+  }, [scriptLoaded]);
 
-  // Handle ResizeObserver and forced resizes
+  // Handle ResizeObserver — debounced to avoid excessive calls
   useEffect(() => {
     if (!mapLoaded || !map.current || !mapContainer.current) return;
     
-    const resizeMap = () => {
-      if (map.current) {
-        map.current.resize();
-      }
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (map.current) map.current.resize();
+      }, 150);
     };
     
-    // Force resize immediately and a few times after to catch layout shifts
-    resizeMap();
-    const timers = [100, 300, 500, 1000].map(t => setTimeout(resizeMap, t));
+    // Single initial resize
+    debouncedResize();
 
-    const resizeObserver = new ResizeObserver(resizeMap);
+    const resizeObserver = new ResizeObserver(debouncedResize);
     resizeObserver.observe(mapContainer.current);
     
     return () => {
       resizeObserver.disconnect();
-      timers.forEach(clearTimeout);
+      clearTimeout(resizeTimer);
     };
-  }, [mapLoaded, directions]);
+  }, [mapLoaded]);
 
   // Update markers when shops change
   useEffect(() => {
@@ -150,21 +154,31 @@ export default function ShopMap({
     // Add nearby shops markers
     nearbyShops.forEach(shop => {
       const el = document.createElement('div');
-      el.className = 'shop-marker';
-      el.innerHTML = '🏪';
-      el.style.fontSize = '24px';
-      el.style.cursor = 'pointer';
+      el.style.cssText = `
+        width: 40px; height: 40px; 
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: 3px solid white;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 14px rgba(16,185,129,0.45);
+        font-size: 18px;
+        transition: box-shadow 0.2s, border-color 0.2s;
+      `;
+      el.innerHTML = '🐾';
+      el.onmouseenter = () => { el.style.boxShadow = '0 0 0 6px rgba(16,185,129,0.3), 0 4px 14px rgba(16,185,129,0.45)'; };
+      el.onmouseleave = () => { el.style.boxShadow = '0 4px 14px rgba(16,185,129,0.45)'; };
       el.onclick = () => onShopClick?.(shop.id);
 
       const marker = new goongjs.Marker(el)
         .setLngLat([shop.longitude, shop.latitude])
         .setPopup(
           new goongjs.Popup({ offset: 25 }).setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold text-sm">${shop.shopName}</h3>
-              <p class="text-xs text-slate-600">${shop.shopType}</p>
-              <p class="text-xs">📍 ${shop.distanceKm} km</p>
-              <p class="text-xs">⭐ ${shop.ratingAvg}</p>
+            <div style="padding:8px; min-width:160px;">
+              <h3 style="font-weight:bold; font-size:14px; margin-bottom:4px;">${shop.shopName}</h3>
+              <p style="font-size:12px; color:#64748b; margin-bottom:2px;">${shop.shopType}</p>
+              <p style="font-size:12px;">📍 ${shop.distanceKm.toFixed(1)} km</p>
+              <p style="font-size:12px;">⭐ ${shop.ratingAvg.toFixed(1)}</p>
             </div>
           `)
         )

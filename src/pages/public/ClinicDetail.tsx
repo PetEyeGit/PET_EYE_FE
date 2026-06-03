@@ -10,9 +10,8 @@ import { clinicService } from '../../services/clinic.service';
 import { useAuth } from '../../contexts/AuthContext';
 import type { ServiceResponse, StaffResponse } from '../../types/api';
 import type { Pet } from '../../types';
-import type { NearbyShopResponse, DirectionsResponse } from '../../services/clinic.service';
+import type { DirectionsResponse } from '../../services/clinic.service';
 import ShopMap from '../../components/ShopMap';
-import NearbyShops from '../../components/NearbyShops';
 
 
 // Camera tier metadata — default fallbacks (shop can override via cameraTierLabels/cameraTierPrices)
@@ -93,8 +92,6 @@ export default function ClinicDetail() {
 
   // ── Map & Directions state ──────────────────────────────────────────────────
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [nearbyShopsFromAPI, setNearbyShopsFromAPI] = useState<NearbyShopResponse[]>([]);
-  const [loadingNearbyShops, setLoadingNearbyShops] = useState(false);
   const [directions, setDirections] = useState<DirectionsResponse | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
@@ -153,31 +150,7 @@ export default function ClinicDetail() {
     };
   }, [showMap]);
 
-  // Fetch nearby shops when user location is available
-  useEffect(() => {
-    if (!userLocation) return;
 
-    console.log('Fetching nearby shops with location:', userLocation);
-
-    setLoadingNearbyShops(true);
-    clinicService
-      .getNearbyShops(userLocation.lat, userLocation.lng, 10)
-      .then((shops) => {
-        // Lọc 3 shop gần nhất, loại trừ shop hiện tại
-        const filtered = shops
-          .filter(s => s.id !== shopId)
-          .sort((a, b) => a.distanceKm - b.distanceKm)
-          .slice(0, 3);
-        console.log('Nearby shops:', filtered);
-        setNearbyShopsFromAPI(filtered);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch nearby shops:', error);
-      })
-      .finally(() => {
-        setLoadingNearbyShops(false);
-      });
-  }, [userLocation, shopId]);
 
   // Debug: Log shop coordinates
   useEffect(() => {
@@ -1837,19 +1810,7 @@ export default function ClinicDetail() {
                   </div>
                 </div>
 
-                {/* Nearby Clinics */}
-                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 flex flex-col shadow-sm">
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-teal-500">near_me</span>
-                    Shop gần bạn
-                  </h3>
-                  <div className="flex-1 overflow-y-auto pr-2 -mr-2">
-                    <NearbyShops
-                      shops={nearbyShopsFromAPI}
-                      loading={loadingNearbyShops}
-                    />
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>
