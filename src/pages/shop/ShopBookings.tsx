@@ -534,8 +534,8 @@ export default function ShopBookings() {
                                                         {format(day, 'd')}
                                                     </span>
                                                     {hasBookings && statusCfg && (
-                                                        <span className={`flex items-center gap-1 text-[9px] font-black text-white ${statusCfg.color} px-1.5 py-0.5 rounded-md shadow-md`}>
-                                                            <div className="size-1 rounded-full bg-white animate-pulse" />
+                                                        <span className={`flex items-center gap-1 text-[10px] font-black text-white ${statusCfg.color.split(' ').filter((c: string) => c.startsWith('text-') || c.startsWith('dark:text-')).map((c: string) => c.replace('text-', 'bg-')).join(' ')} px-1.5 py-0.5 rounded-md shadow-md`}>
+                                                            <div className="size-1.5 rounded-full bg-white animate-pulse" />
                                                             {dayBookings.length}
                                                         </span>
                                                     )}

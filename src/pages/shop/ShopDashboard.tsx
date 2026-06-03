@@ -250,7 +250,7 @@ export default function ShopDashboard() {
                         <p className="text-fluid-sm text-white/80 font-medium leading-relaxed">
                           {dashboardData?.monthlyGrowthDescription || "Chưa có đủ dữ liệu để đánh giá."}
                         </p>
-                        <button className="mt-6 w-full py-3 bg-white text-indigo-900 rounded-xl text-fluid-sm font-black shadow-lg hover:bg-slate-50 transition-colors">Xem chi tiết</button>
+                        <Link to="/shop/bookings" className="mt-6 w-full py-3 bg-white text-indigo-900 rounded-xl text-fluid-sm font-black shadow-lg hover:bg-slate-50 transition-colors block text-center">Xem chi tiết</Link>
                     </div>
                 </div>
             </div>
