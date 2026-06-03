@@ -3,8 +3,10 @@ import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2, ShieldCheck, 
 import { shopService } from '../../services/shop.service';
 import { fileService } from '../../services/file.service';
 import toast from 'react-hot-toast';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 export default function ShopProfile() {
+  const { isDark } = useShopTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -197,62 +199,62 @@ export default function ShopProfile() {
   console.log('Rendering ShopProfile with logo:', shopInfo.logoUrl);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className={`min-h-screen ${isDark ? 'bg-transparent' : 'bg-slate-50'}`}>
+      <div className="max-w-5xl mx-auto px-6 py-8 animate-in fade-in duration-500">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-              <Store className="w-8 h-8 text-blue-600" />
+            <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <Store className={`w-8 h-8 ${isDark ? 'text-indigo-400' : 'text-blue-600'}`} />
               Thông tin cửa hàng
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+            <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Quản lý thông tin và cài đặt cửa hàng của bạn
             </p>
           </div>
         </header>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700 mb-6">
+          <div className={`border rounded-xl p-4 flex items-center gap-3 mb-6 ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-200 text-red-700'}`}>
             <span className="font-semibold">{error}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm">
-            <Loader2 size={40} className="animate-spin text-[#1a2b4c] mb-4" />
-            <p className="text-slate-500 font-medium">Đang tải thông tin cửa hàng...</p>
+          <div className={`flex flex-col items-center justify-center py-20 rounded-2xl shadow-sm ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white'}`}>
+            <Loader2 size={40} className={`animate-spin mb-4 ${isDark ? 'text-indigo-400' : 'text-[#1a2b4c]'}`} />
+            <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải thông tin cửa hàng...</p>
           </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6">
             {/* Shop Media */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+            <div className={`rounded-2xl p-8 shadow-sm border relative overflow-hidden transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
               <div className="absolute top-0 right-0 p-4">
                 {shopInfo.isVerified && (
-                  <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full text-xs font-bold border border-green-100">
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${isDark ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-green-50 text-green-600 border-green-100'}`}>
                     <ShieldCheck size={14} />
                     Đã xác minh
                   </div>
                 )}
               </div>
               
-              <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                <Store size={20} className="text-primary" />
+              <h3 className={`font-bold text-lg mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <Store size={20} className={isDark ? 'text-indigo-400' : 'text-primary'} />
                 Hình ảnh cửa hàng
               </h3>
               
               <div className="space-y-8">
                 {/* Banner Section */}
                 <div className="relative group">
-                  <div className="w-full h-48 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200">
+                  <div className={`w-full h-48 rounded-2xl overflow-hidden border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
                     {uploadingBanner ? (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                        <Loader2 className="animate-spin text-primary" size={32} />
+                      <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                        <Loader2 className={`animate-spin ${isDark ? 'text-indigo-400' : 'text-primary'}`} size={32} />
                       </div>
                     ) : shopInfo.bannerUrl ? (
                       <img src={shopInfo.bannerUrl} alt="Banner" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                      <div className={`w-full h-full flex flex-col items-center justify-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         <ImageIcon size={40} className="mb-2" />
                         <p className="text-xs font-medium">Chưa có ảnh bìa</p>
                       </div>
@@ -269,7 +271,7 @@ export default function ShopProfile() {
                     type="button" 
                     onClick={() => bannerInputRef.current?.click()}
                     disabled={uploadingBanner}
-                    className="absolute bottom-4 right-4 p-2 bg-white/90 backdrop-blur shadow-lg rounded-xl text-slate-700 hover:bg-white transition-all flex items-center gap-2 text-xs font-bold border border-slate-200 disabled:opacity-50"
+                    className={`absolute bottom-4 right-4 p-2 backdrop-blur shadow-lg rounded-xl transition-all flex items-center gap-2 text-xs font-bold border disabled:opacity-50 ${isDark ? 'bg-slate-800/90 text-white border-white/10 hover:bg-slate-800' : 'bg-white/90 text-slate-700 border-slate-200 hover:bg-white'}`}
                   >
                     <Camera size={14} />
                     {uploadingBanner ? 'Đang tải...' : 'Thay ảnh bìa'}
@@ -279,14 +281,14 @@ export default function ShopProfile() {
                 {/* Logo & Info */}
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                   <div className="relative">
-                    <div className="size-32 rounded-3xl bg-white p-1 shadow-xl border border-slate-100 -mt-16 md:-mt-20 ml-4 relative z-10 overflow-hidden">
-                      <div className="w-full h-full rounded-[1.25rem] bg-slate-50 overflow-hidden flex items-center justify-center">
+                    <div className={`size-32 rounded-3xl p-1 shadow-xl border -mt-16 md:-mt-20 ml-4 relative z-10 overflow-hidden ${isDark ? 'bg-slate-800 border-white/10' : 'bg-white border-slate-100'}`}>
+                      <div className={`w-full h-full rounded-[1.25rem] overflow-hidden flex items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
                         {uploadingLogo ? (
-                          <Loader2 className="animate-spin text-primary" size={24} />
+                          <Loader2 className={`animate-spin ${isDark ? 'text-indigo-400' : 'text-primary'}`} size={24} />
                         ) : shopInfo.logoUrl ? (
                           <img src={shopInfo.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                         ) : (
-                          <Store size={40} className="text-slate-200" />
+                          <Store size={40} className={isDark ? 'text-slate-700' : 'text-slate-200'} />
                         )}
                       </div>
                       <input 
@@ -300,17 +302,17 @@ export default function ShopProfile() {
                         type="button" 
                         onClick={() => logoInputRef.current?.click()}
                         disabled={uploadingLogo}
-                        className="absolute bottom-2 right-2 p-1.5 bg-primary text-white rounded-lg shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                        className={`absolute bottom-2 right-2 p-1.5 text-white rounded-lg shadow-lg hover:scale-110 transition-transform disabled:opacity-50 ${isDark ? 'bg-indigo-600' : 'bg-primary'}`}
                       >
                         <Camera size={14} />
                       </button>
                     </div>
                   </div>
                   <div className="flex-1 pt-2">
-                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                    <h2 className={`text-2xl font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {shopInfo.name || 'Tên cửa hàng'}
                     </h2>
-                    <p className="text-sm text-slate-500 font-medium mt-1">
+                    <p className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       {shopInfo.type || 'Chưa cập nhật loại hình'} • {shopInfo.city || 'Chưa cập nhật địa chỉ'}
                     </p>
                   </div>
@@ -319,15 +321,15 @@ export default function ShopProfile() {
             </div>
 
             {/* Photo Gallery */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
-              <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-                <ImageIcon size={20} className="text-primary" />
+            <div className={`rounded-2xl p-8 shadow-sm border transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+              <h3 className={`font-bold text-lg mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <ImageIcon size={20} className={isDark ? 'text-indigo-400' : 'text-primary'} />
                 Thư viện ảnh
               </h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {shopInfo.galleryUrls.split(',').filter(Boolean).map((url, index) => (
-                  <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                  <div key={index} className={`relative group aspect-square rounded-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
                     <img src={url} alt={`Gallery ${index}`} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                     <button
                       type="button"
@@ -345,13 +347,13 @@ export default function ShopProfile() {
                     type="button"
                     onClick={() => galleryInputRef.current?.click()}
                     disabled={uploadingGallery}
-                    className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition-all group disabled:opacity-50"
+                    className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all group disabled:opacity-50 ${isDark ? 'border-slate-700 text-slate-500 hover:border-indigo-500 hover:text-indigo-400' : 'border-slate-200 text-slate-400 hover:border-primary hover:text-primary'}`}
                   >
                     {uploadingGallery ? (
                       <Loader2 className="animate-spin" size={24} />
                     ) : (
                       <>
-                        <div className="size-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <div className={`size-10 rounded-full flex items-center justify-center transition-colors ${isDark ? 'bg-slate-800/50 group-hover:bg-indigo-500/20' : 'bg-slate-50 group-hover:bg-primary/10'}`}>
                           <span className="material-symbols-outlined">add_photo_alternate</span>
                         </div>
                         <span className="text-xs font-bold">Thêm ảnh</span>
@@ -359,7 +361,7 @@ export default function ShopProfile() {
                     )}
                   </button>
                 ) : (
-                  <div className="aspect-square rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 bg-slate-50 opacity-70">
+                  <div className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 opacity-70 ${isDark ? 'border-slate-700 text-slate-500 bg-slate-800/30' : 'border-slate-200 text-slate-400 bg-slate-50'}`}>
                      <span className="material-symbols-outlined text-red-400">block</span>
                      <span className="text-[10px] font-bold text-center px-2">Đã đạt tối đa 10 ảnh</span>
                   </div>
@@ -372,12 +374,12 @@ export default function ShopProfile() {
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e, 'gallery')}
               />
-              <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4">
-                <h4 className="text-sm font-bold text-blue-900 mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600 text-lg">info</span>
+              <div className={`mt-6 border rounded-xl p-4 ${isDark ? 'bg-indigo-900/20 border-indigo-500/20' : 'bg-blue-50/50 border-blue-100'}`}>
+                <h4 className={`text-sm font-bold mb-2 flex items-center gap-2 ${isDark ? 'text-indigo-300' : 'text-blue-900'}`}>
+                  <span className={`material-symbols-outlined text-lg ${isDark ? 'text-indigo-400' : 'text-blue-600'}`}>info</span>
                   Hướng dẫn hiển thị thư viện ảnh
                 </h4>
-                <p className="text-xs text-blue-800/80 mb-3 leading-relaxed">
+                <p className={`text-xs mb-3 leading-relaxed ${isDark ? 'text-indigo-200/70' : 'text-blue-800/80'}`}>
                   Bố cục ảnh trên trang chi tiết cửa hàng sẽ tự động điều chỉnh dựa trên số lượng ảnh bạn tải lên:
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
@@ -435,141 +437,142 @@ export default function ShopProfile() {
             </div>
 
           {/* Basic Info */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-bold text-lg mb-4">Thông tin cơ bản</h3>
+          {/* Basic Info */}
+          <div className={`rounded-xl p-6 shadow-sm border transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+            <h3 className={`font-bold text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Thông tin cơ bản</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Tên cửa hàng *
                 </label>
                 <input
                   type="text"
                   value={shopInfo.name}
                   onChange={(e) => setShopInfo({ ...shopInfo, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Loại hình *
                 </label>
                 <select
                   value={shopInfo.type}
                   onChange={(e) => setShopInfo({ ...shopInfo, type: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                 >
-                  <option>Phòng khám thú y</option>
-                  <option>Spa & Grooming</option>
-                  <option>Khách sạn thú cưng</option>
-                  <option>Cửa hàng thú cưng</option>
-                  <option>Dịch vụ tổng hợp</option>
+                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Phòng khám thú y</option>
+                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Spa & Grooming</option>
+                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Khách sạn thú cưng</option>
+                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Cửa hàng thú cưng</option>
+                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Dịch vụ tổng hợp</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Email *
                 </label>
                 <input
                   type="email"
                   value={shopInfo.email}
                   onChange={(e) => setShopInfo({ ...shopInfo, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Số điện thoại *
                 </label>
                 <input
                   type="tel"
                   value={shopInfo.phone}
                   onChange={(e) => setShopInfo({ ...shopInfo, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                   placeholder="Ví dụ: 0912345678"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Thành phố/Tỉnh *
                 </label>
                 <select
                   value={shopInfo.city}
                   onChange={(e) => setShopInfo({ ...shopInfo, city: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 >
-                  <option value="">Chọn thành phố</option>
+                  <option value="" className={isDark ? 'bg-slate-800 text-white' : ''}>Chọn thành phố</option>
                   {VIETNAM_CITIES.map(city => (
-                    <option key={city} value={city}>{city}</option>
+                    <option key={city} value={city} className={isDark ? 'bg-slate-800 text-white' : ''}>{city}</option>
                   ))}
                 </select>
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Địa chỉ *
                 </label>
                 <input
                   type="text"
                   value={shopInfo.address}
                   onChange={(e) => setShopInfo({ ...shopInfo, address: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Mô tả
                 </label>
                 <textarea
                   value={shopInfo.description}
                   onChange={(e) => setShopInfo({ ...shopInfo, description: e.target.value })}
                   rows={4}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none resize-none"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none resize-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                 />
               </div>
             </div>
           </div>
 
           {/* Working Hours */}
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <h3 className="font-bold text-lg mb-4">Giờ làm việc</h3>
+          <div className={`rounded-xl p-6 shadow-sm border transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+            <h3 className={`font-bold text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Giờ làm việc</h3>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                  <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     Giờ mở cửa
                   </label>
                   <input
                     type="time"
                     value={shopInfo.openTime}
                     onChange={(e) => setShopInfo({ ...shopInfo, openTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                  <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     Giờ đóng cửa
                   </label>
                   <input
                     type="time"
                     value={shopInfo.closeTime}
                     onChange={(e) => setShopInfo({ ...shopInfo, closeTime: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-3">
+                <label className={`block text-sm font-bold mb-3 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Ngày làm việc
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -580,8 +583,8 @@ export default function ShopProfile() {
                       onClick={() => toggleWorkingDay(day)}
                       className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                         shopInfo.workingDays.includes(day)
-                          ? 'bg-[#1a2b4c] text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white')
+                          : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
                       }`}
                     >
                       {day}
@@ -591,7 +594,7 @@ export default function ShopProfile() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Thời gian chờ tối đa (Grace Period)
                 </label>
                 <div className="flex items-center gap-4">
@@ -601,11 +604,11 @@ export default function ShopProfile() {
                     max="30"
                     value={shopInfo.lateGracePeriod}
                     onChange={(e) => setShopInfo({ ...shopInfo, lateGracePeriod: parseInt(e.target.value) || 15 })}
-                    className="w-32 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1a2b4c] focus:border-[#1a2b4c] outline-none"
+                    className={`w-32 px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   />
-                  <span className="text-sm font-medium text-slate-500">phút (Từ 5 đến 30 phút)</span>
+                  <span className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>phút (Từ 5 đến 30 phút)</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Nếu khách hàng đến trễ quá thời gian này, nhân viên sẽ có quyền hủy lịch hẹn và cửa hàng sẽ giữ lại tiền cọc (No-Show).
                 </p>
               </div>
@@ -616,7 +619,7 @@ export default function ShopProfile() {
             <div className="flex justify-end gap-4">
               <button
                 type="button"
-                className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-all"
+                className={`px-6 py-3 border rounded-xl font-semibold transition-all ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                 disabled={saving}
               >
                 Hủy
@@ -624,7 +627,7 @@ export default function ShopProfile() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-3 bg-[#1a2b4c] text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg disabled:opacity-70"
+                className={`flex items-center gap-2 px-6 py-3 text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg disabled:opacity-70 ${isDark ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-[#1a2b4c]'}`}
               >
                 {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}

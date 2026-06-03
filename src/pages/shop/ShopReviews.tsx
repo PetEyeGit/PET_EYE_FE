@@ -5,9 +5,11 @@ import { shopService } from '../../services/shop.service';
 import { Star, MessageCircle, Send, Filter, Calendar, User, CheckCircle2, Reply } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 export default function ShopReviews() {
   const queryClient = useQueryClient();
+  const { isDark } = useShopTheme();
   const [filterRating, setFilterRating] = useState<number | 'all'>('all');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -51,39 +53,39 @@ export default function ShopReviews() {
       {/* Header Section */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Star className="w-8 h-8 text-blue-600" />
+          <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <Star className={`w-8 h-8 ${isDark ? 'text-indigo-400' : 'text-blue-600'}`} />
             Quản lý Đánh giá
-            <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
+            <div className={`px-3 py-1 text-xs font-bold rounded-full border ${isDark ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
               {reviews.length} Phản hồi
             </div>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Xem và phản hồi lại những đánh giá từ khách hàng của bạn.</p>
+          <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Xem và phản hồi lại những đánh giá từ khách hàng của bạn.</p>
         </div>
 
         {/* Rating Summary Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 flex items-center gap-8">
+        <div className={`rounded-3xl p-6 flex items-center gap-8 shadow-sm border transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white shadow-xl shadow-slate-200/50 border-slate-100'}`}>
           <div className="text-center">
-            <span className="text-4xl font-black text-slate-900 dark:text-white">{shop?.ratingAvg?.toFixed(1) || '0.0'}</span>
+            <span className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{shop?.ratingAvg?.toFixed(1) || '0.0'}</span>
             <div className="flex text-amber-400 justify-center mt-1">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star key={s} size={14} fill={s <= Math.round(shop?.ratingAvg || 0) ? "currentColor" : "none"} />
               ))}
             </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Điểm trung bình</p>
+            <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Điểm trung bình</p>
           </div>
-          <div className="w-px h-12 bg-slate-100 dark:bg-slate-800" />
+          <div className={`w-px h-12 ${isDark ? 'bg-white/10' : 'bg-slate-100'}`} />
           <div className="flex flex-col gap-1">
             {[5, 4, 3, 2, 1].map(star => {
               const count = reviews.filter(r => r.rating === star).length;
               const percent = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
               return (
                 <div key={star} className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-slate-500 w-3">{star}</span>
-                  <div className="w-24 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <span className={`text-[11px] font-bold w-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{star}</span>
+                  <div className={`w-24 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                     <div className="h-full bg-amber-400 rounded-full" style={{ width: `${percent}%` }} />
                   </div>
-                  <span className="text-[10px] font-medium text-slate-400">{count}</span>
+                  <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{count}</span>
                 </div>
               );
             })}
@@ -95,10 +97,10 @@ export default function ShopReviews() {
       <div className="flex flex-wrap items-center gap-2 mb-8">
         <button
           onClick={() => setFilterRating('all')}
-          className={`px-5 py-2.5 rounded-2xl text-[13px] font-bold transition-all ${
+          className={`px-5 py-2.5 rounded-2xl text-[13px] font-bold transition-all border ${
             filterRating === 'all'
-              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 dark:bg-white dark:text-slate-900'
-              : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-100 dark:border-slate-800 hover:border-slate-300'
+              ? (isDark ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20')
+              : (isDark ? 'bg-slate-800/50 text-slate-300 border-white/5 hover:bg-slate-800' : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300')
           }`}
         >
           Tất cả
@@ -107,10 +109,10 @@ export default function ShopReviews() {
           <button
             key={star}
             onClick={() => setFilterRating(star)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[13px] font-bold transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[13px] font-bold transition-all border ${
               filterRating === star
-                ? 'bg-amber-400 text-slate-900 shadow-lg shadow-amber-400/20'
-                : 'bg-white dark:bg-slate-900 text-slate-500 border border-slate-100 dark:border-slate-800 hover:border-amber-200'
+                ? (isDark ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-amber-400 text-slate-900 border-amber-400 shadow-lg shadow-amber-400/20')
+                : (isDark ? 'bg-slate-800/50 text-slate-300 border-white/5 hover:bg-slate-800' : 'bg-white text-slate-500 border-slate-100 hover:border-amber-200')
             }`}
           >
             {star} <Star size={14} fill={filterRating === star ? "currentColor" : "none"} />
@@ -122,15 +124,15 @@ export default function ShopReviews() {
       <div className="space-y-6">
         {isLoading ? (
           <div className="text-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${isDark ? 'border-indigo-400' : 'border-primary'}`}></div>
           </div>
         ) : filteredReviews.length === 0 ? (
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-16 text-center border border-slate-100 dark:border-slate-800 border-dashed">
-            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-              <Star size={40} className="text-slate-200" />
+          <div className={`rounded-[2.5rem] p-16 text-center border border-dashed transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-200'}`}>
+            <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <Star size={40} className={isDark ? 'text-slate-600' : 'text-slate-200'} />
             </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Chưa có đánh giá nào</h3>
-            <p className="text-slate-500 mt-2">Những đánh giá từ khách hàng sẽ xuất hiện tại đây.</p>
+            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Chưa có đánh giá nào</h3>
+            <p className={`mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Những đánh giá từ khách hàng sẽ xuất hiện tại đây.</p>
           </div>
         ) : (
           filteredReviews.map((review, idx) => (
@@ -139,7 +141,7 @@ export default function ShopReviews() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               key={review.id}
-              className="group bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-800 hover:border-primary/20 transition-all"
+              className={`group rounded-[2.5rem] p-8 transition-all border ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/5 hover:border-indigo-500/30 shadow-none' : 'bg-white shadow-xl shadow-slate-200/40 border-slate-100 hover:border-primary/20'}`}
             >
               <div className="flex flex-col md:flex-row gap-6">
                 {/* User Info */}
@@ -148,21 +150,21 @@ export default function ShopReviews() {
                     <img
                       src={review.userAvatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop'}
                       alt={review.userName}
-                      className="w-14 h-14 rounded-2xl object-cover ring-4 ring-slate-50 dark:ring-slate-800"
+                      className={`w-14 h-14 rounded-2xl object-cover ring-4 ${isDark ? 'ring-slate-800' : 'ring-slate-50'}`}
                     />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-lg border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-lg border-2 flex items-center justify-center ${isDark ? 'border-slate-800' : 'border-white'}`}>
                       <CheckCircle2 size={12} className="text-white" />
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate max-w-[120px]">{review.userName}</h4>
+                    <h4 className={`font-bold text-sm truncate max-w-[120px] ${isDark ? 'text-white' : 'text-slate-900'}`}>{review.userName}</h4>
                     <div className="flex flex-col gap-1 mt-1">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                      <div className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
                         <Calendar size={10} />
                         {new Date(review.createdAt).toLocaleDateString('vi-VN')}
                       </div>
                       {review.serviceName && (
-                        <div className="text-[10px] font-black text-indigo-500 truncate max-w-[120px] uppercase tracking-tighter">
+                        <div className={`text-[10px] font-black truncate max-w-[120px] uppercase tracking-tighter ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`}>
                           #{review.serviceName}
                         </div>
                       )}
@@ -174,27 +176,27 @@ export default function ShopReviews() {
                 <div className="flex-1">
                   <div className="flex items-center gap-1.5 mb-3">
                     {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} size={16} className={s <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 dark:text-slate-800'} />
+                      <Star key={s} size={16} className={s <= review.rating ? 'text-amber-400 fill-amber-400' : (isDark ? 'text-slate-700' : 'text-slate-200')} />
                     ))}
                   </div>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[15px]">
+                  <p className={`leading-relaxed text-[15px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                     {review.comment}
                   </p>
 
                   {/* Owner Reply Area */}
                   <div className="mt-8">
                     {review.reply ? (
-                      <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/50 relative overflow-hidden group/reply">
-                        <div className="absolute top-0 left-0 w-1.5 h-full bg-primary" />
+                      <div className={`rounded-3xl p-6 border relative overflow-hidden group/reply ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}>
+                        <div className={`absolute top-0 left-0 w-1.5 h-full ${isDark ? 'bg-indigo-500' : 'bg-primary'}`} />
                         <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2 text-primary font-black text-[11px] uppercase tracking-[0.2em]">
+                          <div className={`flex items-center gap-2 font-black text-[11px] uppercase tracking-[0.2em] ${isDark ? 'text-indigo-400' : 'text-primary'}`}>
                             <Reply size={14} /> Phản hồi từ Shop
                           </div>
-                          <span className="text-[10px] text-slate-400 font-medium">
+                          <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
                             {new Date(review.repliedAt!).toLocaleDateString('vi-VN')}
                           </span>
                         </div>
-                        <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed italic">
+                        <p className={`text-sm leading-relaxed italic ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                           "{review.reply}"
                         </p>
                         <button 
@@ -202,7 +204,7 @@ export default function ShopReviews() {
                             setReplyingTo(review.id);
                             setReplyText(review.reply!);
                           }}
-                          className="absolute top-4 right-4 opacity-0 group-hover/reply:opacity-100 transition-opacity text-[11px] font-bold text-primary hover:underline"
+                          className={`absolute top-4 right-4 opacity-0 group-hover/reply:opacity-100 transition-opacity text-[11px] font-bold hover:underline ${isDark ? 'text-indigo-400' : 'text-primary'}`}
                         >
                           Chỉnh sửa
                         </button>
@@ -211,9 +213,9 @@ export default function ShopReviews() {
                       <motion.div 
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="bg-primary/5 rounded-3xl p-6 border border-primary/20"
+                        className={`rounded-3xl p-6 border ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-primary/5 border-primary/20'}`}
                       >
-                        <div className="flex items-center gap-2 mb-4 text-primary font-black text-[11px] uppercase tracking-wider">
+                        <div className={`flex items-center gap-2 mb-4 font-black text-[11px] uppercase tracking-wider ${isDark ? 'text-indigo-400' : 'text-primary'}`}>
                           <MessageCircle size={16} /> Viết phản hồi của bạn
                         </div>
                         <textarea
@@ -221,19 +223,19 @@ export default function ShopReviews() {
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           placeholder="Cảm ơn khách hàng hoặc giải đáp thắc mắc của họ..."
-                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all min-h-[100px] resize-none"
+                          className={`w-full border rounded-2xl p-4 text-sm focus:ring-2 outline-none transition-all min-h-[100px] resize-none ${isDark ? 'bg-slate-900 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 focus:ring-primary/20 focus:border-primary placeholder-slate-400'}`}
                         />
                         <div className="flex justify-end gap-3 mt-4">
                           <button
                             onClick={() => setReplyingTo(null)}
-                            className="px-6 py-2 text-[13px] font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                            className={`px-6 py-2 text-[13px] font-bold transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
                           >
                             Hủy bỏ
                           </button>
                           <button
                             disabled={replyMutation.isPending || !replyText.trim()}
                             onClick={() => handleReplySubmit(review.id)}
-                            className="flex items-center gap-2 px-8 py-2 bg-primary text-white rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all disabled:opacity-50"
+                            className={`flex items-center gap-2 px-8 py-2 text-white rounded-xl text-[13px] font-bold transition-all disabled:opacity-50 ${isDark ? 'bg-indigo-600 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40' : 'bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/40'}`}
                           >
                             {replyMutation.isPending ? 'Đang gửi...' : 'Gửi phản hồi'}
                             {!replyMutation.isPending && <Send size={14} />}
@@ -243,7 +245,7 @@ export default function ShopReviews() {
                     ) : (
                       <button
                         onClick={() => setReplyingTo(review.id)}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 rounded-2xl text-[13px] font-bold hover:bg-primary hover:text-white transition-all group/btn"
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[13px] font-bold transition-all group/btn ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white' : 'bg-slate-50 text-slate-600 hover:bg-primary hover:text-white'}`}
                       >
                         <MessageCircle size={16} className="group-hover/btn:scale-110 transition-transform" />
                         Viết phản hồi ngay

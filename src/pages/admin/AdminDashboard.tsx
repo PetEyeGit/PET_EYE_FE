@@ -9,6 +9,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
 } from 'recharts';
+import ReactApexChart from 'react-apexcharts';
 
 const MONTH_LABELS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
 const DAY_LABELS: Record<string, string> = {
@@ -63,15 +64,19 @@ const CustomTooltip = ({ active, payload, label, isRevenue, isDark }: any) => {
       : label;
 
     return (
-      <div className={`p-4 rounded-xl shadow-2xl border transition-all duration-200 backdrop-blur-md ${
+      <div className={`p-5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border transition-all duration-300 backdrop-blur-xl relative overflow-hidden ${
         isDark 
-          ? 'bg-slate-900/90 border-white/10 text-white' 
-          : 'bg-white/95 border-slate-200/80 text-slate-900'
+          ? 'bg-[#0f172a]/80 border-white/10 text-white' 
+          : 'bg-white/90 border-slate-200 text-slate-900'
       }`}>
-        <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          {displayLabel}
-        </p>
-        <p className="text-sm font-extrabold mt-1">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div>
+        <div className="flex items-center gap-3 mb-1">
+            <div className={`w-2 h-2 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse ${isDark ? 'bg-blue-400' : 'bg-blue-500'}`}></div>
+            <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            {displayLabel}
+            </p>
+        </div>
+        <p className="text-2xl font-black tracking-tight">
           {isRevenue ? fmt(value * 1_000_000) : `${value} lượt đặt`}
         </p>
       </div>
@@ -438,43 +443,54 @@ export default function AdminDashboard() {
                 Chưa có dữ liệu doanh thu
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={isDark ? '#60a5fa' : '#3b82f6'} stopOpacity={isDark ? 0.35 : 0.2} />
-                      <stop offset="95%" stopColor={isDark ? '#60a5fa' : '#3b82f6'} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: tickFill, fontWeight: 700 }} 
-                    dy={12} 
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: tickFill, fontWeight: 700 }} 
-                    dx={-6}
-                  />
-                  <Tooltip
-                    content={<CustomTooltip isRevenue={true} isDark={isDark} />}
-                    cursor={{ stroke: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', strokeWidth: 1 }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke={isDark ? '#60a5fa' : '#3b82f6'} 
-                    strokeWidth={3} 
-                    fillOpacity={1} 
-                    fill="url(#revGrad)" 
-                    activeDot={{ r: 6, stroke: isDark ? '#0f172a' : '#ffffff', strokeWidth: 3, fill: isDark ? '#60a5fa' : '#3b82f6' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <ReactApexChart 
+                options={{
+                  chart: {
+                    type: 'area',
+                    toolbar: { show: false },
+                    background: 'transparent',
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 },
+                    dropShadow: { enabled: true, top: 4, left: 0, blur: 4, opacity: 0.2, color: '#3b82f6' }
+                  },
+                  colors: ['#3b82f6'],
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shadeIntensity: 1,
+                      opacityFrom: 0.6,
+                      opacityTo: 0.05,
+                      stops: [0, 90, 100]
+                    }
+                  },
+                  dataLabels: { enabled: false },
+                  stroke: { curve: 'smooth', width: 4 },
+                  xaxis: {
+                    categories: revenueData.map(d => d.name),
+                    labels: { style: { colors: tickFill, fontSize: '10px', fontWeight: 700 } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                    tooltip: { enabled: false }
+                  },
+                  yaxis: {
+                    labels: { style: { colors: tickFill, fontSize: '10px', fontWeight: 700 } }
+                  },
+                  grid: {
+                    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    strokeDashArray: 4,
+                    xaxis: { lines: { show: false } },
+                    yaxis: { lines: { show: true } },
+                  },
+                  theme: { mode: isDark ? 'dark' : 'light' },
+                  tooltip: {
+                    theme: isDark ? 'dark' : 'light',
+                    y: { formatter: (val: number) => fmt(val * 1_000_000) }
+                  }
+                }}
+                series={[{ name: 'Doanh thu', data: revenueData.map(d => d.value) }]}
+                type="area"
+                height="100%"
+                width="100%"
+              />
             )}
           </div>
         </div>
@@ -506,41 +522,65 @@ export default function AdminDashboard() {
                 Chưa có dữ liệu booking tuần này
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={bookingData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={isDark ? '#c084fc' : '#8b5cf6'} />
-                      <stop offset="100%" stopColor={isDark ? '#6366f1' : '#3b82f6'} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStroke} />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: tickFill, fontWeight: 700 }} 
-                    dy={12} 
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fill: tickFill, fontWeight: 700 }} 
-                    dx={-6}
-                  />
-                  <Tooltip 
-                    content={<CustomTooltip isDark={isDark} />}
-                    cursor={{ fill: 'transparent' }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill="url(#barGrad)" 
-                    radius={[6, 6, 0, 0]} 
-                    maxBarSize={32}
-                    background={{ fill: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)', radius: [6, 6, 0, 0] }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <ReactApexChart
+                options={{
+                  chart: {
+                    type: 'bar',
+                    toolbar: { show: false },
+                    background: 'transparent',
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 },
+                  },
+                  plotOptions: {
+                    bar: {
+                      borderRadius: 6,
+                      columnWidth: '40%',
+                      colors: {
+                        backgroundBarColors: [isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)'],
+                        backgroundBarRadius: 6,
+                      }
+                    }
+                  },
+                  colors: [isDark ? '#c084fc' : '#8b5cf6'],
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shade: isDark ? 'dark' : 'light',
+                      type: 'vertical',
+                      shadeIntensity: 0.5,
+                      gradientToColors: [isDark ? '#6366f1' : '#3b82f6'],
+                      inverseColors: false,
+                      opacityFrom: 1,
+                      opacityTo: 1,
+                      stops: [0, 100]
+                    }
+                  },
+                  dataLabels: { enabled: false },
+                  xaxis: {
+                    categories: bookingData.map(d => d.name),
+                    labels: { style: { colors: tickFill, fontSize: '10px', fontWeight: 700 } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: {
+                    labels: { style: { colors: tickFill, fontSize: '10px', fontWeight: 700 } }
+                  },
+                  grid: {
+                    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    strokeDashArray: 4,
+                    xaxis: { lines: { show: false } },
+                    yaxis: { lines: { show: true } },
+                  },
+                  theme: { mode: isDark ? 'dark' : 'light' },
+                  tooltip: {
+                    theme: isDark ? 'dark' : 'light',
+                    y: { formatter: (val: number) => `${val} lượt đặt` }
+                  }
+                }}
+                series={[{ name: 'Lượt đặt lịch', data: bookingData.map(d => d.value) }]}
+                type="bar"
+                height="100%"
+                width="100%"
+              />
             )}
           </div>
         </div>

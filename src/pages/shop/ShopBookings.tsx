@@ -17,16 +17,17 @@ import {
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 // Constants
 const STATUS_CONFIG: Record<string, any> = {
-    CONFIRMED: { label: 'Chờ xử lý', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
-    IN_PROGRESS: { label: 'Đang làm', color: 'text-blue-600 bg-blue-50 border-blue-100', icon: Clock },
-    COMPLETED: { label: 'Hoàn thành', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', icon: CheckCircle },
-    CANCELLED: { label: 'Đã hủy', color: 'text-rose-600 bg-rose-50 border-rose-100', icon: X },
-    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
-    WAITING_REFUND: { label: 'Chờ hoàn tiền', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
-    WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', icon: AlertCircle }
+    CONFIRMED: { label: 'Chờ xử lý', color: 'text-amber-600 bg-amber-50 border-amber-100 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20 dark:shadow-[0_0_10px_rgba(251,191,36,0.15)]', icon: Clock },
+    IN_PROGRESS: { label: 'Đang làm', color: 'text-blue-600 bg-blue-50 border-blue-100 dark:text-blue-400 dark:bg-blue-500/10 dark:border-blue-500/20 dark:shadow-[0_0_10px_rgba(59,130,246,0.15)]', icon: Clock },
+    COMPLETED: { label: 'Hoàn thành', color: 'text-emerald-600 bg-emerald-50 border-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:shadow-[0_0_10px_rgba(16,185,129,0.15)]', icon: CheckCircle },
+    CANCELLED: { label: 'Đã hủy', color: 'text-rose-600 bg-rose-50 border-rose-100 dark:text-rose-400 dark:bg-rose-500/10 dark:border-rose-500/20 dark:shadow-[0_0_10px_rgba(244,63,94,0.15)]', icon: X },
+    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: 'text-slate-600 bg-slate-50 border-slate-100 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20', icon: Clock },
+    WAITING_REFUND: { label: 'Chờ hoàn tiền', color: 'text-slate-600 bg-slate-50 border-slate-100 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20', icon: Clock },
+    WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', color: 'text-indigo-600 bg-indigo-50 border-indigo-100 dark:text-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:shadow-[0_0_10px_rgba(99,102,241,0.15)]', icon: AlertCircle }
 };
 
 interface BookingListItemProps {
@@ -45,6 +46,7 @@ const CARE_LOG_TYPES = [
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
 function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdateStatus, setSelectedBooking }: BookingListItemProps) {
+    const { isDark } = useShopTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
         queryFn: () => taskService.getPendingStaffChangeRequest(booking.bookingId),
@@ -58,15 +60,15 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
     const completedServices = (booking.completedServiceIds && booking.completedServiceIds.length) || (booking.services ? booking.services.filter((s: any) => s.completedAt).length : 0);
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 group relative">
+        <div className={`rounded-[2rem] p-6 transition-all group relative hover:z-20 focus-within:z-50 ${isDark ? 'admin-glass-card bg-slate-900/40 hover:bg-slate-900/60' : 'bg-white shadow-sm hover:shadow-xl border border-slate-100'}`}>
             <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-[#1a2b4c] dark:text-indigo-400 font-black text-lg">#{(booking.bookingId || '').toString().slice(-3)}</div>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${isDark ? 'bg-slate-800/50 text-indigo-400 shadow-lg glow-indigo' : 'bg-slate-50 text-[#1a2b4c]'}`}>#{(booking.bookingId || '').toString().slice(-3)}</div>
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white">Đơn hàng #{booking.bookingId}</h3>
-                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cfg.className}`}>
+                                <h3 className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Đơn hàng #{booking.bookingId}</h3>
+                                <span className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cfg.color}`}>
                                     <StatusIcon size={10} className={booking.status === 'IN_PROGRESS' ? 'animate-spin' : ''} />
                                     {cfg.label}
                                 </span>
@@ -155,6 +157,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
 }
 
 export default function ShopBookings() {
+    const { isDark } = useShopTheme();
     const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
     const [staffList, setStaffList] = useState<StaffResponse[]>([]);
@@ -370,20 +373,20 @@ export default function ShopBookings() {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-[#f8fafc] dark:bg-[#0f172a] overflow-hidden">
+        <div className="h-screen flex flex-col overflow-hidden animate-in fade-in duration-500">
             <div className="flex-1 flex flex-col max-w-[1600px] mx-auto w-full px-4 md:px-8 py-6 overflow-hidden">
                 {/* Header with View Toggle */}
                 <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 shrink-0">
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-                            <CalendarIcon className="w-8 h-8 text-blue-600" />
+                        <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <CalendarIcon className={`w-8 h-8 ${isDark ? 'text-blue-500 glow-blue' : 'text-blue-600'}`} />
                             Quản lý đặt lịch
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>
+                        <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center bg-white dark:bg-slate-800 p-1 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+                        <div className={`flex items-center p-1 rounded-xl transition-all ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
                             <button 
                                 onClick={() => setViewMode('list')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewMode === 'list' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
@@ -412,7 +415,7 @@ export default function ShopBookings() {
                             className="flex-1 flex flex-col gap-6 overflow-hidden"
                         >
                             {/* List Filters */}
-                            <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
+                            <div className={`rounded-3xl p-5 transition-all shrink-0 ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1 relative">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -421,7 +424,7 @@ export default function ShopBookings() {
                                             placeholder="Tìm khách hàng, thú cưng, mã đơn..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#1a2b4c]/10 outline-none transition-all dark:text-white"
+                                            className={`w-full pl-11 pr-4 py-3 border-none rounded-xl text-sm outline-none transition-all ${isDark ? 'bg-slate-800/50 text-white focus:ring-2 focus:ring-indigo-500/30' : 'bg-slate-50 focus:ring-2 focus:ring-[#1a2b4c]/10'}`}
                                         />
                                     </div>
                                     <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
@@ -430,7 +433,7 @@ export default function ShopBookings() {
                                                 key={t.v}
                                                 onClick={() => setFilter(t.v)}
                                                 className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-                                                    filter === t.v ? 'bg-[#1a2b4c] text-white border-[#1a2b4c]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700'
+                                                    filter === t.v ? (isDark ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg glow-indigo' : 'bg-[#1a2b4c] text-white border-[#1a2b4c]') : (isDark ? 'bg-slate-800/50 text-slate-400 border-white/10 hover:bg-slate-700/50' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50')
                                                 }`}
                                             >
                                                 {t.l}
@@ -469,27 +472,27 @@ export default function ShopBookings() {
                             className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-6 overflow-hidden"
                         >
                             {/* Calendar Grid - Flexible height */}
-                            <div className="xl:col-span-3 bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col h-full">
-                                <div className="px-6 py-4 border-b border-slate-50 dark:border-slate-700 flex items-center justify-between shrink-0">
-                                    <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">
+                            <div className={`xl:col-span-3 rounded-[2rem] transition-all overflow-hidden flex flex-col h-full ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
+                                <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${isDark ? 'border-white/5' : 'border-slate-50'}`}>
+                                    <h2 className={`text-xl font-black capitalize ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                         {format(currentDate, 'MMMM yyyy', { locale: vi })}
                                     </h2>
                                     <div className="flex items-center gap-1">
-                                        <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400">
+                                        <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className={`p-1.5 rounded-lg text-slate-400 ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
                                             <ChevronLeft size={20} />
                                         </button>
-                                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1.5 text-[10px] font-bold text-[#1a2b4c] dark:text-indigo-400">Hôm nay</button>
-                                        <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400">
+                                        <button onClick={() => setCurrentDate(new Date())} className={`px-3 py-1.5 text-[10px] font-bold ${isDark ? 'text-indigo-400' : 'text-[#1a2b4c]'}`}>Hôm nay</button>
+                                        <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className={`p-1.5 rounded-lg text-slate-400 ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50'}`}>
                                             <ChevronRight size={20} />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-7 bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+                                <div className={`grid grid-cols-7 shrink-0 ${isDark ? 'bg-slate-900/50' : 'bg-slate-50/50'}`}>
                                     {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(d => (
-                                        <div key={d} className="py-2.5 text-center text-[9px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
+                                        <div key={d} className={`py-2.5 text-center text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{d}</div>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-7 flex-1 overflow-y-auto custom-scrollbar border-t border-slate-50 dark:border-slate-700">
+                                <div className={`grid grid-cols-7 flex-1 overflow-y-auto custom-scrollbar border-t ${isDark ? 'border-white/5' : 'border-slate-50'}`}>
                                     {calendarDays.map((day, idx) => {
                                         const dayBookings = getBookingsForDay(day);
                                         const isCurrentMonth = isSameMonth(day, monthStart);
@@ -514,20 +517,20 @@ export default function ShopBookings() {
                                             <div 
                                                 key={idx}
                                                 onClick={() => setSelectedDay(day)}
-                                                className={`min-h-[85px] p-2.5 border-b border-r border-slate-50 dark:border-slate-700 cursor-pointer transition-all relative
-                                                    ${!isCurrentMonth ? 'opacity-30 bg-slate-50/50' : 'bg-white dark:bg-slate-800'}
-                                                    ${isSelected ? 'ring-2 ring-inset ring-[#1a2b4c]/20' : ''}
-                                                    ${hasBookings && isCurrentMonth && dayStatus ? `${statusCfg?.className.replace('text-', 'bg-').replace('100', '20') || 'bg-blue-50/40'}` : ''}
-                                                    hover:bg-slate-50 dark:hover:bg-slate-900/50
+                                                className={`min-h-[85px] p-2.5 border-b border-r cursor-pointer transition-all relative ${isDark ? 'border-white/5' : 'border-slate-50'}
+                                                    ${!isCurrentMonth ? (isDark ? 'opacity-30 bg-slate-900/20' : 'opacity-30 bg-slate-50/50') : (isDark ? 'bg-transparent' : 'bg-white')}
+                                                    ${isSelected ? (isDark ? 'ring-2 ring-inset ring-indigo-500/50 bg-slate-800/40' : 'ring-2 ring-inset ring-[#1a2b4c]/20') : ''}
+                                                    ${hasBookings && isCurrentMonth && statusCfg ? statusCfg.color.split(' ').filter((c: string) => c.startsWith('bg-') || c.startsWith('dark:bg-')).join(' ') : ''}
+                                                    ${isDark ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'}
                                                 `}
                                             >
                                                 {/* Appointment indicator line - Color based on Status */}
                                                 {hasBookings && isCurrentMonth && statusCfg && (
-                                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${statusCfg.color} shadow-[1px_0_6px_rgba(0,0,0,0.1)]`} />
+                                                    <div className={`absolute top-0 left-0 w-1.5 h-full ${statusCfg.color.split(' ').filter((c: string) => c.startsWith('text-') || c.startsWith('dark:text-')).map((c: string) => c.replace('text-', 'bg-')).join(' ')} shadow-[1px_0_6px_rgba(0,0,0,0.1)]`} />
                                                 )}
 
                                                 <div className="flex justify-between items-start mb-1.5 relative z-10">
-                                                    <span className={`text-xs font-bold ${isToday(day) ? 'text-white bg-[#1a2b4c] size-5 flex items-center justify-center rounded-full shadow-lg shadow-[#1a2b4c]/20' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                    <span className={`text-xs font-bold ${isToday(day) ? (isDark ? 'text-white bg-indigo-500 shadow-indigo-500/30' : 'text-white bg-[#1a2b4c] shadow-[#1a2b4c]/20') + ' size-5 flex items-center justify-center rounded-full shadow-lg' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                                                         {format(day, 'd')}
                                                     </span>
                                                     {hasBookings && statusCfg && (
@@ -537,13 +540,16 @@ export default function ShopBookings() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="space-y-1">
-                                                    {dayBookings.slice(0, 2).map((b, i) => (
-                                                        <div key={i} className="text-[7px] font-bold p-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 truncate leading-tight">
-                                                            {b.petName}
-                                                        </div>
-                                                    ))}
-                                                    {dayBookings.length > 2 && <div className="text-[7px] text-slate-400 pl-1">+{dayBookings.length - 2}</div>}
+                                                <div className="space-y-1.5 mt-1">
+                                                    {dayBookings.slice(0, 2).map((b, i) => {
+                                                        const bStatus = STATUS_CONFIG[b.status] || STATUS_CONFIG.CONFIRMED;
+                                                        return (
+                                                            <div key={i} className={`text-[8px] font-bold px-1.5 py-1 rounded border truncate leading-tight shadow-sm ${bStatus.color}`}>
+                                                                {b.petName}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {dayBookings.length > 2 && <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 pl-1">+{dayBookings.length - 2} lịch khác</div>}
                                                 </div>
                                             </div>
                                         );
@@ -552,9 +558,9 @@ export default function ShopBookings() {
                             </div>
 
                             {/* Calendar Sidebar - Independent scroll */}
-                            <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full overflow-hidden">
+                            <div className={`p-6 rounded-[2rem] transition-all flex flex-col h-full overflow-hidden ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
                                 <div className="shrink-0 mb-6">
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white mb-0.5">
+                                    <h3 className={`text-lg font-black mb-0.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                         {selectedDay ? format(selectedDay, 'dd MMMM', { locale: vi }) : 'Chọn ngày'}
                                     </h3>
                                     <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">

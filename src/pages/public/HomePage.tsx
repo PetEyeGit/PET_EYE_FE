@@ -9,36 +9,7 @@ import type { Pet } from '../../types';
 import type { ServiceResponse, BookingResponse } from '../../types/api';
 import { reviewService, ReviewResponse } from '../../services/review.service';
 
-// Mock reviews for homepage
-const MOCK_REVIEWS = [
-    {
-        id: 1,
-        userName: "Thanh Hằng",
-        userAvatar: "https://i.pravatar.cc/150?u=1",
-        petName: "Bé Lu",
-        rating: 5,
-        comment: "Dịch vụ spa ở Pet Eye Test Shop cực kỳ chuyên nghiệp. Bé Lu về nhà thơm tho và rất vui vẻ!",
-        date: "2 ngày trước"
-    },
-    {
-        id: 2,
-        userName: "Minh Quân",
-        userAvatar: "https://i.pravatar.cc/150?u=2",
-        petName: "Mimi",
-        rating: 5,
-        comment: "Phòng khám sạch sẽ, bác sĩ tư vấn rất tận tâm. Tôi rất yên tâm khi gửi Mimi ở đây.",
-        date: "1 tuần trước"
-    },
-    {
-        id: 3,
-        userName: "Ngọc Lan",
-        userAvatar: "https://i.pravatar.cc/150?u=3",
-        petName: "Gấu",
-        rating: 4,
-        comment: "Hệ thống Live Camera rất nét, xem được bé Gấu mọi lúc nên tôi đi du lịch rất thoải mái.",
-        date: "3 ngày trước"
-    }
-];
+
 
 export default function HomePage() {
     const { user } = useAuth();
@@ -794,63 +765,61 @@ export default function HomePage() {
                 </div>
             </motion.section>
 
-            <motion.section
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="py-20 px-6 md:px-12 lg:px-20 bg-slate-100/50 dark:bg-slate-900/30"
-            >
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16 space-y-4">
-                        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
-                            <span className="material-symbols-outlined text-sm">rate_review</span>
-                            Đánh giá từ cộng đồng
+            {reviews.length > 0 && (
+                <motion.section
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="py-20 px-6 md:px-12 lg:px-20 bg-slate-100/50 dark:bg-slate-900/30"
+                >
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-16 space-y-4">
+                            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                                <span className="material-symbols-outlined text-sm">rate_review</span>
+                                Đánh giá từ cộng đồng
+                            </div>
+                            <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                                Lời yêu thương <span className="text-gradient">từ chủ nuôi</span>
+                            </h2>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base">Hàng ngàn bé cưng đã được chăm sóc và theo dõi an toàn qua hệ thống PetEye.</p>
                         </div>
-                        <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                            Lời yêu thương <span className="text-gradient">từ chủ nuôi</span>
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-base">Hàng ngàn bé cưng đã được chăm sóc và theo dõi an toàn qua hệ thống PetEye.</p>
-                    </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* 
-                          ✅ API ĐÃ ĐƯỢC KẾT NỐI:
-                          Dữ liệu được lấy từ reviewService.getLatestReviews()
-                        */}
-                        {(reviews.length > 0 ? reviews : MOCK_REVIEWS).map((review, idx) => (
-                            <motion.div
-                                key={review.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
-                                className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-sm border border-slate-100 dark:border-slate-700 relative group hover:shadow-2xl transition-all"
-                            >
-                                <div className="absolute top-8 right-8 text-slate-100 dark:text-slate-700 group-hover:text-primary/10 transition-colors">
-                                    <span className="material-symbols-outlined text-6xl">format_quote</span>
-                                </div>
-                                <div className="flex items-center gap-1 mb-6">
-                                    {[...Array(5)].map((_, i) => (
-                                        <span key={i} className={`material-symbols-outlined text-sm ${i < review.rating ? 'text-yellow-400' : 'text-slate-200'}`}>star</span>
-                                    ))}
-                                </div>
-                                <p className="text-slate-600 dark:text-slate-300 italic mb-8 relative z-10 leading-relaxed font-medium">"{review.comment}"</p>
-                                <div className="flex items-center gap-4">
-                                    <img src={review.userAvatar || "https://i.pravatar.cc/150?u=" + review.id} alt={review.userName} className="w-12 h-12 rounded-full ring-2 ring-slate-100 dark:ring-slate-700" />
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="font-bold text-slate-900 dark:text-white truncate">{review.userName}</h4>
-                                        <p className="text-[10px] font-black uppercase text-primary tracking-widest truncate">
-                                            {review.shopName || "Khách hàng PetEye"}
-                                        </p>
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {reviews.map((review, idx) => (
+                                <motion.div
+                                    key={review.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-sm border border-slate-100 dark:border-slate-700 relative group hover:shadow-2xl transition-all"
+                                >
+                                    <div className="absolute top-8 right-8 text-slate-100 dark:text-slate-700 group-hover:text-primary/10 transition-colors">
+                                        <span className="material-symbols-outlined text-6xl">format_quote</span>
                                     </div>
-                                    <div className="text-[10px] font-bold text-slate-400 shrink-0">
-                                        {'createdAt' in review ? formatRelativeTime(review.createdAt) : (review as any).date}
+                                    <div className="flex items-center gap-1 mb-6">
+                                        {[...Array(5)].map((_, i) => (
+                                            <span key={i} className={`material-symbols-outlined text-sm ${i < review.rating ? 'text-yellow-400' : 'text-slate-200'}`}>star</span>
+                                        ))}
                                     </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                                    <p className="text-slate-600 dark:text-slate-300 italic mb-8 relative z-10 leading-relaxed font-medium">"{review.comment}"</p>
+                                    <div className="flex items-center gap-4">
+                                        <img src={review.userAvatar || "https://i.pravatar.cc/150?u=" + review.id} alt={review.userName} className="w-12 h-12 rounded-full ring-2 ring-slate-100 dark:ring-slate-700" />
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="font-bold text-slate-900 dark:text-white truncate">{review.userName}</h4>
+                                            <p className="text-[10px] font-black uppercase text-primary tracking-widest truncate">
+                                                {review.shopName || "Khách hàng PetEye"}
+                                            </p>
+                                        </div>
+                                        <div className="text-[10px] font-bold text-slate-400 shrink-0">
+                                            {formatRelativeTime(review.createdAt)}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </motion.section>
+                </motion.section>
+            )}
         </div>
     );
 }
