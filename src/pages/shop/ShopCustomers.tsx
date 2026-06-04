@@ -7,8 +7,10 @@ import { Link } from 'react-router-dom';
 import { customerService } from '../../services/customer.service';
 import { CustomerItemResponse, ShopCustomerResponse, CustomerDetailResponse } from '../../types/api';
 import toast from 'react-hot-toast';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 export default function ShopCustomers() {
+  const { isDark } = useShopTheme();
   const [customerData, setCustomerData] = useState<ShopCustomerResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,16 +112,16 @@ export default function ShopCustomers() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="animate-in fade-in duration-500">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header with Image */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-              <User className="w-8 h-8 text-blue-600" />
+            <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <User className={`w-8 h-8 ${isDark ? 'text-blue-500 glow-blue' : 'text-blue-600'}`} />
               Quản lý khách hàng
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
+            <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Danh sách khách hàng và lịch sử giao dịch
             </p>
           </div>
@@ -128,14 +130,14 @@ export default function ShopCustomers() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {[
-            { label: 'Tổng khách hàng', value: customerData?.totalCustomers || 0, gradient: 'from-[#1a2b4c] to-slate-700', icon: '👥' },
-            { label: 'Khách hàng mới (tháng này)', value: customerData?.newCustomersThisMonth || 0, gradient: 'from-green-500 to-emerald-600', icon: '✨' },
-            { label: 'Khách hàng thân thiết', value: customerData?.loyalCustomers || 0, gradient: 'from-purple-500 to-purple-600', icon: '⭐' },
+            { label: 'Tổng khách hàng', value: customerData?.totalCustomers || 0, gradient: isDark ? 'from-indigo-400 to-indigo-600' : 'from-[#1a2b4c] to-slate-700', icon: '👥' },
+            { label: 'Khách hàng mới (tháng này)', value: customerData?.newCustomersThisMonth || 0, gradient: isDark ? 'from-green-400 to-emerald-500' : 'from-green-500 to-emerald-600', icon: '✨' },
+            { label: 'Khách hàng thân thiết', value: customerData?.loyalCustomers || 0, gradient: isDark ? 'from-purple-400 to-fuchsia-500' : 'from-purple-500 to-purple-600', icon: '⭐' },
           ].map((stat) => (
-            <div key={stat.label} className="group bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-50 to-transparent dark:from-slate-700/20 rounded-bl-full group-hover:scale-110 transition-transform" />
+            <div key={stat.label} className={`group rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden ${isDark ? 'admin-glass-card bg-slate-900/40 border border-white/10 hover:bg-slate-800/60' : 'bg-white border border-slate-100'}`}>
+              <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full group-hover:scale-110 transition-transform ${isDark ? 'bg-gradient-to-br from-white/5 to-transparent' : 'bg-gradient-to-br from-slate-50 to-transparent'}`} />
               <div className="relative z-10">
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 flex items-center gap-2">
+                <p className={`text-sm mb-2 flex items-center gap-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                   <span className="text-xl">{stat.icon}</span>
                   {stat.label}
                 </p>
@@ -146,7 +148,7 @@ export default function ShopCustomers() {
         </div>
 
         {/* Search */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm mb-6 border border-slate-100 dark:border-slate-700">
+        <div className={`rounded-2xl p-6 shadow-sm mb-6 ${isDark ? 'admin-glass-card bg-slate-900/40 border border-white/10' : 'bg-white border border-slate-100'}`}>
           <div className="flex flex-col md:flex-row gap-4 mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -155,10 +157,10 @@ export default function ShopCustomers() {
                 placeholder="Tìm khách hàng theo tên, email, số điện thoại..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-slate-900 dark:text-white transition-all"
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl outline-none transition-all ${isDark ? 'bg-slate-900/50 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#1a2b4c]/20 focus:border-[#1a2b4c] text-slate-900'}`}
               />
             </div>
-            <button className="flex items-center gap-2 px-5 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-all">
+            <button className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${isDark ? 'border border-slate-700 text-slate-300 hover:bg-slate-800/60' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
               <Filter size={20} />
               Lọc
             </button>
@@ -176,8 +178,8 @@ export default function ShopCustomers() {
                 key={tab.value}
                 onClick={() => setFilter(tab.value as any)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${filter === tab.value
-                    ? 'bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white shadow-md'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                    ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 glow-indigo' : 'bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white shadow-md')
+                    : (isDark ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-white/5' : 'bg-slate-100 text-slate-700 hover:bg-slate-200')
                   }`}
               >
                 {tab.label}
@@ -189,8 +191,8 @@ export default function ShopCustomers() {
         {/* Customers List */}
         <div className="space-y-4">
           {filteredCustomers.map((customer) => (
-            <div key={customer.id} className="group bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-slate-50 to-transparent dark:from-slate-700/20 rounded-bl-full group-hover:scale-110 transition-transform" />
+            <div key={customer.id} className={`group rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all relative overflow-hidden ${isDark ? 'admin-glass-card bg-slate-900/40 border border-white/10 hover:bg-slate-900/60' : 'bg-white border border-slate-100'}`}>
+              <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-full group-hover:scale-110 transition-transform ${isDark ? 'bg-gradient-to-br from-white/5 to-transparent' : 'bg-gradient-to-br from-slate-50 to-transparent'}`} />
               <div className="flex flex-col lg:flex-row gap-6 relative z-10">
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-center gap-1.5">
@@ -207,13 +209,13 @@ export default function ShopCustomers() {
                       <img
                         src={customer.avatar}
                         alt={customer.name}
-                        className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-700 shadow-sm"
+                        className={`w-20 h-20 rounded-2xl object-cover border-2 shadow-sm ${isDark ? 'border-slate-700' : 'border-slate-100'}`}
                       />
                     </div>
                   </div>
                   <div className="mt-4">
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-none mb-1">{customer.name}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">#{customer.id}</p>
+                    <h3 className={`font-bold text-lg leading-none mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{customer.name}</h3>
+                    <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>#{customer.id}</p>
                   </div>
                 </div>
 
@@ -221,22 +223,22 @@ export default function ShopCustomers() {
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2.5 text-sm">
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                        <Mail size={16} className="text-blue-600 dark:text-blue-400" />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-100 text-blue-600'}`}>
+                        <Mail size={16} />
                       </div>
-                      <span className="text-slate-600 dark:text-slate-300">{customer.email}</span>
+                      <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>{customer.email}</span>
                     </div>
                     <div className="flex items-center gap-2.5 text-sm">
-                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                        <Phone size={16} className="text-green-600 dark:text-green-400" />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-green-100 text-green-600'}`}>
+                        <Phone size={16} />
                       </div>
-                      <span className="text-slate-600 dark:text-slate-300">{customer.phone}</span>
+                      <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>{customer.phone}</span>
                     </div>
                     <div className="flex items-center gap-2.5 text-sm">
-                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                        <Calendar size={16} className="text-purple-600 dark:text-purple-400" />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
+                        <Calendar size={16} />
                       </div>
-                      <span className="text-slate-600 dark:text-slate-300">Lần cuối: {customer.lastVisit}</span>
+                      <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Lần cuối: {customer.lastVisit}</span>
                     </div>
                   </div>
 
@@ -244,33 +246,27 @@ export default function ShopCustomers() {
                   <div className="grid grid-cols-3 gap-3 self-start">
 
                     {/* Thú cưng */}
-                    <div className="h-20 flex flex-col justify-center text-center
-                  bg-blue-50 dark:bg-blue-900/30
-                  rounded-xl">
-                      <p className="text-[11px] text-blue-600 dark:text-blue-300">
+                    <div className={`h-20 flex flex-col justify-center text-center rounded-xl ${isDark ? 'bg-slate-800/50' : 'bg-blue-50'}`}>
+                      <p className={`text-[11px] ${isDark ? 'text-indigo-400' : 'text-blue-600'}`}>
                         Thú cưng
                       </p>
-                      <p className="text-xl font-bold text-blue-700 dark:text-blue-200">
+                      <p className={`text-xl font-bold ${isDark ? 'text-indigo-300' : 'text-blue-700'}`}>
                         {customer.pets}
                       </p>
                     </div>
 
                     {/* Lượt đặt */}
-                    <div className="h-20 flex flex-col justify-center text-center
-                  bg-emerald-50 dark:bg-emerald-900/30
-                  rounded-xl">
-                      <p className="text-[11px] text-emerald-600 dark:text-emerald-300">
+                    <div className={`h-20 flex flex-col justify-center text-center rounded-xl ${isDark ? 'bg-slate-800/50' : 'bg-emerald-50'}`}>
+                      <p className={`text-[11px] ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                         Lượt đặt
                       </p>
-                      <p className="text-xl font-bold text-emerald-700 dark:text-emerald-200">
+                      <p className={`text-xl font-bold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
                         {customer.totalBookings}
                       </p>
                     </div>
 
                     {/* Tổng chi */}
-                    <div className="h-20 flex flex-col justify-center items-center text-center px-1
-                  bg-gradient-to-br from-[#1a2b4c] to-slate-700
-                  rounded-xl overflow-hidden">
+                    <div className={`h-20 flex flex-col justify-center items-center text-center px-1 rounded-xl overflow-hidden ${isDark ? 'bg-gradient-to-br from-indigo-900 to-indigo-950/50' : 'bg-gradient-to-br from-[#1a2b4c] to-slate-700'}`}>
                       <p className="text-[11px] text-slate-300 whitespace-nowrap">
                         Tổng chi
                       </p>
@@ -296,14 +292,14 @@ export default function ShopCustomers() {
                 <div className="flex flex-col gap-2 lg:w-36">
                   <button 
                     onClick={() => handleOpenDetail(customer)}
-                    className="px-4 py-2.5 bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all text-sm"
+                    className={`px-4 py-2.5 rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all text-sm ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-gradient-to-r from-[#1a2b4c] to-slate-700 text-white'}`}
                   >
                     Xem chi tiết
                   </button>
                   <Link 
                     to="/shop/messages"
                     state={{ customerEmail: customer.email, customerName: customer.name }}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm"
+                    className={`flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl font-semibold transition-all text-sm ${isDark ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                   >
                     Nhắn tin
                   </Link>
@@ -326,13 +322,13 @@ export default function ShopCustomers() {
         {/* Customer Detail Modal */}
         {showDetailModal && selectedCustomer && (
             <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300">
+                <div className={`w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300 ${isDark ? 'admin-glass-card bg-slate-900/90' : 'bg-white'}`}>
                     {/* Left Sidebar - Profile Summary */}
-                    <div className="w-full md:w-80 bg-slate-50 dark:bg-slate-800/50 p-8 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-700 flex flex-col items-center text-center">
+                    <div className={`w-full md:w-80 p-8 border-b md:border-b-0 md:border-r flex flex-col items-center text-center ${isDark ? 'bg-slate-900/50 border-white/10' : 'bg-slate-50 border-slate-100'}`}>
                         <div className="relative mb-6">
                             <img 
                                 src={selectedCustomer.avatar} 
-                                className="w-32 h-32 rounded-[2rem] object-cover shadow-xl border-4 border-white dark:border-slate-800" 
+                                className={`w-32 h-32 rounded-[2rem] object-cover shadow-xl border-4 ${isDark ? 'border-slate-800' : 'border-white'}`} 
                                 alt={selectedCustomer.name}
                             />
                             <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-white p-2 rounded-xl shadow-lg">
@@ -340,7 +336,7 @@ export default function ShopCustomers() {
                             </div>
                         </div>
 
-                        <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">{selectedCustomer.name}</h3>
+                        <h3 className={`text-xl font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedCustomer.name}</h3>
                         <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{selectedCustomer.id}</p>
 
                         <div className="mt-4">
@@ -356,22 +352,22 @@ export default function ShopCustomers() {
                         </div>
                         
                         <div className="w-full space-y-3 mt-8 text-left">
-                            <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                            <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-50 text-blue-600'}`}>
                                     <Mail size={16} />
                                 </div>
-                                <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{selectedCustomer.email}</span>
+                                <span className={`text-[10px] sm:text-xs font-bold truncate ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{selectedCustomer.email}</span>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                            <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-green-50 text-green-600'}`}>
                                     <Phone size={16} />
                                 </div>
-                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{selectedCustomer.phone}</span>
+                                <span className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{selectedCustomer.phone}</span>
                             </div>
                         </div>
 
                         <div className="mt-auto pt-8 w-full">
-                            <button className="w-full py-3 bg-[#1a2b4c] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all text-sm shadow-lg shadow-indigo-900/20">
+                            <button className={`w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all text-sm shadow-lg ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/30 glow-indigo' : 'bg-[#1a2b4c] text-white shadow-indigo-900/20'}`}>
                                 <Mail size={18} />
                                 Gửi thông báo
                             </button>
@@ -379,15 +375,15 @@ export default function ShopCustomers() {
                     </div>
 
                     {/* Right Content - Tabs/Details */}
-                    <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900">
-                        <div className="p-6 md:p-8 flex justify-between items-center bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
+                    <div className={`flex-1 flex flex-col min-h-0 ${isDark ? 'bg-transparent' : 'bg-white'}`}>
+                        <div className={`p-6 md:p-8 flex justify-between items-center border-b sticky top-0 z-10 ${isDark ? 'bg-slate-900/50 border-white/10 backdrop-blur-md' : 'bg-white border-slate-100'}`}>
                             <div>
-                                <h4 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Chi tiết hoạt động</h4>
+                                <h4 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Chi tiết hoạt động</h4>
                                 <p className="text-xs text-slate-500 font-medium">Lịch sử giao dịch và dịch vụ đã sử dụng</p>
                             </div>
                             <button 
                                 onClick={() => setShowDetailModal(false)}
-                                className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors"
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
                             >
                                 <X size={20} className="text-slate-400" />
                             </button>
@@ -491,24 +487,24 @@ export default function ShopCustomers() {
 
                                 {/* Section: Recent History */}
                                 <section>
-                                    <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                                    <h5 className={`text-sm font-black mb-4 uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                         <span className="w-1.5 h-4 bg-indigo-500 rounded-full" />
                                         Lịch sử gần đây
                                     </h5>
                                     <div className="space-y-3">
                                         {customerDetail.bookingHistory.length > 0 ? customerDetail.bookingHistory.map((h) => (
-                                            <div key={h.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 group">
+                                            <div key={h.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all border group ${isDark ? 'bg-slate-800/50 border-transparent hover:bg-slate-800 hover:border-slate-700' : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-100'}`}>
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 shadow-sm transition-colors">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-500 shadow-sm transition-colors ${isDark ? 'bg-slate-700' : 'bg-white'}`}>
                                                         <Clock size={18} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">{h.services && h.services.length > 0 ? h.services.map((s: any) => s.serviceName).join(', ') : h.serviceName}</p>
+                                                        <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{h.services && h.services.length > 0 ? h.services.map((s: any) => s.serviceName).join(', ') : h.serviceName}</p>
                                                         <p className="text-[10px] text-slate-500">{new Date(h.appointmentDatetime).toLocaleString('vi-VN')}</p>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xs font-black text-slate-900 dark:text-white">{String(h.servicePrice).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}đ</p>
+                                                    <p className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{String(h.servicePrice).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}đ</p>
                                                     <span className={`text-[9px] font-bold uppercase ${h.status === 'COMPLETED' ? 'text-green-500' : (h.status === 'CANCELLED' || h.status === 'WAITING_REFUND') ? 'text-red-500' : 'text-blue-500'}`}>
                                                         {h.status === 'COMPLETED' ? 'Thành công' : (h.status === 'CANCELLED' || h.status === 'WAITING_REFUND') ? 'Đã hủy' : 'Đã xác nhận'}
                                                     </span>
@@ -523,10 +519,10 @@ export default function ShopCustomers() {
                           ) : null}
                         </div>
 
-                        <div className="p-6 bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                        <div className={`p-6 border-t flex justify-end ${isDark ? 'bg-slate-900/50 border-white/10' : 'bg-slate-50/50 border-slate-100'}`}>
                             <button 
                                 onClick={() => setShowDetailModal(false)}
-                                className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
+                                className={`px-8 py-3 border rounded-2xl font-bold transition-all text-sm ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
                             >
                                 Đóng
                             </button>

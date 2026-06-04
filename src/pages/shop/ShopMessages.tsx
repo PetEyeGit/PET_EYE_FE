@@ -7,10 +7,12 @@ import { shopService } from '../../services/shop.service';
 import { staffService } from '../../services/staff.service';
 import { useQuery } from '@tanstack/react-query';
 import ConversationThread from '../../components/chat/shared/ConversationThread';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 type ChannelType = 'ADMIN_SUPPORT' | 'INTERNAL_STAFF' | 'DIRECT' | 'CUSTOMER_CHAT';
 
 export default function ShopMessages() {
+  const { isDark } = useShopTheme();
   const { user } = useAuth();
   const [activeChannel, setActiveChannel] = useState<{
     type: ChannelType;
@@ -69,17 +71,17 @@ export default function ShopMessages() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-140px)] bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-xl border border-slate-100 dark:border-slate-800 m-4">
+    <div className={`flex h-[calc(100vh-140px)] rounded-3xl overflow-hidden shadow-xl border m-4 transition-all duration-300 animate-in fade-in zoom-in-95 ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
       {/* Sidebar */}
-      <div className="w-80 border-r border-slate-100 dark:border-slate-800 flex flex-col bg-slate-50/50 dark:bg-slate-900/50">
+      <div className={`w-80 border-r flex flex-col transition-colors ${isDark ? 'border-white/10 bg-slate-900/50 backdrop-blur-sm' : 'border-slate-100 bg-slate-50/50'}`}>
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tin nhắn</h1>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Tin nhắn</h1>
           <div className="mt-4 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
               placeholder="Tìm kiếm hội thoại..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+              className={`w-full pl-10 pr-4 py-2.5 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-sm outline-none ${isDark ? 'bg-slate-800/50 text-white placeholder-slate-500' : 'bg-white text-slate-900 placeholder-slate-400'}`}
             />
           </div>
         </div>
@@ -94,15 +96,15 @@ export default function ShopMessages() {
               onClick={() => setActiveChannel({ type: 'ADMIN_SUPPORT', id: 'admin', title: 'Hệ thống Admin' })}
               className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
                 activeChannel.type === 'ADMIN_SUPPORT' 
-                ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700' 
-                : 'hover:bg-white/50 dark:hover:bg-slate-800/50'
+                ? (isDark ? 'bg-indigo-500/20 shadow-sm ring-1 ring-indigo-500/50' : 'bg-white shadow-sm ring-1 ring-slate-200') 
+                : (isDark ? 'hover:bg-white/5' : 'hover:bg-white/50')
               }`}
             >
               <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
                 <Shield size={20} className="text-white" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Admin Hỗ trợ</p>
+                <p className={`font-bold text-sm leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Admin Hỗ trợ</p>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">Chỉ Chủ shop truy cập</p>
               </div>
             </button>
@@ -112,15 +114,15 @@ export default function ShopMessages() {
             onClick={() => setActiveChannel({ type: 'INTERNAL_STAFF', id: 'internal', title: 'Nhóm Nội bộ Shop' })}
             className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
               activeChannel.type === 'INTERNAL_STAFF' 
-              ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700' 
-              : 'hover:bg-white/50 dark:hover:bg-slate-800/50'
+              ? (isDark ? 'bg-indigo-500/20 shadow-sm ring-1 ring-indigo-500/50' : 'bg-white shadow-sm ring-1 ring-slate-200') 
+              : (isDark ? 'hover:bg-white/5' : 'hover:bg-white/50')
             }`}
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
               <Users size={20} className="text-white" />
             </div>
             <div className="flex-1 text-left">
-              <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Nhóm Nội bộ</p>
+              <p className={`font-bold text-sm leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Nhóm Nội bộ</p>
               <p className="text-[11px] text-slate-500 truncate mt-0.5">Tất cả nhân viên</p>
             </div>
           </button>
@@ -142,15 +144,15 @@ export default function ShopMessages() {
               })}
               className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
                 activeChannel.id === customer.email 
-                ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700' 
-                : 'hover:bg-white/50 dark:hover:bg-slate-800/50'
+                ? (isDark ? 'bg-indigo-500/20 shadow-sm ring-1 ring-indigo-500/50' : 'bg-white shadow-sm ring-1 ring-slate-200') 
+                : (isDark ? 'hover:bg-white/5' : 'hover:bg-white/50')
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <MessageCircle size={20} className="text-primary" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                <MessageCircle size={20} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
               </div>
               <div className="flex-1 text-left min-w-0">
-                <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">{customer.fullName}</p>
+                <p className={`font-bold text-sm leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{customer.fullName}</p>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">{customer.email}</p>
               </div>
             </button>
@@ -166,15 +168,15 @@ export default function ShopMessages() {
               onClick={() => setActiveChannel({ type: 'DIRECT', id: staff.email!, title: staff.fullName })}
               className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
                 activeChannel.type === 'DIRECT' && activeChannel.id === staff.email
-                ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700' 
-                : 'hover:bg-white/50 dark:hover:bg-slate-800/50'
+                ? (isDark ? 'bg-indigo-500/20 shadow-sm ring-1 ring-indigo-500/50' : 'bg-white shadow-sm ring-1 ring-slate-200') 
+                : (isDark ? 'hover:bg-white/5' : 'hover:bg-white/50')
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0 overflow-hidden">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
                 <User size={20} className="text-slate-500" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{staff.fullName}</p>
+                <p className={`font-bold text-sm leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{staff.fullName}</p>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">{staff.specialization || 'Nhân viên'}</p>
               </div>
             </button>

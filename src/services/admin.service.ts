@@ -5,10 +5,30 @@ import type { ApiResponse } from '../types/api';
 
 export interface AdminDashboardStats {
   totalRevenue: number;
+  totalRevenueTrend?: string;
+  totalRevenueTrendUp?: boolean | null;
+  totalRevenueSparkData?: number[];
+
   totalUsers: number;
+  totalUsersTrend?: string;
+  totalUsersTrendUp?: boolean | null;
+  totalUsersSparkData?: number[];
+
   totalShops: number;
+  totalShopsTrend?: string;
+  totalShopsTrendUp?: boolean | null;
+  totalShopsSparkData?: number[];
+
   totalBookings: number;
+  totalBookingsTrend?: string;
+  totalBookingsTrendUp?: boolean | null;
+  totalBookingsSparkData?: number[];
+
   pendingShops: number;
+  pendingShopsTrend?: string;
+  pendingShopsTrendUp?: boolean | null;
+  pendingShopsSparkData?: number[];
+
   unreadMessages: number;
 }
 
@@ -70,6 +90,11 @@ export interface AdminUserResponse {
   roles: { name: string }[];
   isActive?: boolean;
   active?: boolean; // field thực tế BE trả về
+  currentTier?: {
+    id: number;
+    name: string;
+    requiredSpending: number;
+  };
 }
 
 export interface PagedResponse<T> {

@@ -8,6 +8,21 @@ import {
   X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import type { NearbyShopResponse } from '../../services/clinic.service';
+import ShopMap from '../../components/ShopMap';
+import NearbyShops from '../../components/NearbyShops';
+import { useEffect, useMemo } from 'react';
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 const SHOP_TYPE_TABS = [
   { value: 'Tất cả', label: 'Tất cả', icon: <Grid size={16} /> },
@@ -16,7 +31,7 @@ const SHOP_TYPE_TABS = [
   { value: 'BOARDING', label: 'Lưu trú', icon: <Home size={16} /> },
 ];
 
-const SORT_OPTIONS = ['gần nhất', 'xa nhất'];
+const SORT_OPTIONS = ['Đánh giá cao nhất', 'Gần nhất', 'Mới nhất'];
 
 const RATING_OPTIONS = [
   { value: 0, label: 'Tất cả' },
@@ -55,13 +70,46 @@ export default function VetSearch() {
 
   const [sortBy, setSortBy] = useState('Đánh giá cao nhất');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [distanceKm, setDistanceKm] = useState(10);
+  const [distanceKm, setDistanceKm] = useState(30);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
-  const sortedClinics = [...clinics].sort((a: ShopPublicResponse, b: ShopPublicResponse) => {
-    if (sortBy === 'Đánh giá cao nhất') return b.ratingAvg - a.ratingAvg;
-    return b.id - a.id;
-  });
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => console.warn('Geolocation error:', err)
+      );
+    }
+  }, []);
+
+  const shopsWithDistance = useMemo(() => {
+    return clinics.map((shop: ShopPublicResponse) => {
+      let dist = undefined;
+      if (userLocation && shop.latitude && shop.longitude) {
+        dist = calculateDistance(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude);
+      }
+      return { ...shop, distanceKm: dist };
+    });
+  }, [clinics, userLocation]);
+
+  const sortedClinics = useMemo(() => {
+    return [...shopsWithDistance].filter((shop: any) => {
+      // Filter by distance if we have user location
+      if (userLocation && shop.distanceKm !== undefined) {
+        return shop.distanceKm <= distanceKm;
+      }
+      // If we don't have user location, we show all shops (ignore distance filter)
+      return true;
+    }).sort((a: any, b: any) => {
+      if (sortBy === 'Gần nhất' && a.distanceKm !== undefined && b.distanceKm !== undefined) {
+        return a.distanceKm - b.distanceKm;
+      }
+      if (sortBy === 'Đánh giá cao nhất') return b.ratingAvg - a.ratingAvg;
+      return b.id - a.id;
+    });
+  }, [shopsWithDistance, userLocation, distanceKm, sortBy]);
   const springTransition = {
     type: "spring",
     stiffness: 100,
@@ -87,6 +135,28 @@ export default function VetSearch() {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0, transition: { ...springTransition } },
   };
+
+  // All shops mapped for sidebar list (includes shops without coordinates)
+  const allShopsForList: NearbyShopResponse[] = useMemo(() => {
+    return sortedClinics.map((shop: any) => ({
+      id: shop.id,
+      shopName: shop.shopName,
+      shopType: shop.shopType,
+      address: shop.address,
+      city: shop.city,
+      latitude: shop.latitude || 0,
+      longitude: shop.longitude || 0,
+      logoUrl: shop.licenseImageUrl || '',
+      ratingAvg: shop.ratingAvg,
+      distanceKm: shop.distanceKm ?? 0,
+      durationMinutes: null
+    }));
+  }, [sortedClinics]);
+
+  // Only shops with valid coordinates for map markers
+  const shopsForMap: NearbyShopResponse[] = useMemo(() => {
+    return allShopsForList.filter(shop => shop.latitude !== 0 && shop.longitude !== 0);
+  }, [allShopsForList]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-display">
@@ -157,7 +227,7 @@ export default function VetSearch() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative inline-flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-[24px] mb-10 overflow-hidden"
+          className="relative inline-flex bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-1.5 rounded-[24px] mb-10 overflow-hidden shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50"
         >
           {SHOP_TYPE_TABS.map((tab) => {
             const isActive = activeService === tab.value;
@@ -229,26 +299,42 @@ export default function VetSearch() {
               <div className="space-y-6">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Khoảng cách</p>
                 <div className="px-2">
-                  <div className="flex justify-between items-end mb-4">
-                    <span className="text-2xl font-black text-primary">{distanceKm}</span>
-                    <span className="text-xs font-bold text-slate-400 pb-1">km</span>
+                  <div className="flex justify-between items-center mb-4">
+                    <button 
+                      onClick={() => setDistanceKm(prev => Math.max(1, prev - 1))}
+                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <span className="text-lg font-bold">-</span>
+                    </button>
+                    <div className="flex items-end">
+                      <span className="text-2xl font-black text-primary">{distanceKm}</span>
+                      <span className="text-xs font-bold text-slate-400 pb-1 ml-1">km</span>
+                    </div>
+                    <button 
+                      onClick={() => setDistanceKm(prev => Math.min(30, prev + 1))}
+                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <span className="text-lg font-bold">+</span>
+                    </button>
                   </div>
                   <input
                     type="range"
                     min={1}
-                    max={50}
+                    max={30}
                     value={distanceKm}
                     onChange={(e) => setDistanceKm(Number(e.target.value))}
                     className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary bg-slate-100 dark:bg-slate-800"
                   />
                   <div className="flex justify-between text-[10px] font-black text-slate-300 mt-2">
                     <span>1 KM</span>
-                    <span>50 KM</span>
+                    <span>30 KM</span>
                   </div>
                 </div>
               </div>
 
-              <button className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-slate-900 text-white font-black text-xs hover:bg-primary transition-all shadow-xl hover:shadow-primary/20 uppercase tracking-widest">
+              <button 
+                onClick={() => setIsMapModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-slate-900 text-white font-black text-xs hover:bg-primary transition-all shadow-xl hover:shadow-primary/20 uppercase tracking-widest">
                 <MapIcon size={16} />
                 Xem trên bản đồ
               </button>
@@ -292,11 +378,7 @@ export default function VetSearch() {
             </div>
 
             {/* Cards Grid/List */}
-            <motion.div
-              key={`${isLoading}-${activeService}-${minRating}`}
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
+            <div
               className={viewMode === 'grid' ? 'grid sm:grid-cols-2 gap-6' : 'flex flex-col gap-6'}
             >
               {isLoading ? (
@@ -308,8 +390,8 @@ export default function VetSearch() {
                   ))}
                 </>
               ) : (
-                sortedClinics.slice(0, 20).map((shop: ShopPublicResponse) => (
-                  <motion.div key={shop.id} variants={itemVariants}>
+                sortedClinics.slice(0, 20).map((shop: ShopPublicResponse, index: number) => (
+                  <div key={`${shop.id}-${index}`} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
                     <Link
                       to={`/clinic/${shop.id}`}
                       className={`group glass dark:glass-dark rounded-[32px] overflow-hidden hover:shadow-3xl hover:translate-y-[-4px] transition-all duration-500 border-2 border-transparent hover:border-primary/10 h-full ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:h-64' : 'flex flex-col'}`}
@@ -353,8 +435,14 @@ export default function VetSearch() {
                             </div>
                           </div>
 
+                          {(shop as any).distanceKm !== undefined && (
+                            <div className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 text-xs font-black bg-teal-50 dark:bg-teal-400/10 w-fit px-2 py-1 rounded-lg">
+                              <MapPin size={12} />
+                              {(shop as any).distanceKm.toFixed(1)} km
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
-                            <MapPin size={14} className="text-primary/60" />
+                            <MapPin size={14} className="text-slate-400" />
                             <span className="truncate">{shop.address}{shop.city ? `, ${shop.city}` : ''}</span>
                           </div>
 
@@ -379,10 +467,10 @@ export default function VetSearch() {
                         </div>
                       </div>
                     </Link>
-                  </motion.div>
+                  </div>
                 ))
               )}
-            </motion.div>
+            </div>
 
             {/* Empty state */}
             {!isLoading && sortedClinics.length === 0 && (
@@ -411,6 +499,61 @@ export default function VetSearch() {
           </div>
         </div>
       </div>
+
+      {/* Map Modal */}
+      <AnimatePresence>
+        {isMapModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] rounded-[32px] overflow-hidden shadow-2xl flex flex-col md:flex-row relative"
+            >
+              <button
+                onClick={() => setIsMapModalOpen(false)}
+                className="absolute top-4 right-4 z-10 p-2 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-500 transition-colors backdrop-blur-md"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="w-full md:w-2/3 h-1/2 md:h-full relative bg-slate-100 dark:bg-slate-800">
+                {userLocation ? (
+                  <ShopMap 
+                    userLocation={userLocation}
+                    nearbyShops={shopsForMap}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
+                    <MapPin size={48} className="mb-4 text-slate-300" />
+                    <p className="font-medium text-lg">Đang lấy vị trí của bạn...</p>
+                    <p className="text-sm mt-2 opacity-70">Vui lòng cho phép truy cập vị trí trong trình duyệt</p>
+                  </div>
+                )}
+              </div>
+              <div className="w-full md:w-1/3 h-1/2 md:h-full bg-slate-50 dark:bg-slate-950 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 flex flex-col">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
+                  <h3 className="font-black text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                    <MapIcon size={24} className="text-primary" />
+                    Bản đồ các cơ sở
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium mt-1">
+                    Hiển thị {allShopsForList.length} kết quả ({shopsForMap.length} có vị trí trên bản đồ)
+                  </p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  <NearbyShops shops={allShopsForList} loading={isLoading} />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -26,25 +26,25 @@ export interface PetMedicalRecordResponse {
 }
 
 export interface PetVaccinationRequest {
-  vaccineName: string;
-  dateAdministered: string;
-  nextDueDate?: string;
-  veterinarianName?: string; // This might still be needed if entered manually, but we usually capture staffName now
-  notes?: string;
+  name: string;
+  drug?: string;
+  clinic?: string;
+  date?: string;
+  status?: string;
 }
 
 export interface PetVaccinationResponse {
   id: number;
   petId: number;
   bookingId?: number;
-  vaccineName: string;
-  dateAdministered: string;
-  nextDueDate?: string;
-  veterinarianName?: string;
-  notes?: string;
+  staffId?: number;
   staffName?: string;
   shopName?: string;
-  createdAt: string;
+  name: string;
+  drug?: string;
+  clinic?: string;
+  date?: string;
+  status?: string;
 }
 
 export const petMedicalService = {

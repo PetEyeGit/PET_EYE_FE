@@ -3,6 +3,7 @@ import { Bell, CheckCheck, Loader2, AlertCircle, RefreshCw, BellOff, Trash2 } fr
 import { useNotifications, type AppNotification } from '../../hooks/useNotifications';
 import { format, parseISO, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,26 +42,28 @@ function groupByDate(notifications: AppNotification[]): { label: string; items: 
 function NotifItem({ 
   notif, 
   onRead, 
-  onDelete 
+  onDelete,
+  isDark
 }: { 
   notif: AppNotification; 
   onRead: (id: number) => void;
   onDelete: (id: number) => void;
+  isDark: boolean;
 }) {
   return (
     <div
       onClick={() => !notif.isRead && onRead(notif.id)}
-      className={`w-full text-left flex items-start gap-4 px-5 py-4 rounded-2xl transition-all group relative cursor-pointer
+      className={`w-full text-left flex items-start gap-4 px-5 py-4 rounded-2xl transition-all group relative cursor-pointer border
         ${notif.isRead
-          ? 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800'
-          : 'bg-blue-50/60 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-blue-100 dark:border-blue-500/20'
+          ? (isDark ? 'bg-slate-800/30 border-transparent hover:bg-slate-800/60' : 'bg-white border-slate-100 hover:bg-slate-50')
+          : (isDark ? 'bg-indigo-900/30 hover:bg-indigo-900/50 border-indigo-500/20 glow-indigo' : 'bg-blue-50 hover:bg-blue-100 border-blue-200')
         }`}
     >
       {/* Icon */}
       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 transition-all
         ${notif.isRead
-          ? 'bg-slate-100 dark:bg-slate-700 text-slate-400'
-          : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
+          ? (isDark ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400')
+          : (isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-100 text-blue-600')
         }`}
       >
         <Bell className="w-4.5 h-4.5" size={18} />
@@ -69,17 +72,17 @@ function NotifItem({
       {/* Content */}
       <div className="flex-1 min-w-0 pr-8">
         <div className="flex items-start justify-between gap-2">
-          <p className={`text-sm leading-snug ${notif.isRead ? 'font-medium text-slate-700 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>
+          <p className={`text-sm leading-snug ${notif.isRead ? (isDark ? 'font-medium text-slate-300' : 'font-medium text-slate-700') : (isDark ? 'font-bold text-white' : 'font-bold text-slate-900')}`}>
             {notif.title}
           </p>
           {!notif.isRead && (
-            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+            <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${isDark ? 'bg-indigo-500 shadow-indigo-500/50' : 'bg-blue-500'}`} />
           )}
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+        <p className={`text-xs mt-1 line-clamp-2 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           {notif.content}
         </p>
-        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium">
+        <p className={`text-[10px] mt-2 font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
           {formatNotifTime(notif.createdAt)}
         </p>
       </div>
@@ -90,7 +93,7 @@ function NotifItem({
           e.stopPropagation();
           onDelete(notif.id);
         }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 opacity-0 group-hover:opacity-100 transition-all duration-200"
+        className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 ${isDark ? 'text-slate-500 hover:text-rose-400 hover:bg-rose-950/30' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}
         title="Xóa thông báo"
       >
         <Trash2 size={16} />
@@ -104,6 +107,7 @@ function NotifItem({
 type FilterKey = 'all' | 'unread' | 'read';
 
 export default function ShopNotifications() {
+  const { isDark } = useShopTheme();
   const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead, deleteRead, deleteSingle } = useNotifications(true);
   const [filter, setFilter] = useState<FilterKey>('all');
 
@@ -116,19 +120,19 @@ export default function ShopNotifications() {
   const grouped = groupByDate(filtered);
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className={`p-6 md:p-8 space-y-6 max-w-4xl mx-auto rounded-3xl m-6 animate-in fade-in duration-500 ${isDark ? 'admin-glass-card bg-slate-900/40 border border-white/10' : 'bg-white'}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+          <h1 className={`text-2xl font-black tracking-tight flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Thông báo
             {unreadCount > 0 && (
-              <span className="text-sm font-black bg-blue-600 text-white px-2 py-0.5 rounded-full">
+              <span className={`text-sm font-black px-2 py-0.5 rounded-full ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-blue-600 text-white'}`}>
                 {unreadCount}
               </span>
             )}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">
+          <p className={`text-sm mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             {unreadCount > 0 ? `Bạn có ${unreadCount} thông báo chưa đọc.` : 'Tất cả thông báo đã được đọc.'}
           </p>
         </div>
@@ -136,7 +140,7 @@ export default function ShopNotifications() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => refetch()}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+            className={`p-2.5 rounded-xl border transition-all ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
             title="Làm mới"
           >
             <RefreshCw className="w-4 h-4" />
@@ -144,7 +148,7 @@ export default function ShopNotifications() {
           {unreadCount > 0 && (
             <button
               onClick={() => markAllRead()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#122143] text-white rounded-xl font-bold text-xs shadow-lg shadow-[#122143]/20 hover:-translate-y-0.5 transition-all"
+              className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl font-bold text-xs transition-all hover:-translate-y-0.5 shadow-lg ${isDark ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-[#122143] shadow-[#122143]/20'}`}
             >
               <CheckCheck className="w-4 h-4" />
               Đánh dấu tất cả đã đọc
@@ -153,7 +157,7 @@ export default function ShopNotifications() {
           {notifications.some(n => n.isRead) && (
             <button
               onClick={() => deleteRead()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-rose-600/20 hover:-translate-y-0.5 transition-all"
+              className={`flex items-center gap-2 px-4 py-2.5 text-white rounded-xl font-bold text-xs transition-all hover:-translate-y-0.5 shadow-lg ${isDark ? 'bg-rose-600/90 shadow-rose-600/20' : 'bg-rose-600 shadow-rose-600/20'}`}
             >
               <Trash2 className="w-4 h-4" />
               Xóa thông báo đã đọc
@@ -163,7 +167,7 @@ export default function ShopNotifications() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+      <div className={`flex gap-1 p-1 rounded-2xl w-fit ${isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
         {([
           { key: 'all' as FilterKey, label: 'Tất cả', count: notifications.length },
           { key: 'unread' as FilterKey, label: 'Chưa đọc', count: notifications.filter(n => !n.isRead).length },
@@ -174,16 +178,16 @@ export default function ShopNotifications() {
             onClick={() => setFilter(t.key)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               filter === t.key
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm')
+                : (isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700')
             }`}
           >
             {t.label}
             {t.count > 0 && (
               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
                 filter === t.key
-                  ? t.key === 'unread' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'
-                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
+                  ? t.key === 'unread' ? (isDark ? 'bg-indigo-600 text-white' : 'bg-blue-600 text-white') : (isDark ? 'bg-slate-600 text-slate-300' : 'bg-slate-200 text-slate-600')
+                  : (isDark ? 'bg-slate-700 text-slate-500' : 'bg-slate-200 text-slate-500')
               }`}>
                 {t.count}
               </span>
@@ -220,16 +224,16 @@ export default function ShopNotifications() {
             <div key={group.label}>
               {/* Date label */}
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <span className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   {group.label}
                 </span>
-                <div className="flex-1 h-px bg-slate-100 dark:bg-slate-700" />
+                <div className={`flex-1 h-px ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`} />
               </div>
 
               {/* Items */}
               <div className="flex flex-col gap-2">
                 {group.items.map(n => (
-                  <NotifItem key={n.id} notif={n} onRead={markRead} onDelete={deleteSingle} />
+                  <NotifItem key={n.id} notif={n} onRead={markRead} onDelete={deleteSingle} isDark={isDark} />
                 ))}
               </div>
             </div>

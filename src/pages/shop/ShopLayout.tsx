@@ -7,10 +7,12 @@ import { motion } from 'motion/react';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { shopService } from '../../services/shop.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { ShopThemeProvider, useShopTheme } from '../../contexts/ShopThemeContext';
 
-export default function ShopLayout() {
+function ShopLayoutInner() {
   const location = useLocation();
   const { user } = useAuth();
+  const { isDark } = useShopTheme();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [shopId, setShopId] = useState<number | null>(null);
   
@@ -24,8 +26,12 @@ export default function ShopLayout() {
     }
   }, [user, shopId]);
 
+  const themeClasses = isDark
+    ? 'admin-bg-mesh text-slate-200'
+    : 'bg-[#f8fafc] text-slate-900';
+
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 max-w-[1920px] mx-auto w-full relative">
+    <div className={`flex min-h-screen max-w-[1920px] mx-auto w-full relative ${themeClasses}`}>
       {/* Fixed Sidebar */}
       <ShopSidebar />
 
@@ -48,7 +54,7 @@ export default function ShopLayout() {
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsChatOpen(!isChatOpen)}
             className={`flex items-center justify-center w-16 h-16 rounded-[2rem] shadow-2xl transition-all relative group ${
-                isChatOpen ? 'bg-rose-500 text-white shadow-rose-500/20' : 'bg-primary text-white shadow-primary/30'
+                isChatOpen ? 'bg-rose-500 text-white shadow-rose-500/20' : 'bg-primary text-white shadow-primary/30 glow-blue'
             }`}
           >
             {isChatOpen ? <X size={28} /> : <MessageCircle size={28} />}
@@ -75,5 +81,13 @@ export default function ShopLayout() {
         />
       )}
     </div>
+  );
+}
+
+export default function ShopLayout() {
+  return (
+    <ShopThemeProvider>
+      <ShopLayoutInner />
+    </ShopThemeProvider>
   );
 }

@@ -10,6 +10,8 @@ import { walletService, type WithdrawalRequestCreate } from '../../services/wall
 import toast from 'react-hot-toast';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useShopTheme } from '../../contexts/ShopThemeContext';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatVND(n: number) {
@@ -22,11 +24,11 @@ function formatDate(s: string) {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  PENDING:  { label: 'Đang chờ duyệt', color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',       icon: <Clock className="w-3.5 h-3.5" /> },
-  PAYING:   { label: 'Đang chuyển',    color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',            icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
-  APPROVED: { label: 'Đã duyệt',       color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-  REJECTED: { label: 'Bị từ chối',     color: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300',               icon: <XCircle className="w-3.5 h-3.5" /> },
-  EXPIRED:  { label: 'Hết hạn',        color: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',           icon: <Clock className="w-3.5 h-3.5" /> },
+  PENDING:  { label: 'Đang chờ duyệt', color: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 dark:shadow-[0_0_10px_rgba(251,191,36,0.2)]',       icon: <Clock className="w-3.5 h-3.5" /> },
+  PAYING:   { label: 'Đang chuyển',    color: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/30 dark:shadow-[0_0_10px_rgba(59,130,246,0.2)]',            icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
+  APPROVED: { label: 'Đã duyệt',       color: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30 dark:shadow-[0_0_10px_rgba(16,185,129,0.2)]', icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+  REJECTED: { label: 'Bị từ chối',     color: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30 dark:shadow-[0_0_10px_rgba(244,63,94,0.2)]',               icon: <XCircle className="w-3.5 h-3.5" /> },
+  EXPIRED:  { label: 'Hết hạn',        color: 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/30',           icon: <Clock className="w-3.5 h-3.5" /> },
 };
 
 const BANKS = [
@@ -42,6 +44,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { isDark } = useShopTheme();
   const [form, setForm] = useState<WithdrawalRequestCreate>({
     amount: 0,
     bankName: '',
@@ -76,9 +79,9 @@ function WithdrawModal({ available, onClose, onSuccess }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
+      <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-transparent'}`}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#1a2b4c] to-slate-700 px-6 py-5 flex items-center justify-between">
+        <div className={`px-6 py-5 flex items-center justify-between ${isDark ? 'bg-slate-900 border-b border-white/10' : 'bg-gradient-to-r from-[#1a2b4c] to-slate-700'}`}>
           <div>
             <h3 className="text-white font-black text-lg">Yêu cầu rút tiền</h3>
             <p className="text-slate-300 text-xs mt-0.5">Số dư khả dụng: <span className="text-teal-300 font-bold">{formatVND(available)}</span></p>
@@ -100,11 +103,11 @@ function WithdrawModal({ available, onClose, onSuccess }: {
                 value={form.amount || ''}
                 onChange={e => setForm(f => ({ ...f, amount: Number(e.target.value) }))}
                 placeholder="Nhập số tiền..."
-                className="w-full px-4 py-3 pr-16 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold outline-none focus:ring-2 focus:ring-[#1a2b4c]/20 dark:text-white transition-all"
+                className={`w-full px-4 py-3 pr-16 rounded-2xl border text-sm font-bold outline-none focus:ring-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:ring-[#1a2b4c]/20'}`}
               />
               <button
                 onClick={() => setForm(f => ({ ...f, amount: available }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded-lg hover:bg-teal-100 transition-colors"
+                className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black px-2 py-1 rounded-lg transition-colors ${isDark ? 'text-indigo-400 bg-indigo-500/20 hover:bg-indigo-500/30' : 'text-teal-600 bg-teal-50 hover:bg-teal-100'}`}
               >
                 TỐI ĐA
               </button>
@@ -120,7 +123,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
             <select
               value={form.bankName}
               onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))}
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium outline-none focus:ring-2 focus:ring-[#1a2b4c]/20 dark:text-white transition-all"
+              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none focus:ring-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:ring-[#1a2b4c]/20'}`}
             >
               <option value="">-- Chọn ngân hàng --</option>
               {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
@@ -135,7 +138,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
               value={form.bankAccount}
               onChange={e => setForm(f => ({ ...f, bankAccount: e.target.value }))}
               placeholder="Nhập số tài khoản..."
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium outline-none focus:ring-2 focus:ring-[#1a2b4c]/20 dark:text-white transition-all"
+              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none focus:ring-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:ring-[#1a2b4c]/20'}`}
             />
           </div>
 
@@ -147,7 +150,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
               value={form.accountHolder}
               onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value }))}
               placeholder="Nhập tên chủ tài khoản (IN HOA)..."
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium outline-none focus:ring-2 focus:ring-[#1a2b4c]/20 dark:text-white transition-all"
+              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none focus:ring-2 transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:ring-[#1a2b4c]/20'}`}
             />
           </div>
 
@@ -159,27 +162,27 @@ function WithdrawModal({ available, onClose, onSuccess }: {
               onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
               placeholder="Ghi chú thêm cho Admin..."
               rows={2}
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium outline-none focus:ring-2 focus:ring-[#1a2b4c]/20 dark:text-white transition-all resize-none"
+              className={`w-full px-4 py-3 rounded-2xl border text-sm font-medium outline-none focus:ring-2 transition-all resize-none ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 focus:ring-[#1a2b4c]/20'}`}
             />
           </div>
 
           {/* Info note */}
-          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-500/20">
-            <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+          <div className={`flex items-start gap-2 p-3 rounded-2xl border ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-blue-50 border-blue-100'}`}>
+            <Info className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-indigo-400' : 'text-blue-500'}`} />
+            <p className={`text-xs leading-relaxed ${isDark ? 'text-indigo-200' : 'text-blue-700'}`}>
               Yêu cầu sẽ được Admin xem xét và xử lý trong vòng 1-3 ngày làm việc. Tiền sẽ được chuyển khoản trực tiếp vào tài khoản của bạn.
             </p>
           </div>
 
           {/* Actions */}
           <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            <button onClick={onClose} className={`flex-1 py-3 rounded-2xl border text-sm font-bold transition-colors ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
               Huỷ
             </button>
             <button
               onClick={handleSubmit}
               disabled={mutation.isPending}
-              className="flex-1 py-3 rounded-2xl bg-[#1a2b4c] text-white text-sm font-bold shadow-lg shadow-[#1a2b4c]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className={`flex-1 py-3 rounded-2xl text-white text-sm font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${isDark ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-[#1a2b4c] shadow-[#1a2b4c]/20'}`}
             >
               {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowDownToLine className="w-4 h-4" />}
               Gửi yêu cầu
@@ -195,6 +198,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
 
 export default function ShopWallet() {
   const qc = useQueryClient();
+  const { isDark } = useShopTheme();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -220,27 +224,27 @@ export default function ShopWallet() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-4 md:p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Wallet className="w-8 h-8 text-blue-600" />
+          <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            <Wallet className={`w-8 h-8 ${isDark ? 'text-indigo-400' : 'text-blue-600'}`} />
             Ví của tôi
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Quản lý doanh thu và yêu cầu rút tiền</p>
+          <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Quản lý doanh thu và yêu cầu rút tiền</p>
         </div>
         <div className="flex items-center gap-2">
           <button
              onClick={() => { refetchWallet(); refetchW(); }}
-             className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+             className={`p-2.5 rounded-xl border transition-all ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}
            >
              <RefreshCw className="w-4 h-4" />
            </button>
           <button
             onClick={() => setShowWithdraw(true)}
             disabled={!wallet || wallet.availableBalance <= 0}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#1a2b4c] text-white rounded-xl font-bold text-sm shadow-lg shadow-[#1a2b4c]/20 hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+            className={`flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold text-sm shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${isDark ? 'bg-indigo-600 shadow-indigo-500/20' : 'bg-[#1a2b4c] shadow-[#1a2b4c]/20'}`}
           >
             <ArrowDownToLine className="w-4 h-4" />
             Rút tiền
@@ -252,68 +256,68 @@ export default function ShopWallet() {
       {walletLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 rounded-3xl p-6 animate-pulse h-36 border border-slate-100 dark:border-slate-700" />
+            <div key={i} className={`rounded-3xl p-6 animate-pulse h-36 border ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`} />
           ))}
         </div>
       ) : wallet ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Available */}
-          <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl shadow-teal-500/20 relative overflow-hidden">
+          <div className={`rounded-3xl p-6 text-white shadow-xl relative overflow-hidden ${isDark ? 'admin-glass-card bg-slate-900/60 border border-white/10 shadow-indigo-500/10' : 'bg-gradient-to-br from-teal-500 to-emerald-600 shadow-teal-500/20'}`}>
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/20'}`}>
                   <Wallet className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider opacity-80">Khả dụng</span>
+                <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'opacity-80'}`}>Khả dụng</span>
               </div>
               <p className="text-2xl font-black">{formatVND(wallet.availableBalance)}</p>
-              <p className="text-xs opacity-70 mt-1">Sẵn sàng rút</p>
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'opacity-70'}`}>Sẵn sàng rút</p>
             </div>
           </div>
 
           {/* Frozen */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className={`rounded-3xl p-6 border shadow-sm ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-amber-100 dark:bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
                 <Lock className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đóng băng</span>
             </div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatVND(wallet.frozenBalance)}</p>
+            <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(wallet.frozenBalance)}</p>
             <p className="text-xs text-slate-400 mt-1">Đơn chưa hoàn thành</p>
           </div>
 
           {/* Total earned */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className={`rounded-3xl p-6 border shadow-sm ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-100 text-blue-600'}`}>
                 <TrendingUp className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng thu nhập</span>
             </div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatVND(wallet.totalEarned)}</p>
+            <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(wallet.totalEarned)}</p>
             <p className="text-xs text-slate-400 mt-1">Sau phí 10% platform</p>
           </div>
 
           {/* Total withdrawn */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className={`rounded-3xl p-6 border shadow-sm ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-600'}`}>
                 <ArrowDownToLine className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đã rút</span>
             </div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white">{formatVND(wallet.totalWithdrawn)}</p>
+            <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(wallet.totalWithdrawn)}</p>
             <p className="text-xs text-slate-400 mt-1">Tổng đã rút thành công</p>
           </div>
         </div>
       ) : null}
 
       {/* Fee info banner */}
-      <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-500/20 mb-4">
-        <Info className="w-5 h-5 text-blue-500 shrink-0" />
-        <p className="text-sm text-blue-700 dark:text-blue-300">
+      <div className={`flex items-center gap-3 p-4 rounded-2xl border mb-4 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-blue-50 border-blue-100'}`}>
+        <Info className={`w-5 h-5 shrink-0 ${isDark ? 'text-indigo-400' : 'text-blue-500'}`} />
+        <p className={`text-sm ${isDark ? 'text-indigo-200' : 'text-blue-700'}`}>
           <span className="font-bold">Chính sách phí:</span> Peteye thu <span className="font-black">10%</span> phí nền tảng trên mỗi đơn hoàn thành. Phần còn lại <span className="font-black">90%</span> được ghi nhận vào ví của bạn.
         </p>
       </div>
@@ -350,19 +354,19 @@ export default function ShopWallet() {
       })}
 
       {/* Withdrawal history */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden mt-4">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700">
-          <h3 className="font-black text-slate-900 dark:text-white">Lịch sử rút tiền</h3>
+      <div className={`rounded-3xl border shadow-sm overflow-hidden mt-4 ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+        <div className={`flex items-center justify-between px-6 py-5 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+          <h3 className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Lịch sử rút tiền</h3>
           {/* Filter */}
-          <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-700 rounded-xl overflow-x-auto">
+          <div className={`flex gap-1 p-1 rounded-xl overflow-x-auto ${isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
             {(['ALL', 'PENDING', 'PAYING', 'APPROVED', 'REJECTED', 'EXPIRED'] as const).map(s => (
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${
                   filterStatus === s
-                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ? (isDark ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm')
+                    : (isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')
                 }`}
               >
                 {s === 'ALL' ? 'Tất cả'
@@ -378,27 +382,27 @@ export default function ShopWallet() {
 
         {wLoading ? (
           <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin" />
+            <Loader2 className={`w-6 h-6 animate-spin ${isDark ? 'text-indigo-400' : ''}`} />
             <span className="text-sm font-medium">Đang tải...</span>
           </div>
         ) : filteredW.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
             <ArrowDownToLine className="w-10 h-10 opacity-30 mb-3" />
             <p className="font-bold">Chưa có yêu cầu rút tiền nào</p>
             <p className="text-sm mt-1">Nhấn "Rút tiền" để tạo yêu cầu đầu tiên.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
+          <div className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-50'}`}>
             {filteredW.map(w => {
               const meta = STATUS_META[w.status] ?? STATUS_META.PENDING;
               return (
-                <div key={w.id} className="flex items-start gap-4 px-6 py-5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                <div key={w.id} className={`flex items-start gap-4 px-6 py-5 transition-colors ${isDark ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}`}>
                   {/* Icon */}
                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
-                    w.status === 'APPROVED' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                    : w.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-500/20 text-red-500'
-                    : w.status === 'PAYING'   ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                    : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                    w.status === 'APPROVED' ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600')
+                    : w.status === 'REJECTED' ? (isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-100 text-red-500')
+                    : w.status === 'PAYING'   ? (isDark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-100 text-blue-600')
+                    : (isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-600')
                   }`}>
                     <ArrowDownToLine className="w-4 h-4" />
                   </div>
@@ -412,7 +416,7 @@ export default function ShopWallet() {
                       </span>
                       <span className="text-xs font-bold text-slate-400 font-mono">#{w.id}</span>
                     </div>
-                    <p className="text-sm font-black text-slate-900 dark:text-white">{formatVND(w.amount)}</p>
+                    <p className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(w.amount)}</p>
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className="text-xs text-slate-500 flex items-center gap-1">
                         <Building2 className="w-3 h-3" /> {w.bankName}
@@ -425,7 +429,7 @@ export default function ShopWallet() {
                       </span>
                     </div>
                     {w.adminNote && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 italic bg-slate-50 dark:bg-slate-700/40 rounded-xl px-3 py-1.5">
+                      <p className={`text-xs mt-1.5 italic rounded-xl px-3 py-1.5 ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
                         Admin: "{w.adminNote}"
                       </p>
                     )}
@@ -435,7 +439,7 @@ export default function ShopWallet() {
                   <div className="text-right shrink-0">
                     <p className="text-xs text-slate-400">{formatDate(w.createdAt)}</p>
                     {w.processedAt && (
-                      <p className="text-[10px] text-slate-300 dark:text-slate-500 mt-0.5">
+                      <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-300'}`}>
                         Xử lý: {formatDate(w.processedAt)}
                       </p>
                     )}

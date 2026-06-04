@@ -157,6 +157,7 @@ export interface BookingResponse {
       serviceId: number;
       serviceName: string;
       servicePrice: number;
+      category?: string;
   }[];
   petId: number;
   petName: string;
@@ -188,6 +189,7 @@ export interface BookingResponse {
   serviceEndDatetime?: string;
   cageSize?: string;
   roomType?: string;
+  category?: string;
 }
 
 export interface TransactionResponse {

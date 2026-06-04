@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Clock, CheckCircle2, Search, Filter, Camera, Zap, Heart, User, Plus, LayoutGrid, X,
     Activity, Syringe, Utensils, Loader2, Sparkles, ClipboardList, AlertCircle, Calendar, Play, Save, PlayCircle, MonitorPlay,
-    StopCircle, VideoOff, UserX, XCircle
+    StopCircle, VideoOff, UserX, XCircle, MessageCircle
 } from 'lucide-react';
 import type { BookingResponse } from '../../types/api';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,6 +20,8 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import HLSPlayer from '../../components/HLSPlayer';
 import { checkStreamReady, resolveStreamUrl } from '../../utils/streamHelper';
+import { useShopChat } from '../../hooks/useShopChat';
+import ConversationThread from '../../components/chat/shared/ConversationThread';
 
 // Constants
 const STATUS_CONFIG = {
@@ -67,14 +69,57 @@ const LATE_SERVICE_SUGGESTIONS = [
 ];
 
 const guessCategory = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông')) return 'BOARDING';
-    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming')) return 'GROOMING';
+    const n = (name || '').toLowerCase();
+    if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông') || n.includes('khách sạn') || n.includes('hotel')) return 'BOARDING';
+    // broaden grooming detection: include words like 'spa', 'tắm', 'cắt', 'grooming', 'vệ sinh', 'massage', 'kiểu', 'tạo kiểu'
+    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming') || n.includes('vệ sinh') || n.includes('massage') || n.includes('kiểu') || n.includes('tạo kiểu')) return 'GROOMING';
     return 'CLINIC';
 };
 
 const formatTime = (iso: string) => format(parseISO(iso), 'HH:mm', { locale: vi });
 const formatDate = (iso: string) => format(parseISO(iso), 'dd/MM/yyyy', { locale: vi });
+
+const StaffChatTab = ({ bookingDetails, user, selectedTask }: { bookingDetails: BookingResponse | null, user: any, selectedTask: TaskResponse | null }) => {
+    const shopId = bookingDetails?.shopId || selectedTask?.shopId || null;
+    const customerEmail = bookingDetails?.customerEmail || selectedTask?.customerEmail;
+
+    const [input, setInput] = useState('');
+    const { messages, connected, sendMessage } = useShopChat(
+        shopId,
+        user?.token,
+        'CUSTOMER_CHAT',
+        customerEmail
+    );
+
+    if (!shopId || !customerEmail) {
+        return (
+            <div className="flex justify-center items-center py-10 flex-col gap-3">
+                <Loader2 className="animate-spin text-slate-400 w-6 h-6" />
+                <p className="text-xs text-slate-500">Đang tải thông tin kết nối...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="h-[600px] max-h-[70vh] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm flex flex-col">
+            <ConversationThread
+                messages={messages}
+                currentUserEmail={user?.email}
+                connected={connected}
+                input={input}
+                setInput={setInput}
+                onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
+                hideHeader={false}
+                headerInfo={{
+                    title: `Trò chuyện với ${bookingDetails?.customerName || 'Khách hàng'}`,
+                    subtitle: bookingDetails?.customerEmail,
+                    icon: <MessageCircle size={20} className="text-primary" />,
+                    showStatus: true
+                }}
+            />
+        </div>
+    );
+};
 
 export default function StaffDashboard() {
     const navigate = useNavigate();
@@ -91,7 +136,7 @@ export default function StaffDashboard() {
     const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
 
     // Workspace states
-    const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'info' | 'logs' | 'medical'>('info');
+    const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'info' | 'logs' | 'medical' | 'chat'>('info');
 
     // Care log states
     const [careLogs, setCareLogs] = useState<CareLogResponse[]>([]);
@@ -132,12 +177,17 @@ export default function StaffDashboard() {
     // No-Show states
     const [isNoShowModalOpen, setIsNoShowModalOpen] = useState(false);
     const [isNoShowProcessing, setIsNoShowProcessing] = useState(false);
+    
+    const [isPetDetailsModalOpen, setIsPetDetailsModalOpen] = useState(false);
 
     // Clinic sub-service completion modal
     const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
     const [pendingClinicServiceId, setPendingClinicServiceId] = useState<number | null>(null);
     const [clinicMedicalForm, setClinicMedicalForm] = useState<PetMedicalRecordRequest>({
         diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString()
+    });
+    const [vaccinationForm, setVaccinationForm] = useState({
+        hasVaccination: false, name: '', drug: '', date: new Date().toISOString(), status: 'done'
     });
     const [submittingClinicMedical, setSubmittingClinicMedical] = useState(false);
 
@@ -154,6 +204,20 @@ export default function StaffDashboard() {
             toast.error('Không thể kết nối máy chủ');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const refreshTasks = async () => {
+        try {
+            const [mine, pool] = await Promise.all([
+                taskService.getMyTasks(),
+                taskService.getUnassignedTasks().catch(() => []),
+            ]);
+            setMyTasks(mine);
+            setPoolTasks(pool);
+            return { mine, pool };
+        } catch {
+            return { mine: [], pool: [] };
         }
     };
 
@@ -319,8 +383,9 @@ export default function StaffDashboard() {
             setDashboardPreviewUrl(updated.cameraStreamUrl || '');
             setRtspInput(updated.cameraRtspUrl || '');
 
-            setSelectedTask(prev => prev ? { ...prev, rtspLink: updated.cameraRtspUrl } : null);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? { ...t, rtspLink: updated.cameraRtspUrl } : t));
+            const { mine } = await refreshTasks();
+            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
+            setSelectedTask(newSelected || (prev => prev ? { ...prev, rtspLink: updated.cameraRtspUrl } : null));
 
             toast.success('Đã lưu cấu hình camera thành công!');
         } catch (err: any) {
@@ -356,12 +421,15 @@ export default function StaffDashboard() {
         }
     };
 
-    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus, rtspLink?: string) => {
+    const handleUpdateStatus = async (bookingId: number, nextStatus: TaskStatus, rtspLink?: string): Promise<boolean> => {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.updateStatus(bookingId, nextStatus, rtspLink);
-            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
-            if (selectedTask?.bookingId === bookingId) setSelectedTask(updated);
+            const { mine } = await refreshTasks();
+            if (selectedTask?.bookingId === bookingId) {
+                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
+                setSelectedTask(newSelected || updated);
+            }
             if (nextStatus === 'IN_PROGRESS') {
                 setLocalStartTime(new Date().toISOString());
             }
@@ -377,6 +445,7 @@ export default function StaffDashboard() {
 
             toast.success(nextStatus === 'IN_PROGRESS' ? 'Đã bắt đầu công việc' : 'Đã hoàn thành công việc!');
             setIsCameraModalOpen(false);
+            return true;
         } catch (err: any) {
             const code = err?.response?.data?.code;
             if (code === 5016) {
@@ -385,6 +454,7 @@ export default function StaffDashboard() {
             } else {
                 toast.error(err?.response?.data?.message || 'Thao tác thất bại');
             }
+            return false;
         } finally {
             setUpdatingId(null);
         }
@@ -394,10 +464,14 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const updated = await taskService.completeServiceItem(bookingId, serviceId);
-            setMyTasks(prev => prev.map(t => t.bookingId === bookingId ? updated : t));
+            // Immediately merge returned updated booking into local task lists to avoid stale API responses
+            setMyTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
+            setPoolTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
             if (selectedTask?.bookingId === bookingId) {
                 setSelectedTask(updated);
             }
+            // Also trigger a background refresh to keep data consistent
+            refreshTasks().catch(() => {});
             toast.success('Đã đánh dấu hoàn thành dịch vụ!');
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Không thể hoàn thành dịch vụ');
@@ -409,6 +483,7 @@ export default function StaffDashboard() {
     const handleOpenClinicModal = (serviceId: number) => {
         setPendingClinicServiceId(serviceId);
         setClinicMedicalForm({ diagnosis: '', symptoms: '', treatment: '', prescription: '', notes: '', visitDate: new Date().toISOString() });
+        setVaccinationForm({ hasVaccination: false, name: '', drug: '', date: new Date().toISOString(), status: 'done' });
         setIsMedicalModalOpen(true);
     };
 
@@ -418,12 +493,27 @@ export default function StaffDashboard() {
 
         setSubmittingClinicMedical(true);
         try {
-            // Step 1: Save medical record
-            await petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
+            // Step 1: Save medical record & optional vaccination
+            const medicalPromise = petMedicalService.addMedicalRecord(selectedTask.bookingId, clinicMedicalForm);
+            
+            const promises: Promise<any>[] = [medicalPromise];
+            if (vaccinationForm.hasVaccination && vaccinationForm.name.trim()) {
+                promises.push(petMedicalService.addVaccination(selectedTask.bookingId, {
+                    name: vaccinationForm.name,
+                    drug: vaccinationForm.drug,
+                    date: vaccinationForm.date,
+                    status: vaccinationForm.status
+                }));
+            }
+            
+            await Promise.all(promises);
+            
             // Step 2: Mark sub-service as complete
             const updated = await taskService.completeServiceItem(selectedTask.bookingId, pendingClinicServiceId);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
+            setMyTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
+            setPoolTasks(prev => prev.map(t => (t.bookingId === updated.bookingId ? updated : t)));
             setSelectedTask(updated);
+            refreshTasks().catch(() => {});
             toast.success('Đã lưu hồ sơ y tế và hoàn thành dịch vụ khám!');
             setIsMedicalModalOpen(false);
             setPendingClinicServiceId(null);
@@ -438,11 +528,13 @@ export default function StaffDashboard() {
         setUpdatingId(bookingId);
         try {
             const claimed = await taskService.claimTask(bookingId);
-            setPoolTasks(prev => prev.filter(t => t.bookingId !== bookingId));
-            setMyTasks(prev => [claimed, ...prev]);
+            const { mine } = await refreshTasks();
             toast.success('Đã nhận công việc thành công!');
             setActiveTab('mine');
-            if (selectedTask?.bookingId === bookingId) setSelectedTask(claimed);
+            if (selectedTask?.bookingId === bookingId) {
+                const newSelected = mine.find((t: any) => t.bookingId === bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === bookingId);
+                setSelectedTask(newSelected || claimed);
+            }
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Không thể nhận task');
         } finally {
@@ -455,8 +547,9 @@ export default function StaffDashboard() {
         setIsNoShowProcessing(true);
         try {
             const updated = await taskService.cancelNoShow(selectedTask.bookingId);
-            setMyTasks(prev => prev.map(t => t.bookingId === selectedTask.bookingId ? updated : t));
-            setSelectedTask(updated);
+            const { mine } = await refreshTasks();
+            const newSelected = mine.find((t: any) => t.bookingId === selectedTask.bookingId && t.category === selectedTask.category) || mine.find((t: any) => t.bookingId === selectedTask.bookingId);
+            setSelectedTask(newSelected || updated);
             setIsNoShowModalOpen(false);
             toast.success('Đã hủy đơn do khách không đến');
         } catch (err: any) {
@@ -513,39 +606,95 @@ export default function StaffDashboard() {
         }
     };
 
-    const inProgressTasks = myTasks.filter(t => t.status === 'IN_PROGRESS');
-    const pendingTasks = myTasks.filter(t => t.status === 'CONFIRMED');
+    const getEffectiveStatus = (t: any) => {
+        // If backend provided final status, prefer it
+        if (!t) return undefined;
+        if (t.status === 'COMPLETED' || t.status === 'CANCELLED') return t.status;
+        // If services are present and all are completed, consider booking COMPLETED
+        if (t.services && t.services.length > 0) {
+            const allCompleted = t.services.every((s: any) => !!s.completedAt || (t.completedServiceIds || []).includes(s.serviceId));
+            if (allCompleted) return 'COMPLETED';
+        }
+        return t.status;
+    };
+
+    const inProgressTasks = myTasks.filter(t => getEffectiveStatus(t) === 'IN_PROGRESS');
+    const pendingTasks = myTasks.filter(t => getEffectiveStatus(t) === 'CONFIRMED');
 
     let displayTasks = activeTab === 'mine' ? myTasks : poolTasks;
 
+    // Dev-only: log status vs effectiveStatus when debugging filters
+    if (process.env.NODE_ENV !== 'production' && statusFilter === 'CANCELLED') {
+        try {
+            // eslint-disable-next-line no-console
+            console.debug('StaffDashboard: CANCELLED filter debug', displayTasks.map((t: any) => ({
+                bookingId: t.bookingId,
+                rawStatus: t.status,
+                effectiveStatus: getEffectiveStatus(t),
+                services: (t.services || []).map((s: any) => ({ id: s.serviceId, completedAt: s.completedAt })),
+                completedServiceIds: t.completedServiceIds || []
+            })));
+        } catch (e) { }
+    }
+
     if (statusFilter === 'ACTIVE') {
-        displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(t.status));
+        displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(getEffectiveStatus(t)));
     } else if (statusFilter === 'COMPLETED') {
-        displayTasks = displayTasks.filter(t => t.status === 'COMPLETED');
+        displayTasks = displayTasks.filter(t => getEffectiveStatus(t) === 'COMPLETED');
     } else if (statusFilter === 'CANCELLED') {
-        displayTasks = displayTasks.filter(t => t.status === 'CANCELLED' || t.status === 'CANCEL_REQUESTED');
+        displayTasks = displayTasks.filter(t => getEffectiveStatus(t) === 'CANCELLED' || getEffectiveStatus(t) === 'CANCEL_REQUESTED');
     }
 
     displayTasks = [...displayTasks].sort((a, b) => {
         const order: Record<string, number> = { 'IN_PROGRESS': 1, 'CONFIRMED': 2, 'PENDING_PAYMENT': 3, 'WAITING_REFUND': 4, 'COMPLETED': 5, 'CANCELLED': 6, 'CANCEL_REQUESTED': 6 };
-        const orderA = order[a.status] || 99;
-        const orderB = order[b.status] || 99;
+        const statusA = getEffectiveStatus(a) || a.status;
+        const statusB = getEffectiveStatus(b) || b.status;
+        const orderA = order[statusA] || 99;
+        const orderB = order[statusB] || 99;
 
         if (orderA !== orderB) return orderA - orderB;
         return new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime();
     });
 
+    // Expand tasks so that if a booking contains multiple services we show one card per service
+    const expandedDisplayTasks = (() => {
+        const out: TaskResponse[] = [];
+        for (const t of displayTasks) {
+            if (t.services && t.services.length > 1) {
+                for (const svc of t.services) {
+                    const item: any = {
+                        ...t,
+                        // represent this row as a single-service task for UI
+                        serviceId: svc.serviceId,
+                        serviceName: svc.serviceName,
+                        servicePrice: svc.servicePrice,
+                        services: [svc]
+                    };
+                    out.push(item);
+                }
+            } else if (t.services && t.services.length === 1) {
+                // keep as-is but ensure services is present
+                out.push({ ...t, services: t.services });
+            } else {
+                out.push(t);
+            }
+        }
+
+        return out;
+    })();
+
     const isMultiService = !!(selectedTask?.services && selectedTask.services.length > 0);
     const boardingServices = selectedTask?.services
-        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) === 'BOARDING')
+        ? selectedTask.services.filter((s: any) => (s.category || guessCategory(s.serviceName)) === 'BOARDING')
         : [];
     const nonBoardingServices = selectedTask?.services
-        ? selectedTask.services.filter((s: any) => guessCategory(s.serviceName) !== 'BOARDING')
+        ? selectedTask.services.filter((s: any) => (s.category || guessCategory(s.serviceName)) !== 'BOARDING')
         : [];
     const incompleteNonBoardingServices = nonBoardingServices.filter(
         (s: any) => !(selectedTask?.completedServiceIds || []).includes(s.serviceId)
     );
     const hasIncompleteNonBoarding = selectedTask?.status === 'IN_PROGRESS' && incompleteNonBoardingServices.length > 0;
+    const nonBoardingTaskIndex = selectedTask ? ((selectedTask.cameraEnabled || (selectedTask.serviceName || '').toLowerCase().includes('camera')) ? 2 : 1) : 1;
 
     return (
         <div className="h-[calc(100vh-4rem)] bg-[#f8fafc] dark:bg-background-dark flex overflow-hidden">
@@ -597,12 +746,12 @@ export default function StaffDashboard() {
                             </div>
                             <p className="text-slate-500 font-medium">Không có công việc nào</p>
                         </div>
-                    ) : (
-                        displayTasks.map(task => (
-                            <div
-                                key={task.bookingId}
+                        ) : (
+                            expandedDisplayTasks.map((task, listIdx) => (
+                                <div
+                                    key={`${task.bookingId}-${task.serviceId || (task.services && task.services[0]?.serviceId) || task.category || 'GENERAL'}-${listIdx}`}
                                 onClick={() => handleSelectTask(task)}
-                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId
+                                className={`p-4 rounded-2xl border transition-all cursor-pointer ${selectedTask?.bookingId === task.bookingId && selectedTask?.category === task.category
                                     ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                                     }`}
@@ -612,9 +761,14 @@ export default function StaffDashboard() {
                                         <h3 className="font-bold text-slate-900">{task.petName}</h3>
                                         <p className="text-xs text-slate-500 font-medium mt-1">{task.customerName}</p>
                                     </div>
-                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${STATUS_CONFIG[task.status]?.color || 'bg-slate-50 text-slate-500'}`}>
-                                        {STATUS_CONFIG[task.status]?.label || task.status}
-                                    </span>
+                                    {(() => {
+                                        const displayStatus = getEffectiveStatus(task) || task.status;
+                                        return (
+                                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${STATUS_CONFIG[displayStatus]?.color || 'bg-slate-50 text-slate-500'}`}>
+                                                {STATUS_CONFIG[displayStatus]?.label || displayStatus}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
                                     <ClipboardList size={14} className="text-primary" />
@@ -647,7 +801,10 @@ export default function StaffDashboard() {
                             {/* Main Info Card */}
                             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-200">
                                 <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
-                                    <div className="flex items-center gap-6">
+                                    <div 
+                                        className="flex items-center gap-6 cursor-pointer hover:bg-slate-50 p-2 -m-2 rounded-2xl transition-colors"
+                                        onClick={() => setIsPetDetailsModalOpen(true)}
+                                    >
                                         <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl shadow-inner border border-slate-100 relative shrink-0 overflow-hidden">
                                             {petDetails?.avatar ? (
                                                 <img src={petDetails.avatar} alt={selectedTask.petName} className="w-full h-full object-cover" />
@@ -704,7 +861,7 @@ export default function StaffDashboard() {
                                         ) : (
                                             <>
                                                 {selectedTask.status === 'CONFIRMED' && (
-                                                    (selectedTask.category === 'BOARDING' || guessCategory(selectedTask.serviceName) === 'BOARDING') && (selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) ? (
+                                                    ((selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && (selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera')) ? (
                                                         <button
                                                             onClick={() => {
                                                                 setRtspInput(rtspInput || selectedTask.rtspLink || '');
@@ -730,7 +887,7 @@ export default function StaffDashboard() {
                                                 )}
                                                 {selectedTask.status === 'IN_PROGRESS' && (
                                                     (() => {
-                                                        const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                        const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
                                                         const checkOutDateStr = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
 
                                                         const getCheckoutTime = () => {
@@ -809,33 +966,42 @@ export default function StaffDashboard() {
 
                             {/* Workspace Tabs */}
                             {selectedTask && (
-                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                                    {(selectedTask.status === 'IN_PROGRESS' || selectedTask.status === 'COMPLETED') && (
-                                        <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
+                                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+                                    <div className="flex border-b border-slate-100 overflow-x-auto custom-scrollbar">
+                                        <button
+                                            onClick={() => setActiveWorkspaceTab('info')}
+                                            className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                        >
+                                            Thông tin chung
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveWorkspaceTab('logs')}
+                                            className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                        >
+                                            Nhật ký chăm sóc
+                                        </button>
+                                        {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'CLINIC' && (
                                             <button
-                                                onClick={() => setActiveWorkspaceTab('info')}
-                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                                onClick={() => setActiveWorkspaceTab('medical')}
+                                                className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
-                                                Thông tin chung
+                                                Hồ sơ y tế
                                             </button>
+                                        )}
+                                        {((selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && (
                                             <button
-                                                onClick={() => setActiveWorkspaceTab('logs')}
-                                                className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                                                onClick={() => setActiveWorkspaceTab('chat')}
+                                                className={`flex-1 min-w-[140px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                                             >
-                                                Nhật ký chăm sóc
+                                                Trò chuyện
                                             </button>
-                                            {guessCategory(selectedTask.serviceName) === 'CLINIC' && (
-                                                <button
-                                                    onClick={() => setActiveWorkspaceTab('medical')}
-                                                    className={`flex-1 min-w-[120px] py-4 text-sm font-bold border-b-2 transition-all ${activeWorkspaceTab === 'medical' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                                                >
-                                                    Hồ sơ y tế
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
 
                                     <div className="p-4 lg:p-6">
+                                        {activeWorkspaceTab === 'chat' && (
+                                            <StaffChatTab bookingDetails={bookingDetails} user={user} selectedTask={selectedTask} />
+                                        )}
                                         {activeWorkspaceTab === 'info' && (
                                             <div className="space-y-6">
                                                 {/* Danh sách dịch vụ cần làm */}
@@ -847,6 +1013,12 @@ export default function StaffDashboard() {
                                                         </h3>
                                                     </div>
                                                     <div className="p-5 space-y-6">
+                                                        {selectedTask?.services && selectedTask.services.length > 0 && (
+                                                            <div className="text-sm text-slate-600">
+                                                                <span className="font-semibold">Dịch vụ: </span>
+                                                                <span className="truncate block md:inline">{selectedTask.services.map((s: any) => s.serviceName).join(', ')}</span>
+                                                            </div>
+                                                        )}
                                                         {isMultiService ? (
                                                             <>
                                                                 {/* Dịch vụ lưu trú */}
@@ -984,12 +1156,13 @@ export default function StaffDashboard() {
                                                                         <div className="p-5 bg-emerald-50/30 dark:bg-emerald-950/5 rounded-2xl border border-emerald-100/55 dark:border-emerald-900/20 space-y-4">
                                                                             <h5 className="font-bold text-xs uppercase tracking-wider text-emerald-800 dark:text-emerald-450 flex items-center gap-2">
                                                                                 <ClipboardList size={14} />
-                                                                                Nhiệm vụ 2: Hoàn thành dịch vụ khác
+                                                                                {`Nhiệm vụ ${nonBoardingTaskIndex}: Hoàn thành dịch vụ khác`}
                                                                             </h5>
                                                                             
                                                                             <div className="space-y-3">
                                                                                 {nonBoardingServices.map((svc: any, idx: number) => {
                                                                                     const isCompleted = (selectedTask.completedServiceIds || []).includes(svc.serviceId);
+                                                                                    const cat = svc.category || guessCategory(svc.serviceName);
                                                                                     return (
                                                                                         <div key={idx} className="p-4 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-700 shadow-sm">
                                                                                             <div className="flex items-center gap-3">
@@ -1023,7 +1196,6 @@ export default function StaffDashboard() {
                                                                                                         <button
                                                                                                             type="button"
                                                                                                             onClick={() => {
-                                                                                                                const cat = guessCategory(svc.serviceName);
                                                                                                                 if (cat === 'CLINIC') {
                                                                                                                     handleOpenClinicModal(svc.serviceId);
                                                                                                                 } else {
@@ -1032,12 +1204,12 @@ export default function StaffDashboard() {
                                                                                                             }}
                                                                                                             disabled={updatingId === selectedTask.bookingId}
                                                                                                             className={`px-3 py-1.5 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 ${
-                                                                                                                guessCategory(svc.serviceName) === 'CLINIC'
+                                                                                                                cat === 'CLINIC'
                                                                                                                     ? 'bg-violet-500 hover:bg-violet-600 shadow-violet-500/10'
                                                                                                                     : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10'
                                                                                                             }`}
                                                                                                         >
-                                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : guessCategory(svc.serviceName) === 'CLINIC' ? '📋 Nhập kết quả' : 'Hoàn thành'}
+                                                                                                            {updatingId === selectedTask.bookingId ? <Loader2 size={12} className="animate-spin" /> : cat === 'CLINIC' ? '📋 Nhập kết quả' : 'Hoàn thành'}
                                                                                                         </button>
                                                                                                     )
                                                                                                 )}
@@ -1199,7 +1371,7 @@ export default function StaffDashboard() {
                                                         )}
                                                     </div>
                                                 )}
-                                                {guessCategory(selectedTask.serviceName) === 'BOARDING' ? (
+                                                {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING' ? (
                                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                             <div className="flex items-center gap-2 mb-2 text-primary font-bold text-sm">
@@ -1235,7 +1407,7 @@ export default function StaffDashboard() {
                                                             </div>
                                                             <p className="font-semibold text-slate-800">{selectedTask.roomType || 'Thường'}</p>
                                                         </div>
-                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || guessCategory(selectedTask.serviceName) === 'BOARDING') && !isMultiService && (
+                                                        {(selectedTask.cameraEnabled || selectedTask.serviceName.toLowerCase().includes('camera') || (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING') && !isMultiService && (
                                                             <>
                                                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                                     <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold text-sm">
@@ -1461,7 +1633,7 @@ export default function StaffDashboard() {
                                             </div>
                                         )}
 
-                                        {activeWorkspaceTab === 'medical' && guessCategory(selectedTask.serviceName) === 'CLINIC' && (
+                                        {activeWorkspaceTab === 'medical' && (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'CLINIC' && (
                                             <div className="space-y-6">
                                                 {selectedTask.status === 'COMPLETED' ? (
                                                     <div className="p-8 text-center bg-slate-50 rounded-3xl border border-slate-100">
@@ -1768,13 +1940,13 @@ export default function StaffDashboard() {
                                         {checkoutType === 'EARLY' ? 'Xác nhận Kết thúc Sớm' : 'Xác nhận Kết thúc Trễ'}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                        {guessCategory(selectedTask.serviceName) === 'BOARDING'
+                                        {(selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING'
                                             ? 'Thời gian kết thúc lưu trú dự kiến'
                                             : 'Thời gian kết thúc dự kiến'}
                                         : <strong>
                                             {(() => {
                                                 const rawCheckOut = selectedTask.checkOutDatetime || (selectedTask as any).checkOut;
-                                                const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                                const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
 
                                                 const checkout = rawCheckOut
                                                     ? new Date(rawCheckOut)
@@ -1796,7 +1968,7 @@ export default function StaffDashboard() {
                                     </label>
                                     <div className="space-y-2">
                                         {(() => {
-                                            const isBoarding = guessCategory(selectedTask.serviceName) === 'BOARDING';
+                                            const isBoarding = (selectedTask?.category || guessCategory(selectedTask.serviceName)) === 'BOARDING';
                                             const suggestionsList = checkoutType === 'EARLY'
                                                 ? (isBoarding ? EARLY_BOARDING_SUGGESTIONS : EARLY_SERVICE_SUGGESTIONS)
                                                 : (isBoarding ? LATE_BOARDING_SUGGESTIONS : LATE_SERVICE_SUGGESTIONS);
@@ -1845,20 +2017,32 @@ export default function StaffDashboard() {
                                                 toast.error(checkoutType === 'EARLY' ? 'Vui lòng nhập hoặc chọn lý do kết thúc sớm.' : 'Vui lòng nhập hoặc chọn lý do kết thúc trễ.');
                                                 return;
                                             }
-                                            setIsCheckoutModalOpen(false);
-                                            const prefix = checkoutType === 'EARLY' ? '[Kết thúc sớm]' : '[Kết thúc trễ]';
-                                            try {
-                                                await careLogService.addLog(selectedTask.bookingId, {
-                                                    type: 'CLEANING',
-                                                    note: `${prefix} Lý do: ${checkoutReason}`,
-                                                    imageUrl: ''
-                                                });
-                                                const logs = await careLogService.getLogs(selectedTask.bookingId);
-                                                setCareLogs(logs);
-                                            } catch (e) {
-                                                console.error('Failed to log checkout reason:', e);
+                                            
+                                            // 1. Try to update status first
+                                            const success = await handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
+                                            
+                                            if (success) {
+                                                // 2. Only add log if status update succeeded
+                                                const prefix = checkoutType === 'EARLY' ? '[Kết thúc sớm]' : '[Kết thúc trễ]';
+                                                try {
+                                                    await careLogService.addLog(selectedTask.bookingId, {
+                                                        type: 'CLEANING', // Use CLEANING or default type for now
+                                                        note: `${prefix} Lý do: ${checkoutReason}`,
+                                                        imageUrl: ''
+                                                    });
+                                                    const logs = await careLogService.getLogs(selectedTask.bookingId);
+                                                    setCareLogs(logs);
+                                                } catch (e) {
+                                                    console.error('Failed to log checkout reason:', e);
+                                                }
+                                                // 3. Clear reason and close modal
+                                                setCheckoutReason('');
+                                                setIsCheckoutModalOpen(false);
+                                            } else {
+                                                // If failed (e.g. missing medical record), close modal but KEEP reason
+                                                // so user doesn't have to retype after filling medical record
+                                                setIsCheckoutModalOpen(false);
                                             }
-                                            handleUpdateStatus(selectedTask.bookingId, 'COMPLETED');
                                         }}
                                         className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10"
                                     >
@@ -2037,6 +2221,61 @@ export default function StaffDashboard() {
                                     />
                                 </div>
 
+                                {/* Tiêm ngừa */}
+                                <div className="p-4 bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 rounded-2xl">
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            id="hasVaccination"
+                                            checked={vaccinationForm.hasVaccination}
+                                            onChange={e => setVaccinationForm({ ...vaccinationForm, hasVaccination: e.target.checked })}
+                                            className="w-5 h-5 rounded text-violet-600 focus:ring-violet-500 border-slate-300 cursor-pointer"
+                                        />
+                                        <label htmlFor="hasVaccination" className="text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
+                                            Có thực hiện tiêm ngừa trong lần khám này
+                                        </label>
+                                    </div>
+                                    
+                                    <AnimatePresence>
+                                        {vaccinationForm.hasVaccination && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-violet-100 dark:border-violet-900/30">
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                            Tên Vắc xin / Bệnh phòng ngừa <span className="text-red-500">*</span>
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            required={vaccinationForm.hasVaccination}
+                                                            value={vaccinationForm.name}
+                                                            onChange={e => setVaccinationForm({ ...vaccinationForm, name: e.target.value })}
+                                                            placeholder="VD: Dại, Care, Parvo..."
+                                                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                                                            Tên Thuốc / Hãng sản xuất
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={vaccinationForm.drug}
+                                                            onChange={e => setVaccinationForm({ ...vaccinationForm, drug: e.target.value })}
+                                                            placeholder="VD: Zoetis, Nobivac..."
+                                                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900/30 transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
                                 {/* Footer buttons */}
                                 <div className="flex gap-3 pt-2">
                                     <button
@@ -2049,7 +2288,7 @@ export default function StaffDashboard() {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={submittingClinicMedical || !clinicMedicalForm.diagnosis.trim()}
+                                        disabled={submittingClinicMedical || !clinicMedicalForm.diagnosis.trim() || (vaccinationForm.hasVaccination && !vaccinationForm.name.trim())}
                                         className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 disabled:opacity-50"
                                     >
                                         {submittingClinicMedical ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -2057,6 +2296,151 @@ export default function StaffDashboard() {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Pet Details Modal */}
+            <AnimatePresence>
+                {isPetDetailsModalOpen && selectedTask && petDetails && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsPetDetailsModalOpen(false)}
+                            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-5xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                        >
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                                <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                                    <ClipboardList className="text-primary" /> Thông tin tổng hợp
+                                </h2>
+                                <button
+                                    onClick={() => setIsPetDetailsModalOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* Left Column: Pet Info */}
+                                    <div className="space-y-6">
+                                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                                            <Heart className="text-rose-500" size={18} /> Hồ sơ thú cưng
+                                        </h3>
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-24 h-24 bg-slate-100 rounded-2xl flex items-center justify-center text-4xl shadow-inner overflow-hidden border border-slate-200 shrink-0">
+                                                {petDetails.avatar ? <img src={petDetails.avatar} alt="pet" className="w-full h-full object-cover" /> : '🐾'}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{petDetails.name}</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.species} - {petDetails.breed}</span>
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.weight}kg</span>
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-semibold">{petDetails.gender === 'MALE' ? 'Đực' : petDetails.gender === 'FEMALE' ? 'Cái' : 'Chưa rõ'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {petDetails.color && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Màu lông</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.color}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.favoriteFood && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thức ăn yêu thích</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.favoriteFood}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.hobbies && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thói quen / Sở thích</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.hobbies}</p>
+                                                </div>
+                                            )}
+                                            {petDetails.walkTime && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Thời gian vận động</p>
+                                                    <p className="font-semibold text-slate-800 dark:text-white">{petDetails.walkTime}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {petDetails.allergies && (
+                                            <div className="p-4 bg-rose-50 dark:bg-rose-950/20 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                                                <p className="text-[10px] font-bold text-rose-500 uppercase mb-1 flex items-center gap-1"><AlertCircle size={12}/> Dị ứng</p>
+                                                <p className="font-bold text-rose-700 dark:text-rose-400">{petDetails.allergies}</p>
+                                            </div>
+                                        )}
+
+                                        {petDetails.healthNote && (
+                                            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                                <p className="text-[10px] font-bold text-amber-600 uppercase mb-1 flex items-center gap-1"><Syringe size={12}/> Ghi chú sức khỏe</p>
+                                                <p className="font-semibold text-amber-800 dark:text-amber-500">{petDetails.healthNote}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Right Column: Task/Service Details */}
+                                    <div className="space-y-4 lg:border-l lg:border-slate-100 lg:dark:border-slate-800 lg:pl-8">
+                                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                                            <CheckCircle2 className="text-emerald-500" size={18} /> Dịch vụ cần thực hiện
+                                        </h3>
+                                        
+                                        <div className="space-y-3">
+                                            {selectedTask.services && selectedTask.services.length > 0 ? (
+                                                selectedTask.services.map((svc: any, idx: number) => (
+                                                    <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                                <Sparkles size={18} className="text-primary" />
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-bold text-slate-800 dark:text-slate-200">{svc.serviceName}</span>
+                                                                <p className="text-xs text-slate-400 font-semibold mt-0.5">Mã dịch vụ: #{svc.serviceId}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-sm font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(svc.servicePrice || 0)}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl flex items-center justify-between border border-slate-150 dark:border-slate-700/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-primary shadow-sm border border-slate-100 dark:border-slate-600">
+                                                            <Sparkles size={18} className="text-primary" />
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-bold text-slate-800 dark:text-slate-200">{selectedTask.serviceName}</span>
+                                                            <p className="text-xs text-slate-400 font-semibold mt-0.5">Mã dịch vụ: #{selectedTask.serviceId}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-black text-primary bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(selectedTask.servicePrice || 0)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-6 p-5 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                                            <p className="text-xs font-bold text-blue-800 dark:text-blue-400 mb-2 uppercase">Ghi chú từ khách hàng</p>
+                                            <p className="text-sm text-blue-900 dark:text-blue-300">
+                                                {selectedTask.note || 'Không có ghi chú thêm.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}

@@ -42,10 +42,19 @@ const STATUS_META: Record<string, { label: string; bg: string; text: string; ico
     CANCELLED: { label: 'Đã hủy lịch', bg: 'bg-rose-100 dark:bg-rose-500/10', text: 'text-rose-600', icon: XCircle },
 };
 
-function guessCategory(serviceName: string): 'boarding' | 'grooming' | 'clinic' {
-    const n = serviceName.toLowerCase();
-    if (n.includes('lưu trú') || n.includes('boarding') || n.includes('trông')) return 'boarding';
-    if (n.includes('spa') || n.includes('tắm') || n.includes('cắt') || n.includes('grooming')) return 'grooming';
+function getCategory(booking: BookingResponse): 'boarding' | 'grooming' | 'clinic' {
+    // Use actual category from DB (set by shop when creating service)
+    const cat = booking.category?.toUpperCase();
+    if (cat === 'BOARDING' || cat === 'HOTEL') return 'boarding';
+    if (cat === 'GROOMING' || cat === 'SPA') return 'grooming';
+    if (cat === 'CLINIC') return 'clinic';
+    // Fallback: check services array for category
+    if (booking.services && booking.services.length > 0) {
+        const svcCat = booking.services[0].category?.toUpperCase();
+        if (svcCat === 'BOARDING' || svcCat === 'HOTEL') return 'boarding';
+        if (svcCat === 'GROOMING' || svcCat === 'SPA') return 'grooming';
+        if (svcCat === 'CLINIC') return 'clinic';
+    }
     return 'clinic';
 }
 
@@ -95,7 +104,7 @@ function StatCard({ label, value, icon: Icon, color, delay }: any) {
 }
 
 function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: any) {
-    const category = guessCategory(booking.serviceName);
+    const category = getCategory(booking);
     const cat = CATEGORY_META[category];
     const status = STATUS_META[booking.status] || STATUS_META.CONFIRMED;
     const isLive = !!booking.cameraStreamUrl;
@@ -680,7 +689,7 @@ export default function BookingHistory() {
 
         // 4. Category filter
         if (selectedCategory !== 'all') {
-            list = list.filter(b => guessCategory(b.serviceName) === selectedCategory);
+            list = list.filter(b => getCategory(b) === selectedCategory);
         }
 
         return list;
@@ -963,7 +972,7 @@ export default function BookingHistory() {
                                         <p className="mt-2 text-base font-black text-slate-900 dark:text-white">{selectedBooking.services && selectedBooking.services.length > 0 ? selectedBooking.services.map((s: any) => s.serviceName).join(', ') : selectedBooking.serviceName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedBooking.shopName} • Bé: {selectedBooking.petName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                            {guessCategory(selectedBooking.serviceName) === 'boarding' && selectedBooking.checkIn && selectedBooking.checkOut
+                                            {getCategory(selectedBooking) === 'boarding' && selectedBooking.checkIn && selectedBooking.checkOut
                                                 ? `Lưu trú: ${format(parseISO(selectedBooking.checkIn), 'dd/MM/yyyy')} → ${format(parseISO(selectedBooking.checkOut), 'dd/MM/yyyy')}`
                                                 : format(parseISO(selectedBooking.appointmentDatetime), 'dd/MM/yyyy • HH:mm', { locale: vi })}
                                         </p>

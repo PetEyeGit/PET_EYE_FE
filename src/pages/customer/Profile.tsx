@@ -17,8 +17,6 @@ export function ProfileLayout() {
   const navigate = useNavigate();
   const { user, logout, setUserSession } = useAuth();
   const [showPerksModal, setShowPerksModal] = useState(false);
-  const [showCongratsPopup, setShowCongratsPopup] = useState(false);
-  const [congratsStep, setCongratsStep] = useState<1 | 2>(1);
   const [fullUserInfo, setFullUserInfo] = useState<any>(null);
   const [publicVouchers, setPublicVouchers] = useState<any[]>([]);
 
@@ -28,10 +26,6 @@ export function ProfileLayout() {
       userService.getById(Number(user.id))
         .then(data => {
             setFullUserInfo(data);
-            if (data.justUpgraded) {
-                setShowCongratsPopup(true);
-                userService.acknowledgeTierUpgrade().catch(console.error);
-            }
         })
         .catch(err => console.error(err));
     }
@@ -281,94 +275,6 @@ export function ProfileLayout() {
           </div>
         )}
 
-        {/* Congratulation Popup */}
-        {showCongratsPopup && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[60] flex items-center justify-center p-4">
-            <div className="bg-[#0f172a] w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in duration-500 relative border border-slate-800">
-                {/* Glowing background */}
-                <div className={`absolute top-0 inset-x-0 h-64 bg-gradient-to-b transition-all duration-1000 ${
-                  congratsStep === 1 
-                  ? 'from-yellow-500/20 via-amber-500/5' 
-                  : 'from-teal-500/20 via-emerald-500/5'
-                } to-transparent`} />
-                
-                {/* Sparkles */}
-                <div className="absolute top-10 left-10 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_#fff] animate-ping" />
-                <div className="absolute top-20 right-12 w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-[0_0_10px_#facc15] animate-ping delay-300" />
-                <div className="absolute top-32 left-20 w-1 h-1 bg-teal-400 rounded-full shadow-[0_0_10px_#2dd4bf] animate-ping delay-700" />
-
-                <div className="p-8 flex flex-col items-center relative z-10">
-                    {congratsStep === 1 ? (
-                        // Step 1: The Trophy / Gift Box
-                        <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="relative mb-8 mt-4">
-                                {/* Glowing halo */}
-                                <div className="absolute inset-0 bg-yellow-500/30 blur-2xl rounded-full" />
-                                <div className="w-28 h-28 bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full flex items-center justify-center shadow-2xl shadow-yellow-500/40 relative z-10 animate-bounce">
-                                    <span className="material-symbols-outlined text-white text-6xl">featured_seasonal_and_gifts</span>
-                                </div>
-                            </div>
-                            
-                            <h2 className="text-3xl font-black text-white mb-3">
-                                Chúc mừng thăng hạng!
-                            </h2>
-                            <p className="text-slate-400 text-sm mb-8 leading-relaxed px-4">
-                                Tuyệt vời! Bạn đã chính thức đạt <strong className={currentPerksData.colorClass}>{currentPerksData.title}</strong>. 
-                                Chúng tôi đã chuẩn bị những phần quà đặc quyền dành riêng cho bạn!
-                            </p>
-                            
-                            <button 
-                                onClick={() => setCongratsStep(2)}
-                                className="w-full py-4 bg-gradient-to-r from-yellow-500 to-amber-500 text-slate-900 rounded-2xl font-black text-lg shadow-lg shadow-yellow-500/25 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
-                            >
-                                <span className="material-symbols-outlined">redeem</span>
-                                Nhận thưởng ngay
-                            </button>
-                        </div>
-                    ) : (
-                        // Step 2: The Rewards Reveal
-                        <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-500">
-                            <div className="w-16 h-16 bg-gradient-to-tr from-teal-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-teal-500/30 mb-4">
-                                <span className="material-symbols-outlined text-white text-3xl">check_circle</span>
-                            </div>
-                            
-                            <h2 className="text-2xl font-black text-white mb-1">
-                                Quà tặng đã vào túi!
-                            </h2>
-                            <p className="text-slate-400 text-xs mb-6 text-center">
-                                Bạn đã mở khóa các đặc quyền của <span className={currentPerksData.colorClass}>{currentPerksData.title}</span>
-                            </p>
-
-                            {/* Rewards List */}
-                            <div className="w-full space-y-3 mb-8">
-                                {currentPerksData.perks.map((p, idx) => (
-                                    <div key={idx} className="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl flex items-center gap-4 animate-in slide-in-from-right-4 fade-in" style={{ animationDelay: `${idx * 150}ms`, animationFillMode: 'both' }}>
-                                        <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center text-teal-400 shadow-inner border border-slate-800 shrink-0">
-                                            <span className="material-symbols-outlined text-2xl">{p.icon}</span>
-                                        </div>
-                                        <div className="text-left flex-1">
-                                            <h4 className="text-sm font-bold text-white mb-0.5">{p.title}</h4>
-                                            <p className="text-[10px] text-slate-400">{p.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            <button 
-                                onClick={() => {
-                                    setShowCongratsPopup(false);
-                                    setCongratsStep(1); // Reset for future
-                                }}
-                                className="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold border border-slate-700 hover:bg-slate-700 hover:border-slate-600 active:scale-95 transition-all text-sm"
-                            >
-                                Hoàn tất
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-          </div>
-        )}
 
         {/* Main */}
         <main className="flex-1">
