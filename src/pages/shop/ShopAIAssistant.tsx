@@ -13,47 +13,47 @@ import { useAIChat } from '../../hooks/useAIChat';
 import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
-function renderInline(text: string): React.ReactNode {
+function renderInline(text: string, isDark?: boolean): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((p, i) => {
-    if (p.startsWith('**') && p.endsWith('**')) return <strong key={i} className="font-bold text-slate-900 dark:text-white">{p.slice(2, -2)}</strong>;
-    if (p.startsWith('*') && p.endsWith('*')) return <em key={i} className="italic text-slate-700">{p.slice(1, -1)}</em>;
-    if (p.startsWith('`') && p.endsWith('`')) return <code key={i} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-mono border border-indigo-100">{p.slice(1, -1)}</code>;
+    if (p.startsWith('**') && p.endsWith('**')) return <strong key={i} className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{p.slice(2, -2)}</strong>;
+    if (p.startsWith('*') && p.endsWith('*')) return <em key={i} className={`italic ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{p.slice(1, -1)}</em>;
+    if (p.startsWith('`') && p.endsWith('`')) return <code key={i} className={`px-1.5 py-0.5 rounded text-xs font-mono border ${isDark ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>{p.slice(1, -1)}</code>;
     return p;
   });
 }
 
-function RichText({ text }: { text: string }) {
+function RichText({ text, isDark }: { text: string; isDark?: boolean }) {
   const lines = text.split('\n');
   return (
-    <div className="space-y-1.5 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+    <div className={`space-y-1.5 text-sm leading-relaxed ${isDark ? 'text-slate-50' : 'text-slate-700'}`}>
       {lines.map((line, i) => {
         if (!line.trim()) return <div key={i} className="h-1.5" />;
-        if (line.startsWith('### ')) return <p key={i} className="font-bold text-slate-900 dark:text-white text-sm mt-3 mb-1">{line.slice(4)}</p>;
+        if (line.startsWith('### ')) return <p key={i} className={`font-bold text-sm mt-3 mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>{line.slice(4)}</p>;
         if (line.startsWith('## ')) return (
-          <div key={i} className="flex items-center gap-2 mt-4 mb-2 pb-2 border-b border-slate-100 dark:border-slate-700">
-            <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-            <p className="font-black text-slate-900 dark:text-white text-base">{line.slice(3)}</p>
+          <div key={i} className={`flex items-center gap-2 mt-4 mb-2 pb-2 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+            <div className="w-1 h-5 bg-indigo-400 rounded-full" />
+            <p className={`font-black text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>{line.slice(3)}</p>
           </div>
         );
-        if (line.startsWith('# ')) return <p key={i} className="font-black text-[#1a2b4c] dark:text-indigo-400 text-lg mt-4">{line.slice(2)}</p>;
+        if (line.startsWith('# ')) return <p key={i} className={`font-black text-lg mt-4 ${isDark ? 'text-indigo-300' : 'text-[#1a2b4c]'}`}>{line.slice(2)}</p>;
         if (line.match(/^[-•*] /)) return (
           <div key={i} className="flex items-start gap-2.5 py-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-2 shrink-0" />
-            <span className="flex-1">{renderInline(line.slice(2))}</span>
+            <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${isDark ? 'bg-indigo-300' : 'bg-indigo-400'}`} />
+            <span className="flex-1">{renderInline(line.slice(2), isDark)}</span>
           </div>
         );
         if (line.match(/^\d+\. /)) return (
           <div key={i} className="flex items-start gap-2.5 py-0.5">
-            <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">{line.match(/^\d+/)?.[0]}</span>
-            <span className="flex-1">{renderInline(line.replace(/^\d+\. /, ''))}</span>
+            <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5 ${isDark ? 'bg-indigo-900/40 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}>{line.match(/^\d+/)?.[0]}</span>
+            <span className="flex-1">{renderInline(line.replace(/^\d+\. /, ''), isDark)}</span>
           </div>
         );
         if (line.startsWith('> ')) return (
-          <div key={i} className="border-l-4 border-amber-400 pl-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 rounded-r-xl text-amber-800 dark:text-amber-300 text-xs italic my-1">{line.slice(2)}</div>
+          <div key={i} className={`border-l-4 pl-3 py-1.5 rounded-r-xl text-xs italic my-1 ${isDark ? 'border-amber-400 bg-amber-900/20 text-amber-300' : 'border-amber-400 bg-amber-50 text-amber-800'}`}>{line.slice(2)}</div>
         );
-        if (line.startsWith('---')) return <hr key={i} className="border-slate-100 dark:border-slate-700 my-2" />;
-        return <p key={i} className="leading-relaxed">{renderInline(line)}</p>;
+        if (line.startsWith('---')) return <hr key={i} className={`my-2 ${isDark ? 'border-slate-700' : 'border-slate-100'}`} />;
+        return <p key={i} className="leading-relaxed">{renderInline(line, isDark)}</p>;
       })}
     </div>
   );
@@ -107,7 +107,11 @@ export default function ShopAIAssistant() {
   const { data: services = [] } = useQuery({ queryKey: ['shopServices-ai'], queryFn: () => serviceService.getMyShopServices() });
   const { data: shopInfo } = useQuery({ queryKey: ['myShop-ai'], queryFn: () => shopService.getMyShop() });
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { 
+    if (bottomRef.current?.parentElement) {
+      bottomRef.current.parentElement.scrollTop = bottomRef.current.parentElement.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = async (text?: string) => {
     const content = (text ?? input).trim();
@@ -198,7 +202,18 @@ export default function ShopAIAssistant() {
           <div className="flex-1 flex flex-col gap-3 min-w-0">
 
             {/* Messages */}
-            <div className={`flex-1 rounded-3xl border shadow-sm overflow-hidden flex flex-col ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`} style={{ minHeight: '400px', maxHeight: 'calc(100vh - 420px)' }}>
+            <div
+              className={`flex-1 rounded-3xl overflow-hidden flex flex-col ${
+                isDark
+                  ? 'border border-[#2d3f5a] shadow-2xl'
+                  : 'border border-slate-100 shadow-sm bg-white'
+              }`}
+              style={{
+                minHeight: '400px',
+                maxHeight: 'calc(100vh - 420px)',
+                background: isDark ? 'linear-gradient(145deg, #1a2d46 0%, #162338 100%)' : undefined
+              }}
+            >
               <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
                 {messages.map(msg => (
                   <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -213,9 +228,16 @@ export default function ShopAIAssistant() {
                       </div>
                     )}
                     <div className={`max-w-[85%] flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      <div className={`rounded-2xl px-4 py-3 shadow-sm ${msg.role === 'user'
-                        ? 'bg-gradient-to-br from-[#1a2b4c] to-indigo-700 text-white rounded-tr-sm'
-                        : (isDark ? 'bg-slate-800/50 border border-slate-700 rounded-tl-sm' : 'bg-slate-50 border border-slate-100 rounded-tl-sm')}`}>
+                      <div
+                        className={`rounded-2xl px-4 py-3.5 shadow-lg ${
+                          msg.role === 'user'
+                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-tr-none shadow-indigo-900/40'
+                            : isDark
+                              ? 'rounded-tl-none border border-[#2d4060] shadow-black/30'
+                              : 'bg-white border border-slate-200 rounded-tl-none shadow-slate-200/80'
+                        }`}
+                        style={isDark && msg.role !== 'user' ? { background: 'linear-gradient(135deg, #1e3352 0%, #1a2d46 100%)' } : undefined}
+                      >
                         {msg.isLoading ? (
                           <div className="flex items-center gap-3 py-1">
                             <div className="flex gap-1">
@@ -226,7 +248,7 @@ export default function ShopAIAssistant() {
                         ) : msg.role === 'user' ? (
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                         ) : (
-                          <RichText text={msg.content} />
+                          <RichText text={msg.content} isDark={isDark} />
                         )}
                       </div>
                       <span className="text-[10px] text-slate-400 px-1">
@@ -240,7 +262,14 @@ export default function ShopAIAssistant() {
             </div>
 
             {/* Input */}
-            <div className={`rounded-2xl border shadow-sm focus-within:ring-2 transition-all ${isDark ? 'admin-glass-card bg-slate-900/60 border-white/10 focus-within:border-indigo-500 focus-within:ring-indigo-500/30' : 'bg-white border-slate-200 focus-within:border-indigo-400 focus-within:ring-indigo-100'}`}>
+            <div
+              className={`rounded-2xl border shadow-sm focus-within:ring-2 transition-all ${
+                isDark
+                  ? 'border-[#2d4060] focus-within:border-indigo-500 focus-within:ring-indigo-500/20'
+                  : 'bg-white border-slate-200 focus-within:border-indigo-400 focus-within:ring-indigo-100'
+              }`}
+              style={isDark ? { background: 'linear-gradient(135deg, #1e3352 0%, #1a2d46 100%)' } : undefined}
+            >
               <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
                 placeholder="Hỏi bất kỳ điều gì về shop... (Enter gửi, Shift+Enter xuống dòng)"
                 disabled={isLoading} rows={2}
@@ -259,7 +288,7 @@ export default function ShopAIAssistant() {
 
           {/* Sidebar: Quick actions */}
           <div className="w-72 shrink-0 flex flex-col gap-3">
-            <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+            <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-100'}`}>
               <button onClick={() => setShowQuickActions(v => !v)}
                 className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                 <div className="flex items-center gap-2">

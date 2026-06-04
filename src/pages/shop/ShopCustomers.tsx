@@ -1,58 +1,45 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, Calendar, Search, Filter, TrendingUp, X, ChevronRight, Clock, ChevronLeft, CreditCard, Heart, Package, Shield, Star, Gift, Rocket, Check } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Search, Filter, TrendingUp, X, ChevronRight, Clock, ChevronLeft, CreditCard, Heart, Package, Shield, Star, Gift, Rocket, Check, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-
-
+import { useQuery } from '@tanstack/react-query';
 import { customerService } from '../../services/customer.service';
+import { userService } from '../../services/user.service';
 import { CustomerItemResponse, ShopCustomerResponse, CustomerDetailResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 import { useShopTheme } from '../../contexts/ShopThemeContext';
 
 export default function ShopCustomers() {
   const { isDark } = useShopTheme();
-  const [customerData, setCustomerData] = useState<ShopCustomerResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'new' | 'regular' | 'vip'>('all');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerItemResponse | null>(null);
-  const [customerDetail, setCustomerDetail] = useState<CustomerDetailResponse | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  React.useEffect(() => {
-    fetchCustomers();
-  }, []);
+  const { data: customerData, isLoading } = useQuery({
+    queryKey: ['shopCustomers'],
+    queryFn: customerService.getShopCustomers
+  });
 
-  const handleOpenDetail = async (customer: CustomerItemResponse) => {
+  const { data: customerDetail, isLoading: isDetailLoading } = useQuery({
+    queryKey: ['customerDetail', selectedCustomerId],
+    queryFn: () => customerService.getCustomerDetail(selectedCustomerId!),
+    enabled: !!selectedCustomerId
+  });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', customerDetail?.customerInfo?.id],
+    queryFn: () => userService.getById(customerDetail!.customerInfo.id),
+    enabled: !!customerDetail?.customerInfo?.id
+  });
+
+  const handleOpenDetail = (customer: CustomerItemResponse) => {
+    setSelectedCustomerId(customer.id);
     setSelectedCustomer(customer);
     setShowDetailModal(true);
-    try {
-      setLoadingDetail(true);
-      const detail = await customerService.getCustomerDetail(customer.id);
-      setCustomerDetail(detail);
-    } catch (error) {
-      console.error('Failed to fetch customer detail:', error);
-      toast.error('Không thể tải thông tin chi tiết');
-    } finally {
-      setLoadingDetail(false);
-    }
   };
 
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const data = await customerService.getShopCustomers();
-      setCustomerData(data);
-    } catch (error) {
-      console.error('Failed to fetch customers:', error);
-      toast.error('Không thể tải danh sách khách hàng');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -72,7 +59,6 @@ export default function ShopCustomers() {
 
     if (filter === 'all') return true;
 
-    // Determine customer category
     const lastVisitDate = new Date(customer.lastVisit.split('/').reverse().join('-'));
     const today = new Date();
     const daysDiff = Math.floor((today.getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -89,26 +75,43 @@ export default function ShopCustomers() {
   });
 
   const getCustomerTier = (customer: CustomerItemResponse) => {
-    const spentAmount = parseInt(customer.totalSpent.replace(/\D/g, ''));
-    if (customer.tier === 'VIP') {
-      return { label: 'Khách hàng VIP', color: 'bg-yellow-500', text: 'text-white', icon: <TrendingUp size={12} /> };
+    const tierName = customer.tier || 'Đồng';
+    if (tierName === 'Kim Cương') {
+      return { label: 'Kim Cương', color: 'bg-cyan-500', text: 'text-white', icon: <TrendingUp size={12} /> };
     }
-    if (customer.tier === 'REGULAR') {
-      return { label: 'Khách thân thiết', color: 'bg-indigo-500', text: 'text-white', icon: <Shield size={12} /> };
+    if (tierName === 'Vàng' || tierName === 'VIP') {
+      return { label: 'Vàng', color: 'bg-yellow-500', text: 'text-white', icon: <TrendingUp size={12} /> };
     }
-    return { label: 'Khách hàng mới', color: 'bg-slate-100 dark:bg-slate-700', text: 'text-slate-600 dark:text-slate-400', icon: <User size={12} /> };
+    if (tierName === 'Bạc' || tierName === 'REGULAR') {
+      return { label: 'Bạc', color: 'bg-slate-300', text: 'text-slate-800', icon: <Shield size={12} /> };
+    }
+    return { label: 'Khách mới', color: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300', icon: <Award size={12} /> };
   };
 
   const getTierStats = (customer: CustomerItemResponse) => {
-    if (customer.tier === 'VIP') {
-      return { current: 'VIP', next: 'CHAMPION', progress: 100, perks: ['Ưu tiên chăm sóc', 'Ưu đãi 15%', 'Tặng quà sinh nhật', 'Lưu trú miễn phí 1 ngày'] };
+    const currentTierName = userProfile?.currentTier?.name || customer.tier || 'Đồng';
+    const totalSpending = userProfile?.totalSpending || parseInt(customer.totalSpent.replace(/\D/g, '')) || 0;
+
+    let next = 'Bạc';
+    let nextThreshold = 500000;
+    let perks = ['Tích lũy chi tiêu', 'Ưu đãi cơ bản'];
+
+    if (currentTierName === 'Bạc') {
+      next = 'Vàng';
+      nextThreshold = 1000000;
+      perks = ['Ưu tiên hỗ trợ', 'Tích lũy chi tiêu'];
+    } else if (currentTierName === 'Vàng' || currentTierName === 'VIP') {
+      next = 'Kim Cương';
+      nextThreshold = 5000000;
+      perks = ['Ưu tiên đặt chỗ', 'Tích điểm x2', 'Hỗ trợ VIP'];
+    } else if (currentTierName === 'Kim Cương') {
+      next = 'Tối đa';
+      nextThreshold = 5000000;
+      perks = ['Dịch vụ miễn phí', 'Hotline VIP', 'Quà sinh nhật'];
     }
-    if (customer.tier === 'REGULAR') {
-      const progress = Math.min(100, (customer.totalBookings / 20) * 100);
-      return { current: 'Thân thiết', next: 'VIP', progress, perks: ['Ưu đãi 10%', 'Tích điểm đổi quà', 'Ưu tiên đặt chỗ'] };
-    }
-    const progress = Math.min(100, (customer.totalBookings / 10) * 100);
-    return { current: 'Mới', next: 'Thân thiết', progress, perks: ['Tích điểm cơ bản', 'Nhận tin tức ưu đãi'] };
+
+    const progress = Math.min(100, (totalSpending / nextThreshold) * 100);
+    return { current: currentTierName, next, progress, perks };
   };
 
   return (
@@ -309,12 +312,12 @@ export default function ShopCustomers() {
           ))}
 
           {filteredCustomers.length === 0 && (
-            <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-              <div className="w-24 h-24 mx-auto mb-6 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+            <div className={`text-center py-16 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+              <div className={`w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>
                 <User className="w-12 h-12 text-slate-400" />
               </div>
-              <p className="text-slate-500 dark:text-slate-400 font-semibold text-lg">Không tìm thấy khách hàng</p>
-              <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">Thử tìm kiếm với từ khóa khác</p>
+              <p className={`font-semibold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Không tìm thấy khách hàng</p>
+              <p className={`text-sm mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Thử tìm kiếm với từ khóa khác</p>
             </div>
           )}
         </div>
@@ -390,7 +393,7 @@ export default function ShopCustomers() {
                         </div>
 
                         <div className="p-8 flex-1 overflow-y-auto space-y-8">
-                          {loadingDetail ? (
+                          {isDetailLoading ? (
                               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
                                   <p className="text-slate-500 font-medium animate-pulse">Đang tải dữ liệu khách hàng...</p>
@@ -398,7 +401,7 @@ export default function ShopCustomers() {
                           ) : customerDetail ? (
                               <>
                                 {/* Membership Progress Section */}
-                                <section className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-800/50 p-6 rounded-[2rem] border border-slate-200/50 dark:border-slate-700/50">
+                                <section className={`bg-gradient-to-br p-6 rounded-[2rem] border ${isDark ? 'from-slate-800 to-slate-800/50 border-slate-700/50' : 'from-slate-50 to-slate-100 border-slate-200/50'}`}>
                                   {(() => {
                                       const tierInfo = getTierStats(customerDetail.customerInfo);
                                       return (
@@ -407,18 +410,18 @@ export default function ShopCustomers() {
                                                   <div>
                                                       <h5 className="text-[10px] font-black uppercase text-indigo-500 tracking-wider mb-1">Cấp bậc hiện tại</h5>
                                                       <div className="flex items-center gap-2">
-                                                          <span className="text-2xl font-black text-slate-900 dark:text-white">{tierInfo.current}</span>
+                                                          <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{tierInfo.current}</span>
                                                           <Shield className="text-indigo-500" size={20} />
                                                       </div>
                                                   </div>
                                                   <div className="text-right">
-                                                      <p className="text-[10px] font-bold text-slate-400 mb-1 leading-tight">Mục tiêu tiếp theo: <span className="text-slate-900 dark:text-white font-black">{tierInfo.next}</span></p>
+                                                      <p className="text-[10px] font-bold text-slate-400 mb-1 leading-tight">Mục tiêu tiếp theo: <span className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{tierInfo.next}</span></p>
                                                       <p className="text-xs font-black text-indigo-500">{Math.round(tierInfo.progress)}%</p>
                                                   </div>
                                               </div>
                                               
                                               {/* Progress Bar */}
-                                              <div className="w-full h-3 bg-white dark:bg-slate-700 rounded-full p-0.5 shadow-inner">
+                                              <div className={`w-full h-3 rounded-full p-0.5 shadow-inner ${isDark ? 'bg-slate-700' : 'bg-white'}`}>
                                                   <div 
                                                       className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-1000"
                                                       style={{ width: `${tierInfo.progress}%` }}
@@ -430,8 +433,8 @@ export default function ShopCustomers() {
                                                   <h6 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Quyền lợi hiện có</h6>
                                                   <div className="grid grid-cols-2 gap-2">
                                                       {tierInfo.perks.map((perk, idx) => (
-                                                          <div key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-                                                              <div className="w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                                                          <div key={idx} className={`flex items-center gap-2 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-green-500 ${isDark ? 'bg-green-900/30' : 'bg-green-100'}`}>
                                                                   <Check size={10} strokeWidth={4} />
                                                               </div>
                                                               {perk}
@@ -447,34 +450,34 @@ export default function ShopCustomers() {
                                 {/* Summary Cards */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     {[
-                                        { label: 'Tổng chi tiêu', value: customerDetail.customerInfo.totalSpent, icon: <CreditCard size={18} />, color: 'teal' },
+                                        { label: 'Tổng chi tiêu', value: (userProfile?.totalSpending || parseInt(customerDetail.customerInfo.totalSpent.replace(/\D/g, '')) || 0).toLocaleString('vi-VN') + 'đ', icon: <CreditCard size={18} />, color: 'teal' },
                                         { label: 'Số thú cưng', value: customerDetail.customerInfo.pets, icon: <Heart size={18} />, color: 'pink' },
                                         { label: 'Lịch đã đặt', value: customerDetail.customerInfo.totalBookings, icon: <Package size={18} />, color: 'indigo' },
                                     ].map(s => (
-                                        <div key={s.label} className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                        <div key={s.label} className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                                             <div className={`w-9 h-9 rounded-xl bg-${s.color}-500 text-white flex items-center justify-center mb-3 shadow-lg shadow-${s.color}-500/20`}>
                                                 {s.icon}
                                             </div>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{s.label}</p>
-                                            <h5 className="text-xl font-black text-slate-900 dark:text-white mt-1.5">{s.value}</h5>
+                                            <h5 className={`text-xl font-black mt-1.5 ${isDark ? 'text-white' : 'text-slate-900'}`}>{s.value}</h5>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Section: List of Pets */}
                                 <section>
-                                    <h5 className="text-sm font-black text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                                    <h5 className={`text-sm font-black mb-4 uppercase tracking-wider flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                         <span className="w-1.5 h-4 bg-teal-500 rounded-full" />
                                         Danh sách thú cưng
                                     </h5>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {customerDetail.pets.length > 0 ? customerDetail.pets.map(pet => (
-                                            <div key={pet.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-lg transition-all group cursor-pointer">
+                                            <div key={pet.id} className={`flex items-center gap-4 p-4 rounded-2xl border hover:shadow-lg transition-all group cursor-pointer ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
                                                 <img src={pet.avatar || 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=300'} className="w-16 h-16 rounded-xl object-cover group-hover:scale-105 transition-transform shadow-md" alt={pet.name} />
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="font-black text-slate-800 dark:text-white">{pet.name}</p>
-                                                        <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">{pet.gender}</span>
+                                                        <p className={`font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{pet.name}</p>
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>{pet.gender}</span>
                                                     </div>
                                                     <p className="text-[11px] text-slate-500 font-medium">{pet.breed} • {pet.species}</p>
                                                 </div>

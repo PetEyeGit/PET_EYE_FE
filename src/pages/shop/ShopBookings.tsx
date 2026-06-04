@@ -115,7 +115,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                 </div>
 
                 <div className="lg:w-48 flex flex-col justify-center gap-2">
-                    <button onClick={() => setSelectedBooking(booking)} className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10">
+                    <button onClick={() => setSelectedBooking(booking)} className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white shadow-indigo-900/10'}`}>
                         <Info size={12} /> Xem chi tiết
                     </button>
 
@@ -126,7 +126,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                                     {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
-                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2">
+                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
                                 <XCircle size={12} /> Từ chối
                             </button>
                         </div>
@@ -145,7 +145,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                     )}
 
                     {booking.status === 'COMPLETED' && (
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
+                        <div className={`p-4 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
                             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
                             <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
                         </div>
