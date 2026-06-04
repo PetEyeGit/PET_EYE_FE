@@ -10,15 +10,15 @@ import { bookingService } from '../../services/booking.service';
 import { staffService } from '../../services/staff.service';
 import { serviceService } from '../../services/service.service';
 import { useAIChat } from '../../hooks/useAIChat';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((p, i) => {
     if (p.startsWith('**') && p.endsWith('**')) return <strong key={i} className="font-bold text-slate-900 dark:text-white">{p.slice(2, -2)}</strong>;
-    if (p.startsWith('*') && p.endsWith('*')) return <em key={i} className="italic text-slate-700">{p.slice(1, -1)}</em>;
-    if (p.startsWith('`') && p.endsWith('`')) return <code key={i} className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-mono border border-indigo-100">{p.slice(1, -1)}</code>;
+    if (p.startsWith('*') && p.endsWith('*')) return <em key={i} className="italic text-slate-700 dark:text-slate-300">{p.slice(1, -1)}</em>;
+    if (p.startsWith('`') && p.endsWith('`')) return <code key={i} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded text-xs font-mono border border-indigo-100 dark:border-indigo-800">{p.slice(1, -1)}</code>;
     return p;
   });
 }
@@ -89,7 +89,7 @@ function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; l
 const WELCOME_MSG = `# Xin chào! Tôi là PetEye Business AI 🤖\n\nTôi phân tích dữ liệu **thực tế** của shop để giúp bạn:\n• **Doanh thu** — xu hướng, dự báo, tối ưu\n• **Lịch hẹn** — tổng quan, tồn đọng, hiệu suất\n• **Dịch vụ** — hot nhất, kém nhất, cần cải thiện\n• **Khách hàng** — ai đặt nhiều nhất, chăm sóc VIP\n• **Nhân viên** — thống kê, phân bổ, tối ưu\n• **Chiến lược** — đề xuất hành động cụ thể\n\nChọn gợi ý bên dưới hoặc hỏi trực tiếp!`;
 
 export default function ShopAIAssistant() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const { messages, isLoading, sendMessage, clearHistory } = useAIChat({
     agentType: 'SHOP_ASSISTANT',
     welcomeMessage: WELCOME_MSG,
@@ -171,7 +171,7 @@ export default function ShopAIAssistant() {
         {dataReady && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard icon={<TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />} label="Doanh thu tháng"
-              value={`${(dashboard!.revenueThisMonth / 1000000).toFixed(1)}M`} sub="đồng"
+              value={`${(dashboard!.periodRevenue / 1000000).toFixed(1)}M`} sub="đồng"
               color="bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-900 dark:text-emerald-400" />
             <StatCard icon={<Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />} label="Tổng lịch hẹn"
               value={`${dashboard!.totalBookings}`} sub={`${dashboard!.pendingBookings} đang chờ`}

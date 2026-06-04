@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Store, Users, DollarSign, Calendar, Clock, MessageCircle, TrendingUp, Wallet, Banknote, AlertCircle, ArrowRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service';
 import { walletService } from '../../services/wallet.service';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
@@ -86,13 +86,43 @@ const CustomTooltip = ({ active, payload, label, isRevenue, isDark }: any) => {
 };
 
 export default function AdminDashboard() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
 
+  const [dateRange, setDateRange] = useState<'today'|'week'|'month'|'all'|'custom'>('all');
+  const [customDateInput, setCustomDateInput] = useState({ start: '', end: '' });
+  const [appliedCustomDate, setAppliedCustomDate] = useState({ start: '', end: '' });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const getDateParams = () => {
+    if (dateRange === 'all') return { startDate: undefined, endDate: undefined };
+    if (dateRange === 'custom') {
+      return { 
+        startDate: appliedCustomDate.start || undefined, 
+        endDate: appliedCustomDate.end || undefined 
+      };
+    }
+    const end = new Date();
+    let start = new Date();
+    if (dateRange === 'today') {
+      // start is today
+    } else if (dateRange === 'week') {
+      start.setDate(end.getDate() - 7);
+    } else if (dateRange === 'month') {
+      start.setDate(end.getDate() - 30);
+    }
+    return { 
+      startDate: start.toISOString().split('T')[0], 
+      endDate: end.toISOString().split('T')[0] 
+    };
+  };
+
+  const { startDate, endDate } = getDateParams();
+
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ['admin-dashboard'],
-    queryFn: adminService.getDashboard,
+    queryKey: ['admin-dashboard', startDate, endDate],
+    queryFn: () => adminService.getDashboard(startDate, endDate),
     refetchInterval: 60_000,
   });
 
@@ -146,15 +176,15 @@ export default function AdminDashboard() {
   // Use real trends and sparklines from the backend API, with safe fallbacks
   const cards = stats ? [
     {
-      label: 'Tổng doanh thu',
-      value: fmtShort(stats.totalRevenue),
+      label: dateRange === 'all' ? 'Tổng doanh thu' : 'Doanh thu (Kỳ)',
+      value: fmtShort(stats.periodRevenue ?? stats.totalRevenue),
       icon: DollarSign,
       accent: 'blue',
       trend: stats.totalRevenueTrend || '+12.4%',
       trendUp: stats.totalRevenueTrendUp ?? true,
       sparkData: stats.totalRevenueSparkData || [35, 42, 50, 48, 55, 62, 58, 70],
       color: isDark ? '#60a5fa' : '#3b82f6',
-      subText: 'so với tháng trước'
+      subText: dateRange === 'all' ? 'so với tháng trước' : `Tổng: ${fmtShort(stats.totalRevenue)}`
     },
     {
       label: 'Số dư hệ thống',
@@ -168,15 +198,15 @@ export default function AdminDashboard() {
       subText: 'số dư khả dụng'
     },
     {
-      label: 'Tổng người dùng',
-      value: formatNum(stats.totalUsers),
+      label: dateRange === 'all' ? 'Tổng người dùng' : 'Người dùng mới (Kỳ)',
+      value: formatNum(stats.periodUsers ?? stats.totalUsers),
       icon: Users,
       accent: 'emerald',
       trend: stats.totalUsersTrend || '+8.2%',
       trendUp: stats.totalUsersTrendUp ?? true,
       sparkData: stats.totalUsersSparkData || [100, 110, 118, 125, 140, 155, 172, 185],
       color: isDark ? '#34d399' : '#10b981',
-      subText: 'so với tuần trước'
+      subText: dateRange === 'all' ? 'so với tuần trước' : `Tổng: ${formatNum(stats.totalUsers)}`
     },
     {
       label: 'Tổng shop',
@@ -190,15 +220,15 @@ export default function AdminDashboard() {
       subText: 'cửa hàng hoạt động'
     },
     {
-      label: 'Tổng booking',
-      value: formatNum(stats.totalBookings),
+      label: dateRange === 'all' ? 'Tổng booking' : 'Booking mới (Kỳ)',
+      value: formatNum(stats.periodBookings ?? stats.totalBookings),
       icon: Calendar,
       accent: 'purple',
       trend: stats.totalBookingsTrend || '+15.1%',
       trendUp: stats.totalBookingsTrendUp ?? true,
       sparkData: stats.totalBookingsSparkData || [150, 162, 175, 190, 205, 220, 245, 260],
       color: isDark ? '#c084fc' : '#8b5cf6',
-      subText: 'đã hoàn thành'
+      subText: dateRange === 'all' ? 'đã hoàn thành' : `Tổng: ${formatNum(stats.totalBookings)}`
     },
     {
       label: 'Rút tiền chờ duyệt',
@@ -263,7 +293,7 @@ export default function AdminDashboard() {
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-purple-500/5 rounded-full blur-[130px] pointer-events-none z-0" />
 
       {/* Header */}
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="relative z-50 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className={`text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
             Tổng quan hệ thống
@@ -272,12 +302,90 @@ export default function AdminDashboard() {
             Thống kê và trực quan hóa toàn bộ hoạt động của Peteye
           </p>
         </div>
-        <div className={`px-4 py-2 rounded-2xl text-xs font-semibold border ${
-          isDark 
-            ? 'bg-slate-900/50 border-white/5 text-slate-400' 
-            : 'bg-white border-slate-200/60 text-slate-500 shadow-sm'
-        }`}>
-          Cập nhật: {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        
+        {/* Date Filters & Update time */}
+        <div className="flex flex-wrap items-center gap-3">
+            <div className="relative">
+                <div className={`flex items-center gap-1 p-1 rounded-2xl border ${isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'}`}>
+                    {[
+                        { id: 'today', label: 'Hôm nay' },
+                        { id: 'week', label: '7 ngày' },
+                        { id: 'month', label: '30 ngày' },
+                        { id: 'all', label: 'Toàn thời gian' }
+                    ].map(f => (
+                        <button 
+                            key={f.id}
+                            onClick={() => {
+                                setDateRange(f.id as any);
+                                setShowDatePicker(false);
+                            }}
+                            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${dateRange === f.id ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 glow-indigo' : 'bg-indigo-50 text-indigo-700 shadow-sm') : (isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-50')}`}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                    <button 
+                        onClick={() => {
+                            setShowDatePicker(!showDatePicker);
+                            if (dateRange !== 'custom') setDateRange('custom');
+                        }}
+                        className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${dateRange === 'custom' ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 glow-indigo' : 'bg-indigo-50 text-indigo-700 shadow-sm') : (isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-50')}`}
+                    >
+                        <Calendar size={14} /> Tuỳ chọn
+                    </button>
+                </div>
+
+                {showDatePicker && dateRange === 'custom' && (
+                    <div className={`absolute top-full right-0 mt-3 p-5 rounded-3xl border shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200 ${isDark ? 'bg-slate-900 border-white/10 shadow-black/50' : 'bg-white border-slate-200 shadow-indigo-900/10'}`}>
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className={`text-[10px] font-bold uppercase tracking-wider pl-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Từ ngày</label>
+                                <div className={`flex items-center px-4 py-2.5 rounded-2xl border-2 transition-all cursor-pointer ${isDark ? 'bg-slate-800 border-transparent hover:border-indigo-500/30 focus-within:border-indigo-500' : 'bg-slate-50 border-transparent hover:border-indigo-200 focus-within:border-indigo-400'}`}>
+                                    <input 
+                                        type="date" 
+                                        value={customDateInput.start}
+                                        onChange={(e) => setCustomDateInput(prev => ({ ...prev, start: e.target.value }))}
+                                        className={`text-sm font-bold outline-none bg-transparent cursor-pointer w-[120px] ${isDark ? 'text-white [color-scheme:dark]' : 'text-slate-700'}`}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1.5 mt-5">
+                                <span className={`font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>-</span>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <label className={`text-[10px] font-bold uppercase tracking-wider pl-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đến ngày</label>
+                                <div className={`flex items-center px-4 py-2.5 rounded-2xl border-2 transition-all cursor-pointer ${isDark ? 'bg-slate-800 border-transparent hover:border-indigo-500/30 focus-within:border-indigo-500' : 'bg-slate-50 border-transparent hover:border-indigo-200 focus-within:border-indigo-400'}`}>
+                                    <input 
+                                        type="date" 
+                                        value={customDateInput.end}
+                                        onChange={(e) => setCustomDateInput(prev => ({ ...prev, end: e.target.value }))}
+                                        className={`text-sm font-bold outline-none bg-transparent cursor-pointer w-[120px] ${isDark ? 'text-white [color-scheme:dark]' : 'text-slate-700'}`}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-5 flex justify-end">
+                            <button 
+                                onClick={() => {
+                                    setAppliedCustomDate(customDateInput);
+                                    setShowDatePicker(false);
+                                }}
+                                className={`px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-transform active:scale-95 ${isDark ? 'bg-indigo-600 shadow-indigo-500/20 hover:bg-indigo-500' : 'bg-indigo-600 shadow-indigo-500/30 hover:bg-indigo-700'}`}
+                            >
+                                Lấy dữ liệu
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className={`px-4 py-2 rounded-2xl text-xs font-semibold border ${
+              isDark 
+                ? 'bg-slate-900/50 border-white/5 text-slate-400' 
+                : 'bg-white border-slate-200/60 text-slate-500 shadow-sm'
+            }`}>
+              Cập nhật: {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
         </div>
       </div>
 
@@ -449,7 +557,7 @@ export default function AdminDashboard() {
                     type: 'area',
                     toolbar: { show: false },
                     background: 'transparent',
-                    animations: { enabled: true, easing: 'easeinout', speed: 800 },
+                    animations: { enabled: true, speed: 800 },
                     dropShadow: { enabled: true, top: 4, left: 0, blur: 4, opacity: 0.2, color: '#3b82f6' }
                   },
                   colors: ['#3b82f6'],
@@ -528,7 +636,7 @@ export default function AdminDashboard() {
                     type: 'bar',
                     toolbar: { show: false },
                     background: 'transparent',
-                    animations: { enabled: true, easing: 'easeinout', speed: 800 },
+                    animations: { enabled: true, speed: 800 },
                   },
                   plotOptions: {
                     bar: {

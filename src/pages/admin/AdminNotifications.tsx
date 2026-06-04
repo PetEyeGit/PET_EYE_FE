@@ -3,7 +3,7 @@ import { Bell, Send, X, Plus, Trash2, Users, Store, Globe, User, Search, CheckCi
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '../../services/admin.service';
 import type { NotificationType } from '../../services/admin.service';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 
 type TargetType = 'SINGLE' | 'ALL_USERS' | 'ALL_SHOPS' | 'ALL';
@@ -43,7 +43,7 @@ const FILTER_OPTIONS_BASE = [{ value: '', label: 'Tất cả' }];
 const EMPTY_FORM: NotifForm = { title: '', content: '', targetType: 'ALL', notificationType: 'GENERAL', email: '' };
 
 export default function AdminNotifications() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NotifForm>(EMPTY_FORM);

@@ -4,8 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import {
   Bell, ChevronDown, LogOut, User, Settings,
-  PawPrint, Menu, X, Video, Calendar, MessageCircle, ReceiptText
+  PawPrint, Menu, X, Video, Calendar, MessageCircle, ReceiptText, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userService } from '../services/user.service';
@@ -25,6 +26,15 @@ function useOutsideClick(ref: React.RefObject<HTMLElement | null>, cb: () => voi
 function scrollTo(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ThemeToggle() {
+  const { isDark, toggleTheme } = useTheme();
+  return (
+    <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors flex items-center justify-center">
+      {isDark ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -76,6 +86,7 @@ function GuestNavbar() {
         <div className="flex-1" />
 
         <div className="hidden sm:flex items-center gap-4">
+          <ThemeToggle />
           <Link to="/login"
             className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold bg-primary-light text-primary hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-all hover:-translate-y-1 active:scale-95">
             Đăng nhập
@@ -86,10 +97,13 @@ function GuestNavbar() {
           </Link>
         </div>
 
-        <button onClick={() => setMobileOpen(v => !v)}
-          className="lg:hidden p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2 lg:hidden">
+          <ThemeToggle />
+          <button onClick={() => setMobileOpen(v => !v)}
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -235,6 +249,8 @@ function AuthNavbar() {
           </div>
 
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block" />
+
+          <ThemeToggle />
 
           {/* Notifications */}
           <div ref={notifRef} className="relative">

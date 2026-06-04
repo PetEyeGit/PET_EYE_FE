@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Constants
 const STATUS_CONFIG: Record<string, any> = {
@@ -46,7 +46,7 @@ const CARE_LOG_TYPES = [
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
 function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdateStatus, setSelectedBooking }: BookingListItemProps) {
-    const { isDark } = useShopTheme();
+    const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
         queryFn: () => taskService.getPendingStaffChangeRequest(booking.bookingId),
@@ -157,7 +157,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
 }
 
 export default function ShopBookings() {
-    const { isDark } = useShopTheme();
+    const { isDark } = useTheme();
     const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
     const [staffList, setStaffList] = useState<StaffResponse[]>([]);

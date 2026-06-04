@@ -6,11 +6,11 @@ import { useAdminChat } from '../../hooks/useAdminChat';
 import { useAuth } from '../../contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import ConversationThread from '../../components/chat/shared/ConversationThread';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AdminMessages() {
   const { user } = useAuth();
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   
   if (user?.role !== 'ADMIN') return <Navigate to="/home" />;
   

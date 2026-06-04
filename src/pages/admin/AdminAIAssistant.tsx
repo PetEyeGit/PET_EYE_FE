@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { adminService } from '../../services/admin.service';
 import { useAIChat } from '../../hooks/useAIChat';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 function renderInline(text: string, isDark: boolean): React.ReactNode {
@@ -87,7 +87,7 @@ function StatCard({ icon, label, value, sub, color, isDark }: { icon: React.Reac
 const WELCOME_MSG = `# Xin chào! Tôi là PetEye Admin AI 🛡️\n\nTôi phân tích dữ liệu **toàn hệ thống** để hỗ trợ quản trị:\n• **Dashboard** — tổng quan doanh thu, booking, tăng trưởng\n• **Shop** — phân tích, duyệt, chính sách quản lý\n• **Member** — thống kê user, phân loại, xu hướng\n• **Thông báo** — hiệu quả, tỷ lệ đọc, đề xuất nội dung\n• **Tin nhắn** — tình trạng hỗ trợ, thời gian phản hồi\n• **Rủi ro & Chính sách** — cảnh báo và đề xuất hành động\n\nChọn gợi ý bên dưới hoặc hỏi trực tiếp!`;
 
 export default function AdminAIAssistant() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const { messages, isLoading, sendMessage, clearHistory } = useAIChat({
     agentType: 'ADMIN_ASSISTANT',
     welcomeMessage: WELCOME_MSG,
@@ -99,7 +99,7 @@ export default function AdminAIAssistant() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Stats for display
-  const { data: stats, refetch: refetchStats } = useQuery({ queryKey: ['admin-dashboard-ai'], queryFn: adminService.getDashboard });
+  const { data: stats, refetch: refetchStats } = useQuery({ queryKey: ['admin-dashboard-ai'], queryFn: () => adminService.getDashboard() });
   const { data: shops = [], refetch: refetchShops } = useQuery({ queryKey: ['admin-shops-ai'], queryFn: adminService.getAllShops });
   const { data: users = [] } = useQuery({ queryKey: ['admin-users-ai'], queryFn: adminService.getAllUsers });
   const { data: notifications } = useQuery({ queryKey: ['admin-notifs-ai'], queryFn: () => adminService.getNotifications(0) });

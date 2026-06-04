@@ -8,7 +8,7 @@ import {
   RefreshCw, Search, ExternalLink, X, Info, AlertCircle
 } from 'lucide-react';
 import { walletService, type WithdrawalRequestResponse } from '../../services/wallet.service';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -50,7 +50,7 @@ function PayOSModal({ request, checkoutUrl, onConfirm, onClose, confirming }: {
   onClose: () => void;
   confirming: boolean;
 }) {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const [opened, setOpened] = useState(false);
 
   const handleOpenPayOS = () => {
@@ -137,7 +137,7 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
   approving: boolean;
   rejecting: boolean;
 }) {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const [adminNote, setAdminNote] = useState('');
   const meta = statusMeta(request.status, isDark);
 
@@ -264,7 +264,7 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AdminWithdrawals() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterStatus, setFilterStatus] = useState<string>('PENDING');

@@ -5,11 +5,11 @@ import { shopService } from '../../services/shop.service';
 import { Star, MessageCircle, Send, Filter, Calendar, User, CheckCircle2, Reply } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ShopReviews() {
   const queryClient = useQueryClient();
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [filterRating, setFilterRating] = useState<number | 'all'>('all');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');

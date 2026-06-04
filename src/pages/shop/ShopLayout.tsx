@@ -7,12 +7,12 @@ import { motion } from 'motion/react';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { shopService } from '../../services/shop.service';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShopThemeProvider, useShopTheme } from '../../contexts/ShopThemeContext';
+import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 
 function ShopLayoutInner() {
   const location = useLocation();
   const { user } = useAuth();
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [shopId, setShopId] = useState<number | null>(null);
   
@@ -86,8 +86,8 @@ function ShopLayoutInner() {
 
 export default function ShopLayout() {
   return (
-    <ShopThemeProvider>
+    <ThemeProvider>
       <ShopLayoutInner />
-    </ShopThemeProvider>
+    </ThemeProvider>
   );
 }

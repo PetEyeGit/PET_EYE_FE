@@ -3,10 +3,10 @@ import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2, ShieldCheck, 
 import { shopService } from '../../services/shop.service';
 import { fileService } from '../../services/file.service';
 import toast from 'react-hot-toast';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ShopProfile() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);

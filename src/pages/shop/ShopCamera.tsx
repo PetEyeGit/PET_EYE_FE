@@ -9,14 +9,14 @@ import type { BookingResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 import { resolveStreamUrl, checkStreamReady } from '../../utils/streamHelper';
 import HLSPlayer from '../../components/HLSPlayer';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 
 
 export default function ShopCamera() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [loading, setLoading] = useState(true);

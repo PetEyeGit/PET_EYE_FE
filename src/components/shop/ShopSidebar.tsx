@@ -4,7 +4,7 @@ import {
   BarChart3, Calendar, Package, Video, Users as UsersIcon, Sparkles, Star, MessageCircle, Store, ChevronRight, Wallet, Sun, Moon
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const navItems = [
   { label: 'Dashboard', path: '/shop/dashboard', icon: BarChart3 },
@@ -21,7 +21,7 @@ const navItems = [
 
 export default function ShopSidebar() {
   const location = useLocation();
-  const { isDark, toggleTheme } = useShopTheme();
+  const { isDark, toggleTheme } = useTheme();
   const isActive = (path: string) => location.pathname === path;
 
   return (

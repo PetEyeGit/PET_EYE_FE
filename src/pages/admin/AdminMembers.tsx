@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, User, Mail, Phone, Shield, Eye, X, Ban, CheckCircle, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminUserResponse } from '../../services/admin.service';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -10,7 +10,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function AdminMembers() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Tất cả');

@@ -8,7 +8,7 @@ import {
 import { staffService, type StaffResponse, type StaffCreationRequest } from '../../services/staff.service';
 import { shopService } from '../../services/shop.service';
 import { userService } from '../../services/user.service';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -21,7 +21,7 @@ const ROLES = [
 ];
 
 export default function ShopStaff() {
-    const { isDark } = useShopTheme();
+    const { isDark } = useTheme();
     const [activeTab, setActiveTab] = useState<'list' | 'settings'>('list');
     const [staffList, setStaffList] = useState<StaffResponse[]>([]);
     const [loading, setLoading] = useState(false);

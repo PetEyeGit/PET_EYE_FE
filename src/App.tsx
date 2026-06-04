@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -100,7 +101,7 @@ function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       {shouldShowCustomerNav && <Navbar />}
 
       <main className={`flex-1 flex flex-col h-full grow relative ${shouldShowCustomerNav ? 'overflow-x-hidden' : ''}`}>
@@ -212,39 +213,41 @@ function ScrollToTop() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Toaster 
-        position="bottom-right" 
-        reverseOrder={false} 
-        toastOptions={{
-          style: {
-            background: '#1e293b', // bg-slate-800
-            color: '#fff',
-            borderRadius: '16px',
-            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3)',
-            padding: '12px 24px',
-            fontSize: '13px',
-            fontWeight: '600',
-            letterSpacing: '0.02em',
-          },
-          success: {
-            iconTheme: {
-              primary: '#22c55e',
-              secondary: '#fff',
+    <ThemeProvider>
+      <AuthProvider>
+        <Toaster 
+          position="bottom-right" 
+          reverseOrder={false} 
+          toastOptions={{
+            style: {
+              background: '#1e293b', // bg-slate-800
+              color: '#fff',
+              borderRadius: '16px',
+              boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3)',
+              padding: '12px 24px',
+              fontSize: '13px',
+              fontWeight: '600',
+              letterSpacing: '0.02em',
             },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
+            success: {
+              iconTheme: {
+                primary: '#22c55e',
+                secondary: '#fff',
+              },
             },
-          },
-        }}
-      />
-      <Router>
-        <ScrollToTop />
-        <AppLayout />
-      </Router>
-    </AuthProvider>
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+        <Router>
+          <ScrollToTop />
+          <AppLayout />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -5,11 +5,13 @@ import type { ApiResponse } from '../types/api';
 
 export interface AdminDashboardStats {
   totalRevenue: number;
+  periodRevenue?: number;
   totalRevenueTrend?: string;
   totalRevenueTrendUp?: boolean | null;
   totalRevenueSparkData?: number[];
 
   totalUsers: number;
+  periodUsers?: number;
   totalUsersTrend?: string;
   totalUsersTrendUp?: boolean | null;
   totalUsersSparkData?: number[];
@@ -20,6 +22,7 @@ export interface AdminDashboardStats {
   totalShopsSparkData?: number[];
 
   totalBookings: number;
+  periodBookings?: number;
   totalBookingsTrend?: string;
   totalBookingsTrendUp?: boolean | null;
   totalBookingsSparkData?: number[];
@@ -135,8 +138,11 @@ export interface ChatMessage {
 
 export const adminService = {
   // Dashboard
-  getDashboard: async (): Promise<AdminDashboardStats> => {
-    const res = await apiClient.get<ApiResponse<AdminDashboardStats>>('/admin/dashboard');
+  getDashboard: async (startDate?: string, endDate?: string): Promise<AdminDashboardStats> => {
+    const params: any = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const res = await apiClient.get<ApiResponse<AdminDashboardStats>>('/admin/dashboard', { params });
     return res.data.result!;
   },
 

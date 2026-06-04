@@ -7,10 +7,10 @@ import { Link } from 'react-router-dom';
 import { customerService } from '../../services/customer.service';
 import { CustomerItemResponse, ShopCustomerResponse, CustomerDetailResponse } from '../../types/api';
 import toast from 'react-hot-toast';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ShopCustomers() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [customerData, setCustomerData] = useState<ShopCustomerResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

@@ -69,8 +69,12 @@ export const shopService = {
     return response.data.result!;
   },
 
-  getDashboard: async (): Promise<ShopDashboardResponse> => {
-    const response = await apiClient.get<ApiResponse<ShopDashboardResponse>>('/shops/my-shop/dashboard');
+  getDashboard: async (startDate?: string, endDate?: string): Promise<ShopDashboardResponse> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await apiClient.get<ApiResponse<ShopDashboardResponse>>(`/shops/my-shop/dashboard${params.toString() ? '?' + params.toString() : ''}`);
     return response.data.result!;
   },
 

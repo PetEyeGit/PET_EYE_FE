@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleLeft, ToggleRight, Loader2, Package } from 'lucide-react';
 import { serviceService } from '../../services/service.service';
 import type { ServiceResponse, ServiceCreationRequest, ServiceUpdateRequest } from '../../types/api';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Camera tier options (defaults — shop can override label & price) ─────────
 
@@ -69,7 +69,7 @@ const EMPTY_FORM: ServiceForm = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ShopServices() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [services, setServices] = useState<ServiceResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
