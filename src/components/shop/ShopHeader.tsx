@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, ChevronDown, LogOut, Search, Settings, User, Store, MessageCircle, BarChart3, Wallet, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { walletService, ShopWalletResponse } from '../../services/wallet.service';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -48,39 +49,40 @@ export default function ShopHeader() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className={`h-20 sticky top-0 z-40 backdrop-blur-xl border-b px-8 flex items-center justify-between ${isDark ? 'bg-slate-950/80 border-white/5' : 'bg-white/80 border-slate-100'}`}>
-      {/* Search Bar */}
-      <div className="flex-1 max-w-xl">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Tìm kiếm nhanh..." 
-            className={`w-full border-none rounded-2xl py-2.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none ${isDark ? 'bg-slate-900/50 text-white placeholder:text-slate-500 focus:bg-slate-900/80' : 'bg-slate-50 text-slate-900'}`}
-          />
-        </div>
-      </div>
-
+    <header className={`h-16 sticky top-0 z-40 backdrop-blur-xl border-b px-8 flex items-center justify-end ${isDark ? 'bg-slate-950/80 border-white/5' : 'bg-white/80 border-slate-100'}`}>
       {/* Right Side Actions */}
       <div className="flex items-center gap-4">
         {/* Theme Toggle */}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={toggleTheme}
-          className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all relative ${
-            isDark ? 'bg-white/5 text-amber-400 hover:bg-white/10 hover:text-amber-300' : 'bg-slate-50 text-indigo-500 hover:bg-slate-100 hover:text-indigo-600'
+          className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors relative overflow-hidden ${
+            isDark ? 'bg-white/5 text-amber-400 hover:bg-white/10 hover:text-amber-300 shadow-lg shadow-amber-400/5' : 'bg-slate-50 text-indigo-500 hover:bg-slate-100 hover:text-indigo-600 shadow-sm'
           }`}
         >
-          {isDark ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={isDark ? 'dark' : 'light'}
+              initial={{ y: -30, opacity: 0, rotate: -90 }}
+              animate={{ y: 0, opacity: 1, rotate: 0 }}
+              exit={{ y: 30, opacity: 0, rotate: 90 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 250, damping: 15 }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </motion.div>
+          </AnimatePresence>
+        </motion.button>
         {/* Wallet Balance */}
         {wallet && (
-          <Link to="/shop/wallet" className={`hidden sm:flex items-center gap-3 px-5 py-2 rounded-2xl border transition-all shadow-sm group ${isDark ? 'bg-emerald-950/30 border-emerald-900/50 hover:bg-emerald-900/40 shadow-emerald-500/5' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100/50 shadow-emerald-500/5'}`}>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-              <Wallet size={16} />
+          <Link to="/shop/wallet" className={`hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-xl border transition-all shadow-sm group ${isDark ? 'bg-emerald-950/30 border-emerald-900/50 hover:bg-emerald-900/40 shadow-emerald-500/5' : 'bg-emerald-50 border-emerald-100 hover:bg-emerald-100/50 shadow-emerald-500/5'}`}>
+            <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+              <Wallet size={14} />
             </div>
             <div className="flex flex-col">
-              <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>Số dư ví</p>
-              <p className={`text-[14px] font-black mt-0.5 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+              <p className={`text-[9px] font-black uppercase tracking-widest leading-none ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>Số dư ví</p>
+              <p className={`text-[13px] font-black mt-0.5 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(wallet.availableBalance)}
               </p>
             </div>
@@ -91,13 +93,13 @@ export default function ShopHeader() {
         <div ref={notifRef} className="relative">
           <button 
             onClick={() => setNotifOpen(!notifOpen)}
-            className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all relative ${
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all relative ${
               notifOpen ? 'bg-primary text-white shadow-lg shadow-primary/20 glow-blue' : isDark ? 'bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
             }`}
           >
-            <Bell size={20} />
+            <Bell size={18} />
             {unreadCount > 0 && (
-              <span className={`absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'}`} />
+              <span className={`absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 ${isDark ? 'border-slate-950' : 'border-white'}`} />
             )}
           </button>
 

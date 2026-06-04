@@ -187,7 +187,8 @@ export default function ShopMessages() {
       {/* Main Chat Area */}
       <ConversationThread 
         key={`${activeChannel.type}-${activeChannel.id}`}
-        containerClassName="flex-1 rounded-r-3xl"
+        containerClassName={`flex-1 rounded-r-3xl ${isDark ? 'bg-slate-900/60' : 'bg-white'}`}
+        isDark={isDark}
         messages={messages}
         loading={loading}
         currentUserEmail={user?.email}

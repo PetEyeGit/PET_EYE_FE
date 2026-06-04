@@ -213,19 +213,18 @@ export default function ShopStaff() {
 
                         <AnimatePresence>
                             {showForm && (
-                                <div className="fixed -inset-10 z-[9999] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-10 overflow-y-auto custom-scrollbar">
-                                    <div className="w-full max-w-2xl flex items-center justify-center py-20 min-h-full">
-                                        <motion.div 
-                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                            onClick={() => setShowForm(false)}
-                                            className="fixed inset-0 bg-transparent" 
-                                        />
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                            className={`relative w-full rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden border z-10 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-transparent'}`}
-                                        >
+                                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-4 sm:p-6 overflow-hidden">
+                                    <motion.div 
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        onClick={() => setShowForm(false)}
+                                        className="fixed inset-0 bg-transparent" 
+                                    />
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                        className={`relative w-full max-w-2xl max-h-full rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden border z-10 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-transparent'}`}
+                                    >
                                         {/* Compact Premium Modal Header */}
                                         <div className="bg-primary p-6 relative overflow-hidden shrink-0">
                                             <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
@@ -249,7 +248,7 @@ export default function ShopStaff() {
                                             </div>
                                         </div>
 
-                                        <div className="overflow-y-auto p-6 custom-scrollbar">
+                                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                                             <form onSubmit={handleSubmit} className="space-y-6">
                                                 {/* Section 1: Thông tin cơ bản */}
                                                 <div className="space-y-4">
@@ -363,7 +362,6 @@ export default function ShopStaff() {
                                         </div>
                                     </motion.div>
                                 </div>
-                            </div>
                         )}
                     </AnimatePresence>
 

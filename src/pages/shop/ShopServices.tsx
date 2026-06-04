@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleLeft, ToggleRight, Loader2, Package } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Camera, X, Clock, DollarSign, Tag, ToggleLeft, ToggleRight, Loader2, Package, LayoutGrid, List as ListIcon, Scissors, Stethoscope, Home } from 'lucide-react';
 import { serviceService } from '../../services/service.service';
 import type { ServiceResponse, ServiceCreationRequest, ServiceUpdateRequest } from '../../types/api';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -77,6 +77,7 @@ export default function ShopServices() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('Tất cả');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -297,10 +298,24 @@ export default function ShopServices() {
     }
   }
 
+  // ── Stats ───────────────────────────────────────────────────────────────────
+
+  const totalServices = services.length;
+  const groomingCount = services.filter(s => s.category === 'GROOMING').length;
+  const clinicCount = services.filter(s => s.category === 'CLINIC').length;
+  const boardingCount = services.filter(s => s.category === 'BOARDING').length;
+
+  const kpis = [
+    { label: 'Tổng số dịch vụ', value: totalServices, icon: Package, color: 'bg-blue-500', shadow: 'shadow-blue-500/30', glow: 'glow-blue' },
+    { label: 'Chăm sóc (Grooming)', value: groomingCount, icon: Scissors, color: 'bg-pink-500', shadow: 'shadow-pink-500/30', glow: 'glow-pink' },
+    { label: 'Khám bệnh (Clinic)', value: clinicCount, icon: Stethoscope, color: 'bg-emerald-500', shadow: 'shadow-emerald-500/30', glow: 'glow-emerald' },
+    { label: 'Lưu trú (Boarding)', value: boardingCount, icon: Home, color: 'bg-indigo-500', shadow: 'shadow-indigo-500/30', glow: 'glow-indigo' },
+  ];
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="w-full px-6 md:px-10 py-8">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -332,36 +347,76 @@ export default function ShopServices() {
         </div>
       )}
 
+      {/* Grid Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {kpis.map((s) => (
+          <div 
+            key={s.label} 
+            className={`p-6 rounded-[2rem] transition-all duration-300 group block border ${isDark ? 'admin-glass-card bg-slate-900/40 hover:bg-slate-900/60 border-white/5' : 'bg-white shadow-sm border-slate-100 hover:shadow-xl'}`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white ${s.color} shadow-lg ${s.shadow} ${isDark ? s.glow : ''} group-hover:scale-110 transition-transform`}>
+                <s.icon size={22} />
+              </div>
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
+            <h3 className={`text-2xl font-black mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {s.value} <span className={`text-xs font-medium ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>dịch vụ</span>
+            </h3>
+          </div>
+        ))}
+      </div>
+
       {/* Search & Filter */}
       <div className={`rounded-xl p-4 shadow-sm mb-6 border transition-all ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm dịch vụ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-            />
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm dịch vụ..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+              />
+            </div>
+
+            {/* Category tabs */}
+            <div className="flex gap-2 flex-wrap items-center">
+              {ALL_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-4 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+                    activeCategory === cat
+                      ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white')
+                      : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+                  }`}
+                >
+                  {cat === 'Tất cả' ? 'Tất cả' : categoryLabel(cat)}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Category tabs */}
-          <div className="flex gap-2 flex-wrap">
-            {ALL_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                  activeCategory === cat
-                    ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white')
-                    : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
-                }`}
-              >
-                {cat === 'Tất cả' ? 'Tất cả' : categoryLabel(cat)}
-              </button>
-            ))}
+          {/* View Toggle */}
+          <div className={`flex items-center p-1.5 rounded-2xl transition-all shrink-0 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${viewMode === 'list' ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-white text-indigo-700 shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+            >
+              <ListIcon size={16} />
+              Danh sách
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${viewMode === 'grid' ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-white text-indigo-700 shadow-md') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+            >
+              <LayoutGrid size={16} />
+              Dạng thẻ
+            </button>
           </div>
         </div>
       </div>
@@ -391,91 +446,165 @@ export default function ShopServices() {
         </div>
       )}
 
-      {/* Service grid */}
+      {/* Service Grid/List */}
       {!loading && filtered.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
           {filtered.map((service) => (
-            <div key={service.id} className={`rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-300 flex flex-col group border ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/5 hover:border-indigo-500/30' : 'bg-white shadow-sm hover:shadow-md border-slate-100'}`}>
-              {/* Image */}
-              <div className={`relative h-48 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                {service.imageUrl ? (
-                  <img
-                    src={service.imageUrl}
-                    alt={service.serviceName}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className={`w-full h-full flex flex-col items-center justify-center transition-colors ${isDark ? 'bg-slate-800 group-hover:bg-slate-700' : 'bg-slate-100/80 group-hover:bg-slate-200/50'}`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm mb-2 ${isDark ? 'bg-slate-700 text-slate-500' : 'bg-white text-slate-300'}`}>
-                      <Camera size={24} />
-                    </div>
-                    <span className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chưa có ảnh</span>
-                  </div>
-                )}
-                {/* Active badge */}
-                <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
-                  service.active 
-                    ? (isDark ? 'bg-slate-900/80 text-green-400 border border-green-500/20' : 'bg-white/90 text-green-600') 
-                    : (isDark ? 'bg-slate-900/80 text-slate-400 border border-white/10' : 'bg-white/90 text-slate-500')
-                }`}>
-                  {service.active ? 'Đang hoạt động' : 'Tạm dừng'}
-                </div>
-                {/* Category badge */}
-                <div className={`absolute top-3 right-3 px-2.5 py-1 text-white rounded-full text-xs font-bold shadow-sm
-                  ${service.category === 'GROOMING' ? 'bg-pink-500' : service.category === 'CLINIC' ? 'bg-emerald-500' : 'bg-indigo-500'}
-                `}>
-                  {categoryLabel(service.category)}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className={`font-bold text-lg mb-1 truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{service.serviceName}</h3>
-                <p className={`text-sm mb-4 line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{service.description || 'Chưa có mô tả cho dịch vụ này.'}</p>
-
-                <div className="flex flex-wrap items-center gap-3 mb-5 mt-auto">
-                  <div className="flex items-center text-sm">
-                    <span className={`font-extrabold px-2.5 py-1 rounded-lg ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-[#1a2b4c] bg-[#1a2b4c]/5'}`}>
-                      {service.price.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 text-sm font-medium px-2.5 py-1 rounded-lg ${isDark ? 'bg-slate-800/50 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
-                    <Clock size={14} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
-                    <span>{service.durationMinutes} phút</span>
-                  </div>
-                  {service.category === 'BOARDING' && service.cameraEnabled && (
-                    <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-indigo-600 bg-indigo-50'}`}>
-                      📷 {service.cameraTiers?.length ?? 0} loại camera
+            viewMode === 'grid' ? (
+              <div key={service.id} className={`rounded-xl overflow-hidden hover:-translate-y-1 transition duration-300 flex flex-col group border ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/5 hover:border-indigo-500/30' : 'bg-white shadow-sm hover:shadow-md border-slate-100'}`}>
+                {/* Image */}
+                <div className={`relative h-48 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                  {service.imageUrl ? (
+                    <img
+                      src={service.imageUrl}
+                      alt={service.serviceName}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className={`w-full h-full flex flex-col items-center justify-center transition-colors ${isDark ? 'bg-slate-800 group-hover:bg-slate-700' : 'bg-slate-100/80 group-hover:bg-slate-200/50'}`}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm mb-2 ${isDark ? 'bg-slate-700 text-slate-500' : 'bg-white text-slate-300'}`}>
+                        <Camera size={24} />
+                      </div>
+                      <span className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chưa có ảnh</span>
                     </div>
                   )}
+                  {/* Active badge */}
+                  <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md ${
+                    service.active 
+                      ? (isDark ? 'bg-slate-900/80 text-green-400 border border-green-500/20' : 'bg-white/90 text-green-600') 
+                      : (isDark ? 'bg-slate-900/80 text-slate-400 border border-white/10' : 'bg-white/90 text-slate-500')
+                  }`}>
+                    {service.active ? 'Đang hoạt động' : 'Tạm dừng'}
+                  </div>
+                  {/* Category badge */}
+                  <div className={`absolute top-3 right-3 px-2.5 py-1 text-white rounded-full text-xs font-bold shadow-sm
+                    ${service.category === 'GROOMING' ? 'bg-pink-500' : service.category === 'CLINIC' ? 'bg-emerald-500' : 'bg-indigo-500'}
+                  `}>
+                    {categoryLabel(service.category)}
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex-1 flex flex-col">
+                  <h3 className={`font-bold text-lg mb-1 truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{service.serviceName}</h3>
+                  <p className={`text-sm mb-4 line-clamp-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{service.description || 'Chưa có mô tả cho dịch vụ này.'}</p>
+
+                  <div className="flex flex-wrap items-center gap-3 mb-5 mt-auto">
+                    <div className="flex items-center text-sm">
+                      <span className={`font-extrabold px-2.5 py-1 rounded-lg ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-[#1a2b4c] bg-[#1a2b4c]/5'}`}>
+                        {service.price.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 text-sm font-medium px-2.5 py-1 rounded-lg ${isDark ? 'bg-slate-800/50 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+                      <Clock size={14} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                      <span>{service.durationMinutes} phút</span>
+                    </div>
+                    {service.category === 'BOARDING' && service.cameraEnabled && (
+                      <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-indigo-600 bg-indigo-50'}`}>
+                        📷 {service.cameraTiers?.length ?? 0} loại camera
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className={`flex items-center justify-between pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                    {/* Toggle status */}
+                    <button
+                      onClick={() => toggleServiceStatus(service)}
+                      className={`flex items-center gap-1 text-sm font-semibold transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-[#1a2b4c]'}`}
+                      title={service.active ? 'Tạm dừng dịch vụ' : 'Kích hoạt dịch vụ'}
+                    >
+                      {service.active
+                        ? <ToggleRight size={22} className="text-green-500" />
+                        : <ToggleLeft size={22} className={isDark ? 'text-slate-600' : 'text-slate-400'} />
+                      }
+                      {service.active ? 'Đang bật' : 'Đang tắt'}
+                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(service)}
+                        className={`p-2 rounded-lg transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white' : 'bg-slate-100 hover:bg-[#1a2b4c] hover:text-white'}`}
+                        title="Chỉnh sửa"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => setDeletingService(service)}
+                        className={`p-2 rounded-lg transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-red-500 hover:text-white' : 'bg-slate-100 hover:bg-red-500 hover:text-white'}`}
+                        title="Xóa"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div key={service.id} className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-5 border transition hover:-translate-y-0.5 hover:shadow-md ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/5 hover:border-indigo-500/30' : 'bg-white shadow-sm hover:shadow-lg border-slate-100 hover:border-slate-300'}`}>
+                {/* Thumbnail */}
+                <div className={`shrink-0 w-full h-32 sm:w-20 sm:h-20 rounded-xl overflow-hidden relative ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                  {service.imageUrl ? (
+                    <img src={service.imageUrl} alt={service.serviceName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera size={20} className={isDark ? 'text-slate-600' : 'text-slate-400'} />
+                    </div>
+                  )}
+                  {/* Category mini badge */}
+                  <div className={`absolute bottom-0 left-0 right-0 text-center py-0.5 text-[8px] font-black uppercase text-white shadow-sm ${service.category === 'GROOMING' ? 'bg-pink-500' : service.category === 'CLINIC' ? 'bg-emerald-500' : 'bg-indigo-500'}`}>
+                    {categoryLabel(service.category)}
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`font-bold text-base truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{service.serviceName}</h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 ${service.active ? (isDark ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-green-100 text-green-700') : (isDark ? 'bg-slate-800 text-slate-400 border border-white/10' : 'bg-slate-100 text-slate-500')}`}>
+                      {service.active ? 'Hoạt động' : 'Tạm dừng'}
+                    </span>
+                  </div>
+                  <p className={`text-xs line-clamp-1 mb-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{service.description || 'Chưa có mô tả cho dịch vụ này.'}</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`text-sm font-black px-2 py-0.5 rounded-lg ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-[#1a2b4c] bg-[#1a2b4c]/5'}`}>
+                      {service.price.toLocaleString('vi-VN')}đ
+                    </span>
+                    <span className={`flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-lg ${isDark ? 'bg-slate-800/50 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+                      <Clock size={12} /> {service.durationMinutes} phút
+                    </span>
+                    {service.category === 'BOARDING' && service.cameraEnabled && (
+                      <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg ${isDark ? 'text-indigo-300 bg-indigo-500/10' : 'text-indigo-600 bg-indigo-50'}`}>
+                        📷 {service.cameraTiers?.length ?? 0} loại camera
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Actions */}
-                <div className={`flex items-center justify-between pt-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                  {/* Toggle status */}
+                <div className={`flex items-center justify-between sm:justify-end gap-3 sm:pl-5 sm:border-l shrink-0 mt-4 sm:mt-0 ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+                  {/* Status Toggle */}
                   <button
                     onClick={() => toggleServiceStatus(service)}
-                    className={`flex items-center gap-1 text-sm font-semibold transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-[#1a2b4c]'}`}
+                    className={`flex items-center gap-1.5 p-2 rounded-xl text-xs font-semibold transition-colors ${isDark ? 'text-slate-400 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-[#1a2b4c]'}`}
                     title={service.active ? 'Tạm dừng dịch vụ' : 'Kích hoạt dịch vụ'}
                   >
                     {service.active
-                      ? <ToggleRight size={22} className="text-green-500" />
-                      : <ToggleLeft size={22} className={isDark ? 'text-slate-600' : 'text-slate-400'} />
+                      ? <ToggleRight size={24} className="text-green-500" />
+                      : <ToggleLeft size={24} className={isDark ? 'text-slate-600' : 'text-slate-400'} />
                     }
-                    {service.active ? 'Đang bật' : 'Đang tắt'}
                   </button>
-
                   <div className="flex gap-2">
                     <button
                       onClick={() => openEditModal(service)}
-                      className={`p-2 rounded-lg transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white' : 'bg-slate-100 hover:bg-[#1a2b4c] hover:text-white'}`}
+                      className={`p-2.5 rounded-xl transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-[#1a2b4c] hover:text-white'}`}
                       title="Chỉnh sửa"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => setDeletingService(service)}
-                      className={`p-2 rounded-lg transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-red-500 hover:text-white' : 'bg-slate-100 hover:bg-red-500 hover:text-white'}`}
+                      className={`p-2.5 rounded-xl transition-all ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-red-500 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-red-500 hover:text-white'}`}
                       title="Xóa"
                     >
                       <Trash2 size={16} />
@@ -483,14 +612,14 @@ export default function ShopServices() {
                   </div>
                 </div>
               </div>
-            </div>
+            )
           ))}
         </div>
       )}
       {/* ── Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className={`rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border ${isDark ? 'admin-glass-card bg-slate-900 border-white/10' : 'bg-white border-slate-100'}`}>
+          <div className={`rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] border ${isDark ? 'bg-[#0f172a] border-white/5' : 'bg-white border-slate-100'}`}>
             {/* Modal header */}
             <div className={`flex items-center justify-between p-6 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
               <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -510,7 +639,7 @@ export default function ShopServices() {
               {/* Image upload */}
               <div>
                 <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Hình ảnh dịch vụ</label>
-                <div className={`relative w-full h-40 rounded-xl overflow-hidden flex items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                <div className={`relative w-full h-40 rounded-xl overflow-hidden flex items-center justify-center border-2 border-dashed ${isDark ? 'bg-[#0b1121] border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                   {imagePreview ? (
                     <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
                   ) : (
@@ -546,7 +675,7 @@ export default function ShopServices() {
                   type="text"
                   value={form.serviceName}
                   onChange={(e) => setForm((prev) => ({ ...prev, serviceName: e.target.value }))}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   placeholder="Ví dụ: Tắm & sấy lông"
                   required
                 />
@@ -558,7 +687,7 @@ export default function ShopServices() {
                 <select
                   value={form.category}
                   onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 >
                   <option value="GROOMING" className={isDark ? 'bg-slate-800 text-white' : ''}>Chăm sóc (Grooming)</option>
@@ -579,7 +708,7 @@ export default function ShopServices() {
                     step={1000}
                     value={form.price === 0 ? '' : form.price}
                     onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                     placeholder="150000"
                     required
                   />
@@ -597,7 +726,7 @@ export default function ShopServices() {
                         step={1}
                         value={form.durationDays === 0 ? '' : form.durationDays}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationDays: Number(e.target.value) }))}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                         placeholder="1"
                         required
                       />
@@ -611,7 +740,7 @@ export default function ShopServices() {
                         step={5}
                         value={form.durationMinutes === 0 ? '' : form.durationMinutes}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                         placeholder="60"
                         required
                       />
@@ -627,7 +756,7 @@ export default function ShopServices() {
                   value={form.description}
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                   rows={4}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none resize-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none resize-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                   placeholder="Mô tả chi tiết về dịch vụ..."
                 />
               </div>
@@ -643,7 +772,7 @@ export default function ShopServices() {
                       type="text"
                       value={form.cageSize}
                       onChange={(e) => setForm((prev) => ({ ...prev, cageSize: e.target.value }))}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                       placeholder="VD: Nhỏ, Vừa, Lớn"
                     />
                   </div>
@@ -655,7 +784,7 @@ export default function ShopServices() {
                       type="text"
                       value={form.roomType}
                       onChange={(e) => setForm((prev) => ({ ...prev, roomType: e.target.value }))}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                       placeholder="VD: Tiêu chuẩn, VIP"
                     />
                   </div>
@@ -778,7 +907,7 @@ export default function ShopServices() {
                                         cameraTierLabels: { ...prev.cameraTierLabels, [tier.id]: e.target.value },
                                       }))}
                                       placeholder={tier.label}
-                                      className={`w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 outline-none ${isDark ? 'bg-slate-800 border-indigo-500/30 text-white focus:ring-indigo-500 placeholder-slate-600' : 'bg-white border-indigo-200 focus:ring-indigo-400'}`}
+                                      className={`w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 outline-none ${isDark ? 'bg-[#0b1121] border-indigo-500/30 text-white focus:ring-indigo-500 placeholder-slate-500' : 'bg-white border-indigo-200 focus:ring-indigo-400'}`}
                                     />
                                   </div>
                                   <div>
@@ -794,7 +923,7 @@ export default function ShopServices() {
                                         ...prev,
                                         cameraTierPrices: { ...prev.cameraTierPrices, [tier.id]: Number(e.target.value) },
                                       }))}
-                                      className={`w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 outline-none ${isDark ? 'bg-slate-800 border-indigo-500/30 text-white focus:ring-indigo-500' : 'bg-white border-indigo-200 focus:ring-indigo-400'}`}
+                                      className={`w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 outline-none ${isDark ? 'bg-[#0b1121] border-indigo-500/30 text-white focus:ring-indigo-500' : 'bg-white border-indigo-200 focus:ring-indigo-400'}`}
                                     />
                                   </div>
                                 </div>
@@ -820,7 +949,7 @@ export default function ShopServices() {
                           value={form.cameraDescription}
                           onChange={(e) => setForm((prev) => ({ ...prev, cameraDescription: e.target.value }))}
                           rows={3}
-                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none text-sm resize-none ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-600' : 'bg-white border-slate-200 focus:ring-indigo-400 focus:border-indigo-400 placeholder-slate-400'}`}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none text-sm resize-none ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 focus:ring-indigo-400 focus:border-indigo-400 placeholder-slate-400'}`}
                           placeholder="Ví dụ: Camera góc rộng, xem được toàn bộ phòng, lưu trữ 24h..."
                         />
                       </div>
