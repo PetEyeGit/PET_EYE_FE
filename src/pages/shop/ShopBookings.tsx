@@ -379,7 +379,7 @@ export default function ShopBookings() {
                 <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 shrink-0">
                     <div>
                         <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            <CalendarIcon className={`w-8 h-8 ${isDark ? 'text-blue-500 glow-blue' : 'text-blue-600'}`} />
+                            <CalendarIcon className={`w-8 h-8 ${isDark ? 'text-blue-500 drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]' : 'text-blue-600'}`} />
                             Quản lý đặt lịch
                         </h1>
                         <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>

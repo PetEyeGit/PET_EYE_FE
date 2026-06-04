@@ -61,25 +61,25 @@ function RichText({ text, isDark }: { text: string; isDark?: boolean }) {
 
 // ─── Quick actions ────────────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { icon: '📊', label: 'Phân tích doanh thu', color: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20', prompt: 'Phân tích chi tiết doanh thu: tổng quan, xu hướng 7 ngày, dịch vụ đóng góp nhiều nhất. Đề xuất cải thiện cụ thể.' },
-  { icon: '👑', label: 'Khách đặt nhiều nhất', color: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-500/20', prompt: 'Ai là khách hàng đặt lịch nhiều nhất? Liệt kê tên khách, số lần đặt, dịch vụ hay dùng. Đề xuất chương trình khách hàng thân thiết.' },
-  { icon: '📅', label: 'Tổng quan lịch hẹn', color: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20', prompt: 'Tổng hợp lịch hẹn theo trạng thái (chờ/xác nhận/hoàn thành/hủy). Có lịch tồn đọng không? Đề xuất tối ưu.' },
-  { icon: '✂️', label: 'Dịch vụ hot & kém', color: 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/20 hover:bg-teal-100 dark:hover:bg-teal-500/20', prompt: 'Dịch vụ nào được đặt nhiều nhất? Dịch vụ nào chưa ai đặt hoặc ít được chọn? Đề xuất chiến lược cải thiện.' },
-  { icon: '👥', label: 'Thống kê nhân viên', color: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20', prompt: 'Thống kê nhân viên: số lượng, trạng thái, chuyên môn, phân bổ công việc. Đề xuất tối ưu nhân sự.' },
-  { icon: '⚠️', label: 'Cảnh báo & rủi ro', color: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20', prompt: 'Có vấn đề gì cần chú ý? Lịch tồn đọng, dịch vụ kém, nhân viên thiếu, doanh thu giảm? Đề xuất xử lý ngay.' },
-  { icon: '🎯', label: 'Chiến lược tăng trưởng', color: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/20 hover:bg-orange-100 dark:hover:bg-orange-500/20', prompt: 'Dựa trên dữ liệu thực, đề xuất 3-5 chiến lược cụ thể để tăng doanh thu và khách hàng trong tháng tới.' },
-  { icon: '📈', label: 'So sánh tháng này vs trước', color: 'bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-500/20 hover:bg-cyan-100 dark:hover:bg-cyan-500/20', prompt: 'So sánh hiệu suất tháng này với tháng trước: doanh thu, lịch hẹn, khách hàng mới. Nhận xét xu hướng.' },
+  { icon: '📊', label: 'Phân tích doanh thu', colorDark: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30', colorLight: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100', prompt: 'Phân tích chi tiết doanh thu: tổng quan, xu hướng 7 ngày, dịch vụ đóng góp nhiều nhất. Đề xuất cải thiện cụ thể.' },
+  { icon: '👑', label: 'Khách đặt nhiều nhất', colorDark: 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30', colorLight: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100', prompt: 'Ai là khách hàng đặt lịch nhiều nhất? Liệt kê tên khách, số lần đặt, dịch vụ hay dùng. Đề xuất chương trình khách hàng thân thiết.' },
+  { icon: '📅', label: 'Tổng quan lịch hẹn', colorDark: 'bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30', colorLight: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100', prompt: 'Tổng hợp lịch hẹn theo trạng thái (chờ/xác nhận/hoàn thành/hủy). Có lịch tồn đọng không? Đề xuất tối ưu.' },
+  { icon: '✂️', label: 'Dịch vụ hot & kém', colorDark: 'bg-teal-500/20 text-teal-300 border-teal-500/30 hover:bg-teal-500/30', colorLight: 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100', prompt: 'Dịch vụ nào được đặt nhiều nhất? Dịch vụ nào chưa ai đặt hoặc ít được chọn? Đề xuất chiến lược cải thiện.' },
+  { icon: '👥', label: 'Thống kê nhân viên', colorDark: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/30', colorLight: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100', prompt: 'Thống kê nhân viên: số lượng, trạng thái, chuyên môn, phân bổ công việc. Đề xuất tối ưu nhân sự.' },
+  { icon: '⚠️', label: 'Cảnh báo & rủi ro', colorDark: 'bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30', colorLight: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100', prompt: 'Có vấn đề gì cần chú ý? Lịch tồn đọng, dịch vụ kém, nhân viên thiếu, doanh thu giảm? Đề xuất xử lý ngay.' },
+  { icon: '🎯', label: 'Chiến lược tăng trưởng', colorDark: 'bg-orange-500/20 text-orange-300 border-orange-500/30 hover:bg-orange-500/30', colorLight: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100', prompt: 'Dựa trên dữ liệu thực, đề xuất 3-5 chiến lược cụ thể để tăng doanh thu và khách hàng trong tháng tới.' },
+  { icon: '📈', label: 'So sánh tháng này vs trước', colorDark: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/30', colorLight: 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100', prompt: 'So sánh hiệu suất tháng này với tháng trước: doanh thu, lịch hẹn, khách hàng mới. Nhận xét xu hướng.' },
 ];
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, sub, color }: { icon: React.ReactNode; label: string; value: string; sub?: string; color: string }) {
+function StatCard({ icon, label, value, sub, colorDark, colorLight }: { icon: React.ReactNode; label: string; value: string; sub?: string; colorDark: string; colorLight: string }) {
+  const { isDark } = useShopTheme();
   return (
-    <div className={`rounded-2xl p-4 border ${color} flex items-start gap-3`}>
-      <div className="w-9 h-9 rounded-xl bg-white/60 dark:bg-white/10 flex items-center justify-center shrink-0 shadow-sm">{icon}</div>
+    <div className={`rounded-xl p-2.5 border flex items-center gap-2 ${isDark ? colorDark : colorLight}`}>
+      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${isDark ? 'bg-white/10' : 'bg-white/60'}`}>{icon}</div>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wider opacity-70 truncate">{label}</p>
-        <p className="text-xl font-black leading-tight mt-0.5">{value}</p>
-        {sub && <p className="text-[10px] opacity-60 mt-0.5 truncate">{sub}</p>}
+        <p className="text-[8px] font-bold uppercase tracking-wider opacity-70 truncate">{label}</p>
+        <p className="text-sm font-black leading-tight truncate">{value}</p>
       </div>
     </div>
   );
@@ -96,7 +96,8 @@ export default function ShopAIAssistant() {
   });
 
   const [input, setInput] = useState('');
-  const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showAllActions, setShowAllActions] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -138,10 +139,10 @@ export default function ShopAIAssistant() {
   const topService = dashboard?.topServices?.[0];
 
   return (
-    <div className={`min-h-screen flex flex-col ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/20' : 'bg-gradient-to-br from-slate-50 via-white to-indigo-50/30'}`}>
+    <div className={`h-full flex flex-col overflow-hidden ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/20' : 'bg-gradient-to-br from-slate-50 via-white to-indigo-50/30'}`}>
 
       {/* Header */}
-      <div className={`backdrop-blur-xl border-b px-6 py-4 sticky top-0 z-10 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
+      <div className={`backdrop-blur-xl border-b px-6 py-3 sticky top-0 z-10 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#1a2b4c] to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -169,29 +170,35 @@ export default function ShopAIAssistant() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-4 flex flex-col gap-4 min-h-0">
 
         {/* Stats row */}
         {dataReady && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <StatCard icon={<TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />} label="Doanh thu tháng"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
+            <StatCard icon={<TrendingUp className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />} label="Doanh thu tháng"
               value={`${(dashboard!.revenueThisMonth / 1000000).toFixed(1)}M`} sub="đồng"
-              color="bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-900 dark:text-emerald-400" />
-            <StatCard icon={<Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />} label="Tổng lịch hẹn"
+              colorDark="bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+              colorLight="bg-emerald-50 border-emerald-100 text-emerald-900" />
+            <StatCard icon={<Calendar className={`w-4 h-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />} label="Tổng lịch hẹn"
               value={`${dashboard!.totalBookings}`} sub={`${dashboard!.pendingBookings} đang chờ`}
-              color="bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-900 dark:text-blue-400" />
-            <StatCard icon={<Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />} label="Khách hàng"
+              colorDark="bg-blue-500/10 border-blue-500/20 text-blue-400"
+              colorLight="bg-blue-50 border-blue-100 text-blue-900" />
+            <StatCard icon={<Users className={`w-4 h-4 ${isDark ? 'text-purple-400' : 'text-purple-600'}`} />} label="Khách hàng"
               value={`${dashboard!.totalCustomers}`} sub={`${dashboard!.totalPets} thú cưng`}
-              color="bg-purple-50 dark:bg-purple-500/10 border-purple-100 dark:border-purple-500/20 text-purple-900 dark:text-purple-400" />
+              colorDark="bg-purple-500/10 border-purple-500/20 text-purple-400"
+              colorLight="bg-purple-50 border-purple-100 text-purple-900" />
             <StatCard icon={<span className="text-sm">👑</span>} label="Khách VIP"
               value={topCustomer?.name?.slice(0, 10) ?? '—'} sub={topCustomer ? `${topCustomer.count} lần đặt` : 'Chưa có'}
-              color="bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-900 dark:text-amber-400" />
-            <StatCard icon={<Scissors className="w-4 h-4 text-teal-600 dark:text-teal-400" />} label="Dịch vụ hot"
+              colorDark="bg-amber-500/10 border-amber-500/20 text-amber-400"
+              colorLight="bg-amber-50 border-amber-100 text-amber-900" />
+            <StatCard icon={<Scissors className={`w-4 h-4 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />} label="Dịch vụ hot"
               value={topService?.name?.slice(0, 10) ?? '—'} sub={topService ? `${topService.count} lần` : 'Chưa có'}
-              color="bg-teal-50 dark:bg-teal-500/10 border-teal-100 dark:border-teal-500/20 text-teal-900 dark:text-teal-400" />
-            <StatCard icon={<Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />} label="Nhân viên"
+              colorDark="bg-teal-500/10 border-teal-500/20 text-teal-400"
+              colorLight="bg-teal-50 border-teal-100 text-teal-900" />
+            <StatCard icon={<Users className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />} label="Nhân viên"
               value={`${staff.filter(s => s.isActive).length}/${staff.length}`} sub="đang hoạt động"
-              color="bg-indigo-50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-500/20 text-indigo-900 dark:text-indigo-400" />
+              colorDark="bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
+              colorLight="bg-indigo-50 border-indigo-100 text-indigo-900" />
           </div>
         )}
 
@@ -203,16 +210,12 @@ export default function ShopAIAssistant() {
 
             {/* Messages */}
             <div
-              className={`flex-1 rounded-3xl overflow-hidden flex flex-col ${
+              className={`flex-1 rounded-3xl overflow-hidden flex flex-col min-h-0 ${
                 isDark
                   ? 'border border-[#2d3f5a] shadow-2xl'
                   : 'border border-slate-100 shadow-sm bg-white'
               }`}
-              style={{
-                minHeight: '400px',
-                maxHeight: 'calc(100vh - 420px)',
-                background: isDark ? 'linear-gradient(145deg, #1a2d46 0%, #162338 100%)' : undefined
-              }}
+              style={isDark ? { background: 'linear-gradient(145deg, #1a2d46 0%, #162338 100%)' } : undefined}
             >
               <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
                 {messages.map(msg => (
@@ -287,35 +290,41 @@ export default function ShopAIAssistant() {
           </div>
 
           {/* Sidebar: Quick actions */}
-          <div className="w-72 shrink-0 flex flex-col gap-3">
-            <div className={`rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-100'}`}>
+          <div className="w-[260px] shrink-0 flex flex-col gap-3 overflow-y-auto pb-4 custom-scrollbar">
+            <div className={`shrink-0 rounded-3xl border shadow-sm overflow-hidden ${isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-100'}`}>
               <button onClick={() => setShowQuickActions(v => !v)}
-                className={`w-full flex items-center justify-between px-4 py-3.5 transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
+                className={`w-full flex items-center justify-between px-3 py-3 transition-colors ${isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-50'}`}>
                 <div className="flex items-center gap-2">
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
                     <Sparkles className={`w-3.5 h-3.5 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
                   </div>
                   <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Phân tích nhanh</span>
                 </div>
-                {showQuickActions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                {showQuickActions ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
               </button>
               {showQuickActions && (
                 <div className="px-3 pb-3 flex flex-col gap-1.5">
-                  {QUICK_ACTIONS.map(action => (
+                  {(showAllActions ? QUICK_ACTIONS : QUICK_ACTIONS.slice(0, 4)).map(action => (
                     <button key={action.label} onClick={() => handleSend(action.prompt)}
                       disabled={isLoading}
-                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed ${action.color}`}>
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-all disabled:opacity-40 disabled:cursor-not-allowed ${isDark ? action.colorDark : action.colorLight}`}>
                       <span className="text-base shrink-0">{action.icon}</span>
                       <span className="leading-snug">{action.label}</span>
                     </button>
                   ))}
+                  {QUICK_ACTIONS.length > 4 && (
+                    <button onClick={() => setShowAllActions(!showAllActions)}
+                      className={`mt-1 text-[11px] font-bold py-1.5 text-center rounded-lg transition-colors ${isDark ? 'text-indigo-300 hover:bg-indigo-500/10' : 'text-indigo-600 hover:bg-indigo-50'}`}>
+                      {showAllActions ? 'Thu gọn' : 'Xem thêm'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Data summary card */}
             {dataReady && (
-              <div className="bg-gradient-to-br from-[#1a2b4c] to-indigo-700 rounded-3xl p-4 text-white shadow-lg shadow-indigo-500/20">
+              <div className="shrink-0 bg-gradient-to-br from-[#1a2b4c] to-indigo-700 rounded-3xl p-4 text-white shadow-lg shadow-indigo-500/20">
                 <div className="flex items-center gap-2 mb-3">
                   <BarChart2 className="w-4 h-4 text-indigo-300" />
                   <p className="text-xs font-bold text-indigo-200 uppercase tracking-wider">Tóm tắt nhanh</p>
@@ -342,7 +351,7 @@ export default function ShopAIAssistant() {
             )}
 
             {/* Tip */}
-            <div className={`border rounded-2xl p-3 ${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-200'}`}>
+            <div className={`shrink-0 border rounded-2xl p-3 ${isDark ? 'bg-amber-500/10 border-amber-500/20' : 'bg-amber-50 border-amber-200'}`}>
               <div className="flex items-start gap-2">
                 <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
                 <div>

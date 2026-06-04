@@ -97,7 +97,7 @@ export default function ShopDashboard() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
            <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-             <LayoutDashboard className="w-8 h-8 text-blue-500 glow-blue" />
+             <LayoutDashboard className={`w-8 h-8 text-blue-500 ${isDark ? 'drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]' : ''}`} />
              Tổng quan kinh doanh
            </h1>
            <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>

@@ -31,7 +31,7 @@ function ShopLayoutInner() {
     : 'bg-[#f8fafc] text-slate-900';
 
   return (
-    <div className={`flex min-h-screen max-w-[1920px] mx-auto w-full relative ${themeClasses}`}>
+    <div className={`flex h-screen max-w-[1920px] mx-auto w-full relative overflow-hidden ${themeClasses}`}>
       {/* Fixed Sidebar */}
       <ShopSidebar />
 
@@ -39,7 +39,7 @@ function ShopLayoutInner() {
       <div className="flex-1 flex flex-col min-w-0">
         <ShopHeader />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 flex flex-col min-h-0 overflow-x-hidden overflow-y-auto">
           <Outlet />
         </main>
       </div>
