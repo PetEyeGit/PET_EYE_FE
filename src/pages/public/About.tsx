@@ -7,19 +7,9 @@ export default function About() {
   const location = useLocation();
 
   // Scroll to section based on hash
-  useEffect(() => {
-    if (location.hash) {
-      const element = document.getElementById(location.hash.replace('#', ''));
-      if (element) {
-        // Adding a slight delay to ensure layout is ready
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }, [location]);
+ useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
@@ -279,7 +269,7 @@ export default function About() {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
+              <a href="https://web.facebook.com/profile.php?id=61590306674838" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
                 Tham gia Facebook
               </a>
               <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-white text-slate-800 border border-slate-200 font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2">

@@ -56,7 +56,7 @@ export default function VerifyEmail() {
         navigate('/shop/register/success', { replace: true });
       } else if (password) {
         await login(email, password);
-        navigate('/home', { replace: true });
+        navigate('/user/dashboard', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }
@@ -69,7 +69,7 @@ export default function VerifyEmail() {
           navigate('/shop/register/success', { replace: true });
         } else if (password) {
           await login(email, password);
-          navigate('/home', { replace: true });
+          navigate('/user/dashboard', { replace: true });
         } else {
           navigate('/login', { replace: true });
         }

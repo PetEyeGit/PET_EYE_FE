@@ -12,7 +12,7 @@ export default function AdminMessages() {
   const { user } = useAuth();
   const { isDark } = useTheme();
   
-  if (user?.role !== 'ADMIN') return <Navigate to="/home" />;
+  if (user?.role !== 'ADMIN') return <Navigate to="/user/dashboard" />;
   
   const [activeTab, setActiveTab] = useState<'SHOPS' | 'CUSTOMERS'>('SHOPS');
   const [activeShopId, setActiveShopId] = useState<number | null>(null);

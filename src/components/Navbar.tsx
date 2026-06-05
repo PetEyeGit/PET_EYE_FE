@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
 import {
   Bell, ChevronDown, LogOut, User, Settings,
-  PawPrint, Menu, X, Video, Calendar, MessageCircle, ReceiptText, Sun, Moon
+  PawPrint, Menu, X, Video, Calendar, MessageCircle, ReceiptText, Sun, Moon, LayoutDashboard
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -71,16 +71,11 @@ function GuestNavbar() {
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
-          {[
-            { label: 'Cơ sở thú y', id: 'co-so' },
-            { label: 'Camera 24/7', id: 'camera' },
-            { label: 'Quy trình', id: 'quy-trinh' },
-          ].map(item => (
-            <button key={item.id} onClick={() => goto(item.id)}
-              className="h-10 px-5 rounded-xl text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-secondary dark:hover:text-secondary hover:bg-secondary/5 transition-all">
-              {item.label}
-            </button>
-          ))}
+          <Link to="/search"
+            className="h-10 px-5 rounded-xl flex items-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-secondary dark:hover:text-secondary hover:bg-secondary/5 transition-all">
+            Tìm cơ sở
+          </Link>
+
         </nav>
 
         <div className="flex-1" />
@@ -115,15 +110,11 @@ function GuestNavbar() {
             className="lg:hidden overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800"
           >
             <div className="px-6 py-6 space-y-2">
-              {[
-                { label: 'Cơ sở thú y', id: 'co-so' },
-                { label: 'Camera 24/7', id: 'camera' },
-              ].map(item => (
-                <button key={item.label} onClick={() => goto(item.id)}
-                  className="w-full text-left px-4 py-3.5 rounded-xl text-[15px] font-bold text-slate-700 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all">
-                  {item.label}
-                </button>
-              ))}
+              <Link to="/search" onClick={() => setMobileOpen(false)}
+                className="block w-full text-left px-4 py-3.5 rounded-xl text-[15px] font-bold text-slate-700 dark:text-slate-300 hover:bg-primary/5 hover:text-primary transition-all">
+                Tìm cơ sở
+              </Link>
+
               <div className="flex flex-col gap-3 pt-4">
                 <Link to="/login" onClick={() => setMobileOpen(false)}
                   className="w-full text-center py-4 rounded-2xl bg-primary-light text-primary dark:bg-blue-950/40 dark:text-blue-400 font-bold">
@@ -179,8 +170,7 @@ function AuthNavbar() {
   }, []);
 
   const NAV = [
-    { to: '/home', label: 'Trang chủ' },
-    { to: '/search', label: 'Khám phá' },
+    { to: '/search', label: 'Tìm cơ sở' },
     { to: '/profile/bookings', label: 'Lịch hẹn' },
   ];
 
@@ -199,7 +189,7 @@ function AuthNavbar() {
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">
 
         {/* ── Logo ──────────────────────────────── */}
-        <Link to="/home" className="shrink-0 group">
+        <Link to="/" className="shrink-0 group">
           <Logo className="group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
@@ -348,7 +338,8 @@ function AuthNavbar() {
                   </div>
 
                   {[
-                    { to: '/profile', icon: <User size={16} />, label: 'Hồ sơ của tôi' },
+                  { to: '/user/dashboard', icon: <LayoutDashboard size={16} />, label: 'Tổng quan' },
+                    { to: '/profile', icon: <User size={16} />, label: 'Quản lý tài khoản' },
                     { to: '/profile/pets', icon: <PawPrint size={16} />, label: 'Thú cưng của tôi' },
                     { to: '/profile/bookings', icon: <Calendar size={16} />, label: 'Lịch đặt hẹn' },
                     { to: '/camera', icon: <Video size={16} />, label: 'Theo dõi Camera', badge: 'LIVE' },

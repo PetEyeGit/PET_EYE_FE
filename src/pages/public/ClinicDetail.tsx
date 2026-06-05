@@ -325,6 +325,7 @@ export default function ClinicDetail() {
 
   // ── Pet selection modal ─────────────────────────────────────────────────────
   const [showPetModal, setShowPetModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [petNote, setPetNote] = useState('');
   const [selectedServiceForDetail, setSelectedServiceForDetail] = useState<ServiceResponse | null>(null);
@@ -447,6 +448,10 @@ export default function ClinicDetail() {
   // ── Open pet modal ──────────────────────────────────────────────────────────
   function handleBookClick() {
     if (!canBook) return;
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
     setShowPetModal(true);
   }
 
@@ -1703,18 +1708,32 @@ export default function ClinicDetail() {
                   </button>
 
                   <div className="flex gap-3">
-                    <button className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
+                    <button 
+                      onClick={() => {
+                        if (!user) {
+                          setShowLoginPrompt(true);
+                        } else {
+                          window.location.href = `tel:${shop?.phone || ''}`;
+                        }
+                      }}
+                      className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
                       <span className="material-symbols-outlined text-lg">call</span>
                       Gọi điện
                     </button>
 
-                    <Link
-                      to="/messages"
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          setShowLoginPrompt(true);
+                        } else {
+                          navigate('/messages');
+                        }
+                      }}
                       className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
                     >
                       <span className="material-symbols-outlined text-lg">chat</span>
                       Nhắn tin
-                    </Link>
+                    </button>
                   </div>
 
                   <div className="flex items-center justify-center gap-1 text-xs text-slate-400 font-medium">
@@ -2398,6 +2417,61 @@ export default function ClinicDetail() {
         </AnimatePresence>
 
       </div>
+
+      {/* Login Prompt Modal */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+            onClick={() => setShowLoginPrompt(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[28px] overflow-hidden shadow-2xl relative"
+            >
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <span className="material-symbols-outlined text-4xl text-indigo-500">lock_person</span>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+                  Yêu cầu đăng nhập
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                  Bạn cần đăng nhập hoặc tạo tài khoản để có thể đặt lịch hẹn, gọi điện và nhắn tin với cơ sở này.
+                </p>
+                
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => navigate('/login', { state: { from: `/clinic/${shopId}` } })}
+                    className="w-full py-3.5 px-4 bg-[#1a2b4c] text-white rounded-xl font-bold hover:bg-[#111c33] transition-colors"
+                  >
+                    Đăng nhập ngay
+                  </button>
+                  <button
+                    onClick={() => navigate('/register', { state: { from: `/clinic/${shopId}` } })}
+                    className="w-full py-3.5 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Tạo tài khoản mới
+                  </button>
+                  <button
+                    onClick={() => setShowLoginPrompt(false)}
+                    className="w-full py-3 px-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold text-sm transition-colors mt-2"
+                  >
+                    Bỏ qua
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

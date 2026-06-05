@@ -279,7 +279,7 @@ export default function CameraView() {
 
     if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[500px] gap-4 bg-[#f5efe6] h-[calc(100vh-64px)]">
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-4 bg-[#f5efe6] h-[calc(100vh-64px)]">
                 <Loader2 className="w-10 h-10 animate-spin text-secondary" />
                 <p className="text-sm font-semibold text-slate-500">Đang tải luồng camera...</p>
             </div>
@@ -288,7 +288,7 @@ export default function CameraView() {
 
     if (cameras.length === 0 || !activeCam) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-[#f5efe6] text-center p-8 text-primary">
+            <div className="flex-1 flex flex-col items-center justify-center h-[calc(100vh-64px)] bg-[#f5efe6] text-center p-8 text-primary">
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
                     <WifiOff className="w-10 h-10 text-slate-400" />
                 </div>

@@ -22,9 +22,24 @@ export interface ShopPublicResponse {
   workingDays?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
   staffs?: any[];
+  serviceNames?: string[];
   latitude?: number;
   longitude?: number;
   lateGracePeriod?: number;
+}
+
+export interface ShopNearbyResponse {
+  id: number;
+  shopName: string;
+  shopType: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  logoUrl?: string;
+  ratingAvg: number;
+  distanceKm: number;
+  durationMinutes: number;
 }
 
 export interface ShopRegistrationRequest {
@@ -102,6 +117,14 @@ export const shopService = {
     shopType?: string;
   }): Promise<ShopPublicResponse[]> => {
     const response = await apiClient.get<ApiResponse<ShopPublicResponse[]>>('/shops/public', { params });
+    return response.data.result ?? [];
+  },
+
+  /** Search nearby shops using coordinates */
+  searchNearby: async (lat: number, lng: number, radius: number = 10.0): Promise<ShopNearbyResponse[]> => {
+    const response = await apiClient.get<ApiResponse<ShopNearbyResponse[]>>('/shops/nearby', {
+      params: { lat, lng, radius }
+    });
     return response.data.result ?? [];
   },
 

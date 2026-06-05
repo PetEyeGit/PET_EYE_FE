@@ -10,12 +10,12 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     {/* Cột 1: Brand & Socials */}
                     <div className="space-y-6">
-                        <Link to="/home"><Logo lightText /></Link>
+                        <Link to="/"><Logo lightText /></Link>
                         <p className="text-sm text-slate-300 leading-relaxed pr-4">
                             Nền tảng kết nối chủ nuôi với cơ sở thú y và pet shop uy tín hàng đầu.
                         </p>
                         <div className="flex items-center gap-3">
-                            <a href="#" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-slate-300 hover:text-white">
+                            <a href="https://web.facebook.com/profile.php?id=61590306674838" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-slate-300 hover:text-white">
                                 <FaFacebookF size={16} />
                             </a>
                             <a href="#" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-slate-300 hover:text-white">
