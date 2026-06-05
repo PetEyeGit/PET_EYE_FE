@@ -11,7 +11,7 @@ import {
   Sun, Moon, ChevronLeft, PanelLeftClose, PanelLeft
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { AdminThemeProvider, useAdminTheme } from '../../contexts/AdminThemeContext';
+import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -26,7 +26,7 @@ const NAV_ITEMS = [
 
 function AdminLayoutInner() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme, isDark } = useAdminTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -616,8 +616,8 @@ function AdminLayoutInner() {
 
 export default function AdminLayout() {
   return (
-    <AdminThemeProvider>
+    <ThemeProvider>
       <AdminLayoutInner />
-    </AdminThemeProvider>
+    </ThemeProvider>
   );
 }

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminShopResponse, AdminStaffResponse } from '../../services/admin.service';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 
 type ShopStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -41,7 +41,7 @@ function StatusBadge({ status, isDark }: { status: ShopStatus; isDark: boolean }
 }
 
 export default function AdminShops() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Tất cả');

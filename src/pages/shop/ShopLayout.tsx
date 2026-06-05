@@ -7,12 +7,12 @@ import { motion } from 'motion/react';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { shopService } from '../../services/shop.service';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShopThemeProvider, useShopTheme } from '../../contexts/ShopThemeContext';
+import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 
 function ShopLayoutInner() {
   const location = useLocation();
   const { user } = useAuth();
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [shopId, setShopId] = useState<number | null>(null);
   
@@ -31,7 +31,7 @@ function ShopLayoutInner() {
     : 'bg-[#f8fafc] text-slate-900';
 
   return (
-    <div className={`flex min-h-screen max-w-[1920px] mx-auto w-full relative ${themeClasses}`}>
+    <div className={`flex h-screen max-w-[1920px] mx-auto w-full relative overflow-hidden ${themeClasses}`}>
       {/* Fixed Sidebar */}
       <ShopSidebar />
 
@@ -39,7 +39,7 @@ function ShopLayoutInner() {
       <div className="flex-1 flex flex-col min-w-0">
         <ShopHeader />
         
-        <main className="flex-1 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 flex flex-col min-h-0 overflow-x-hidden overflow-y-auto">
           <Outlet />
         </main>
       </div>
@@ -86,8 +86,8 @@ function ShopLayoutInner() {
 
 export default function ShopLayout() {
   return (
-    <ShopThemeProvider>
+    <ThemeProvider>
       <ShopLayoutInner />
-    </ShopThemeProvider>
+    </ThemeProvider>
   );
 }

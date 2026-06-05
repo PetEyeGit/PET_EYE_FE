@@ -7,12 +7,12 @@ import { shopService } from '../../services/shop.service';
 import { staffService } from '../../services/staff.service';
 import { useQuery } from '@tanstack/react-query';
 import ConversationThread from '../../components/chat/shared/ConversationThread';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type ChannelType = 'ADMIN_SUPPORT' | 'INTERNAL_STAFF' | 'DIRECT' | 'CUSTOMER_CHAT';
 
 export default function ShopMessages() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const { user } = useAuth();
   const [activeChannel, setActiveChannel] = useState<{
     type: ChannelType;
@@ -187,7 +187,8 @@ export default function ShopMessages() {
       {/* Main Chat Area */}
       <ConversationThread 
         key={`${activeChannel.type}-${activeChannel.id}`}
-        containerClassName="flex-1 rounded-r-3xl"
+        containerClassName={`flex-1 rounded-r-3xl ${isDark ? 'bg-slate-900/60' : 'bg-white'}`}
+        isDark={isDark}
         messages={messages}
         loading={loading}
         currentUserEmail={user?.email}

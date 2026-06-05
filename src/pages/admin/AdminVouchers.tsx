@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit2, Trash2, Ticket, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { adminService } from '../../services/admin.service';
-import { useAdminTheme } from '../../contexts/AdminThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AdminVouchers() {
-  const { isDark } = useAdminTheme();
+  const { isDark } = useTheme();
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -255,13 +255,25 @@ export interface ServiceStat {
   count: number;
 }
 
+export interface BookingStatusStats {
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+}
+
 export interface ShopDashboardResponse {
   totalRevenue: number;
-  revenueThisMonth: number;
+  periodRevenue: number;
   totalBookings: number;
   pendingBookings: number;
   totalCustomers: number;
   totalPets: number;
+  periodBookings: number;
+  periodNewCustomers: number;
   revenueChart: RevenueChartData[];
   topServices: ServiceStat[];
+  bookingStatusStats: BookingStatusStats;
+  growthPercentage: number;
+  growthDescription: string;
 }

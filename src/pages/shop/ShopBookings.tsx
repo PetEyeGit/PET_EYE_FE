@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Constants
 const STATUS_CONFIG: Record<string, any> = {
@@ -46,7 +46,7 @@ const CARE_LOG_TYPES = [
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
 function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdateStatus, setSelectedBooking }: BookingListItemProps) {
-    const { isDark } = useShopTheme();
+    const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
         queryFn: () => taskService.getPendingStaffChangeRequest(booking.bookingId),
@@ -115,7 +115,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                 </div>
 
                 <div className="lg:w-48 flex flex-col justify-center gap-2">
-                    <button onClick={() => setSelectedBooking(booking)} className="w-full py-3 bg-[#1a2b4c] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/10">
+                    <button onClick={() => setSelectedBooking(booking)} className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white shadow-indigo-900/10'}`}>
                         <Info size={12} /> Xem chi tiết
                     </button>
 
@@ -126,7 +126,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                                     {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
-                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className="w-full py-3 border border-red-100 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2">
+                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
                                 <XCircle size={12} /> Từ chối
                             </button>
                         </div>
@@ -145,7 +145,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                     )}
 
                     {booking.status === 'COMPLETED' && (
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700">
+                        <div className={`p-4 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
                             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
                             <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
                         </div>
@@ -157,7 +157,7 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
 }
 
 export default function ShopBookings() {
-    const { isDark } = useShopTheme();
+    const { isDark } = useTheme();
     const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
     const [staffList, setStaffList] = useState<StaffResponse[]>([]);
@@ -379,7 +379,7 @@ export default function ShopBookings() {
                 <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 shrink-0">
                     <div>
                         <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            <CalendarIcon className={`w-8 h-8 ${isDark ? 'text-blue-500 glow-blue' : 'text-blue-600'}`} />
+                            <CalendarIcon className={`w-8 h-8 ${isDark ? 'text-blue-500 drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]' : 'text-blue-600'}`} />
                             Quản lý đặt lịch
                         </h1>
                         <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Điều phối và theo dõi tiến độ dịch vụ cửa hàng</p>

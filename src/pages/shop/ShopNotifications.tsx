@@ -3,7 +3,7 @@ import { Bell, CheckCheck, Loader2, AlertCircle, RefreshCw, BellOff, Trash2 } fr
 import { useNotifications, type AppNotification } from '../../hooks/useNotifications';
 import { format, parseISO, isToday, isYesterday, formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ function NotifItem({
 type FilterKey = 'all' | 'unread' | 'read';
 
 export default function ShopNotifications() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead, deleteRead, deleteSingle } = useNotifications(true);
   const [filter, setFilter] = useState<FilterKey>('all');
 

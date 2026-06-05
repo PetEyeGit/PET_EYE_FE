@@ -10,7 +10,7 @@ import { walletService, type WithdrawalRequestCreate } from '../../services/wall
 import toast from 'react-hot-toast';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [form, setForm] = useState<WithdrawalRequestCreate>({
     amount: 0,
     bankName: '',
@@ -198,7 +198,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
 
 export default function ShopWallet() {
   const qc = useQueryClient();
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 

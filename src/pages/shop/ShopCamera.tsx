@@ -9,14 +9,14 @@ import type { BookingResponse } from '../../types/api';
 import toast from 'react-hot-toast';
 import { resolveStreamUrl, checkStreamReady } from '../../utils/streamHelper';
 import HLSPlayer from '../../components/HLSPlayer';
-import { useShopTheme } from '../../contexts/ShopThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 
 
 export default function ShopCamera() {
-  const { isDark } = useShopTheme();
+  const { isDark } = useTheme();
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +179,7 @@ export default function ShopCamera() {
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className={`text-3xl font-black tracking-tight flex items-center gap-3 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              <Video className={`w-8 h-8 ${isDark ? 'text-blue-400 glow-blue' : 'text-blue-600'}`} />
+              <Video className={`w-8 h-8 ${isDark ? 'text-blue-400 drop-shadow-[0_0_12px_rgba(96,165,250,0.5)]' : 'text-blue-600'}`} />
               Cấu hình & Giám sát Camera Lưu Trú
             </h1>
             <p className={`font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -222,7 +222,7 @@ export default function ShopCamera() {
         {/* ── Content Grid ── */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 size={48} className={`animate-spin mb-4 ${isDark ? 'text-indigo-400 glow-indigo' : 'text-blue-500'}`} />
+            <Loader2 size={48} className={`animate-spin mb-4 ${isDark ? 'text-indigo-400 drop-shadow-[0_0_12px_rgba(129,140,248,0.5)]' : 'text-blue-500'}`} />
             <p className="font-medium">Đang tải danh sách đặt phòng và kiểm tra trạng thái Docker...</p>
           </div>
         ) : bookings.length === 0 ? (
