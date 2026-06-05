@@ -81,10 +81,14 @@ export default function Login() {
   };
 
   const handleSocialSuccess = (userData: any) => {
+    // Social login chỉ dành cho trang customer
+    if (userData.role === 'SHOP_OWNER' || userData.role === 'STAFF') {
+      setErrorMessage('Tài khoản cửa hàng/nhân viên không thể đăng nhập ở đây. Vui lòng dùng trang đăng nhập dành cho cửa hàng.');
+      setLoading(false);
+      return;
+    }
     setUserSession(userData);
     if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
-    else if (userData.role === 'SHOP_OWNER') navigateToTarget('/shop/dashboard');
-    else if (userData.role === 'STAFF') navigateToTarget('/staff/dashboard');
     else navigateToTarget('/home');
   };
 
@@ -127,10 +131,35 @@ export default function Login() {
 
     try {
       const userData = await login(email, password);
-      if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
-      else if (userData.role === 'SHOP_OWNER') navigateToTarget('/shop/dashboard');
-      else if (userData.role === 'STAFF') navigateToTarget('/staff/dashboard');
-      else navigateToTarget('/home');
+
+      if (roleType === 'customer') {
+        // Trang customer: chỉ cho phép USER và ADMIN
+        if (userData.role === 'SHOP_OWNER') {
+          setErrorMessage('Tài khoản này dành cho cửa hàng. Vui lòng đăng nhập tại trang dành cho cửa hàng.');
+          setLoading(false);
+          return;
+        }
+        if (userData.role === 'STAFF') {
+          setErrorMessage('Tài khoản nhân viên không thể đăng nhập tại đây. Vui lòng đăng nhập tại trang dành cho cửa hàng.');
+          setLoading(false);
+          return;
+        }
+        // USER hoặc ADMIN
+        if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
+        else navigateToTarget('/home');
+
+      } else {
+        // Trang shop: chỉ cho phép SHOP_OWNER, STAFF và ADMIN
+        if (userData.role === 'USER') {
+          setErrorMessage('Tài khoản khách hàng không thể đăng nhập tại đây. Vui lòng đăng nhập tại trang dành cho khách hàng.');
+          setLoading(false);
+          return;
+        }
+        // SHOP_OWNER, STAFF hoặc ADMIN
+        if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
+        else if (userData.role === 'SHOP_OWNER') navigateToTarget('/shop/dashboard');
+        else navigateToTarget('/staff/dashboard');
+      }
     } catch (error: any) {
       const code = Number(error.response?.data?.code);
       const msgs: Record<number, string> = {
