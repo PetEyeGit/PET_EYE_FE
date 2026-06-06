@@ -82,6 +82,7 @@ function AppLayout() {
   const isNoNavbarRoute = NO_NAVBAR_ROUTES.includes(location.pathname);
   const isHomePage = location.pathname === '/user/dashboard';
   const isCameraPage = location.pathname === '/camera';
+  const isMessagingPage = location.pathname === '/messages';
   
   // Show customer navbar for:
   // - Landing page (/) when not logged in
@@ -101,10 +102,10 @@ function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className={`${isMessagingPage ? 'h-screen overflow-hidden' : 'min-h-screen'} flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300`}>
       {shouldShowCustomerNav && <Navbar />}
 
-      <main className={`flex-1 flex flex-col h-full grow relative ${shouldShowCustomerNav ? 'overflow-x-hidden' : ''}`}>
+      <main className={`flex-1 flex flex-col grow relative ${shouldShowCustomerNav && !isMessagingPage ? 'overflow-x-hidden' : ''} ${isMessagingPage ? 'overflow-hidden' : ''}`}>
         {shouldShowCustomerNav && (
           <>
             <div className="decoration-blob w-96 h-96 bg-primary/20 top-0 left-0 rounded-full translate-x-[-30%] translate-y-[-30%]" />
@@ -190,13 +191,13 @@ function AppLayout() {
         </Routes>
       </main>
 
-      {shouldShowCustomerNav && <Footer />}
+      {shouldShowCustomerNav && !isMessagingPage && <Footer />}
 
       {/* Gift Box Celebration — hiển thị khi user thăng hạng */}
       {user && !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && <GiftBoxCelebration />}
 
-      {/* Chatbot — hiển thị cho tất cả customer pages (kể cả /home) */}
-      {!isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && <Chatbot />}
+      {/* Chatbot — hiển thị cho tất cả customer pages (kể cả /home), trừ Camera và Messages */}
+      {!isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && !isMessagingPage && <Chatbot />}
     </div>
   );
 }

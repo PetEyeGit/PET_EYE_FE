@@ -151,7 +151,7 @@ export default function ConversationThread({
                 className={`mt-2 flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-md ${
                     isMe
                         ? 'bg-white/10 border-white/20 hover:bg-white/20'
-                        : isDark ? 'bg-slate-700/50 border-slate-600 hover:bg-slate-600/50' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                        : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600/50'
                 }`}
             >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
@@ -160,7 +160,7 @@ export default function ConversationThread({
                     <FileText size={18} className={isMe ? 'text-white' : 'text-primary'} />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold truncate ${isMe ? 'text-white' : isDark ? 'text-white' : 'text-slate-800'}`}>
+                    <p className={`text-xs font-bold truncate ${isMe ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
                         {msg.attachmentName || 'Tệp đính kèm'}
                     </p>
                     <p className={`text-[10px] ${isMe ? 'text-white/60' : 'text-slate-400'}`}>
@@ -176,7 +176,7 @@ export default function ConversationThread({
         <div className={`flex flex-col h-full relative ${containerClassName}`} style={{ backgroundColor: 'var(--conv-bg, inherit)' }}>
             {/* Header */}
             {!hideHeader && headerInfo && (
-                <div className={`flex items-center justify-between px-6 py-4 border-b backdrop-blur-md sticky top-0 z-10 shrink-0 ${isDark ? 'border-slate-700/50 bg-slate-900/80' : 'border-slate-100 bg-white/80'}`}>
+                <div className={`flex items-center justify-between px-6 py-4 border-b backdrop-blur-md sticky top-0 z-10 shrink-0 border-slate-100 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80`}>
                     <div className="flex items-center gap-4">
                         {onBack && (
                             <button onClick={onBack} className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all">
@@ -189,7 +189,7 @@ export default function ConversationThread({
                             </div>
                         )}
                         <div>
-                            <h2 className={`font-bold text-base leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <h2 className={`font-bold text-base leading-tight text-slate-900 dark:text-white`}>
                                 {headerInfo.title}
                             </h2>
                             {headerInfo.subtitle && (
@@ -214,13 +214,13 @@ export default function ConversationThread({
                 className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scrollbar-hide relative"
             >
                 {loading ? (
-                    <div className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-[2px] z-20 ${isDark ? 'bg-slate-900/50' : 'bg-white/50'}`}>
+                    <div className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-[2px] z-20 bg-white/50 dark:bg-slate-900/50`}>
                         <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đang tải tin nhắn...</p>
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className={`flex flex-col items-center justify-center h-full ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+                    <div className={`flex flex-col items-center justify-center h-full text-slate-300 dark:text-slate-600`}>
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-slate-50 dark:bg-slate-800/50`}>
                             <MessageCircle size={32} className="opacity-20 text-slate-500" />
                         </div>
                         <p className="text-xs font-black uppercase tracking-[0.1em] opacity-50">Bắt đầu trò chuyện</p>
@@ -247,7 +247,7 @@ export default function ConversationThread({
                                     <div className={`px-4 sm:px-5 py-3 text-sm leading-relaxed shadow-sm break-words
                                         ${isMe
                                             ? 'bg-primary text-white rounded-2xl rounded-br-none shadow-primary/10'
-                                            : isDark ? 'bg-slate-800 text-white rounded-2xl rounded-bl-none border border-slate-700' : 'bg-slate-100 text-slate-800 rounded-2xl rounded-bl-none border border-slate-100'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white rounded-2xl rounded-bl-none border border-slate-100 dark:border-slate-700'
                                         }`}>
                                         {msg.content && <span>{msg.content}</span>}
                                         {renderAttachment(msg, isMe)}
@@ -264,22 +264,22 @@ export default function ConversationThread({
 
             {/* Pending File Preview */}
             {pendingFile && (
-                <div className={`px-4 sm:px-6 pt-3 pb-1 border-t shrink-0 ${isDark ? 'bg-slate-900/95 border-slate-700/50' : 'bg-white border-slate-100'}`}>
-                    <div className={`flex items-center gap-3 p-3 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                <div className={`px-4 sm:px-6 pt-3 pb-1 border-t shrink-0 bg-white dark:bg-slate-900/95 border-slate-100 dark:border-slate-700`}>
+                    <div className={`flex items-center gap-3 p-3 rounded-2xl border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700`}>
                         {pendingFile.previewUrl ? (
-                            <img src={pendingFile.previewUrl} alt="Preview" className={`w-14 h-14 rounded-xl object-cover border ${isDark ? 'border-slate-600' : 'border-slate-200'}`} />
+                            <img src={pendingFile.previewUrl} alt="Preview" className={`w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-600`} />
                         ) : (
                             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
                                 <FileText size={22} className="text-primary" />
                             </div>
                         )}
                         <div className="flex-1 min-w-0">
-                            <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-800'}`}>{pendingFile.file.name}</p>
+                            <p className={`text-xs font-bold truncate text-slate-800 dark:text-white`}>{pendingFile.file.name}</p>
                             <p className="text-[10px] text-slate-400">{(pendingFile.file.size / 1024).toFixed(1)} KB</p>
                         </div>
                         <button
                             onClick={cancelPendingFile}
-                            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}
+                            className={`p-1.5 rounded-lg transition-colors hover:bg-slate-200 dark:hover:bg-slate-700`}
                         >
                             <X size={16} className="text-slate-400" />
                         </button>
@@ -288,7 +288,7 @@ export default function ConversationThread({
             )}
 
             {/* Input Area */}
-            <div className={`p-4 sm:p-6 backdrop-blur-md border-t shrink-0 relative ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-100'}`}>
+            <div className={`p-4 sm:p-6 backdrop-blur-md border-t shrink-0 relative bg-white/80 dark:bg-slate-900/80 border-slate-100 dark:border-slate-700`}>
                 {!connected && (
                     <div className="absolute inset-x-0 -top-6 flex justify-center z-20">
                         <span className="px-4 py-1 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg animate-pulse">
@@ -303,7 +303,7 @@ export default function ConversationThread({
                     onChange={handleFileSelect}
                     className="hidden"
                 />
-                <form onSubmit={handleSend} className={`flex items-center gap-3 rounded-full p-1.5 pl-4 sm:pl-6 shadow-inner focus-within:ring-2 focus-within:ring-primary/10 transition-all ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                <form onSubmit={handleSend} className={`flex items-center gap-3 rounded-full p-1.5 pl-4 sm:pl-6 shadow-inner focus-within:ring-2 focus-within:ring-primary/10 transition-all bg-slate-50 dark:bg-slate-800`}>
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
@@ -337,7 +337,7 @@ export default function ConversationThread({
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={pendingFile ? "Thêm ghi chú (tuỳ chọn)..." : placeholder}
                         disabled={disableInput}
-                        className={`flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-400 py-2 sm:py-3 outline-none min-w-0 ${isDark ? 'text-white' : 'text-slate-900'}`}
+                        className={`flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-400 py-2 sm:py-3 outline-none min-w-0 text-slate-900 dark:text-white`}
                     />
                     <button
                         type="submit"
@@ -345,7 +345,7 @@ export default function ConversationThread({
                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex shrink-0 items-center justify-center transition-all ${
                             (input.trim() || pendingFile) && connected && !disableInput && !uploading
                             ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95' 
-                            : isDark ? 'bg-slate-700 text-slate-400' : 'bg-slate-200 text-slate-400'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
                         }`}
                     >
                         {uploading ? (

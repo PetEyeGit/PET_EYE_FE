@@ -97,7 +97,7 @@ export default function TransactionHistory() {
               className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white">
                   <span className="material-symbols-outlined">
                     {tx.type === 'REFUND' ? 'currency_exchange' : 'payment'}
                   </span>
@@ -123,7 +123,7 @@ export default function TransactionHistory() {
                     {getStatusLabel(tx.status)}
                   </span>
                 </div>
-                <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors hidden sm:block">
+                <span className="material-symbols-outlined text-slate-300 hidden sm:block">
                   chevron_right
                 </span>
               </div>

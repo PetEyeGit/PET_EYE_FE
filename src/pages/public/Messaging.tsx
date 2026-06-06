@@ -77,9 +77,9 @@ export default function Messaging() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="flex-1 flex bg-slate-50 dark:bg-slate-950 overflow-hidden">
       {/* Sidebar */}
-      <aside className={`w-full md:w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-slate-900 transition-all ${selectedShop ? 'hidden md:flex' : 'flex'}`}>
+      <aside className={`w-full md:w-80 lg:w-96 border-r border-slate-200 dark:border-slate-700 flex flex-col bg-white dark:bg-slate-900 transition-all ${selectedShop ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-6">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Tin nhắn</h1>
           <div className="relative">
@@ -99,18 +99,18 @@ export default function Messaging() {
               onClick={() => setSelectedShop(shop)}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group relative ${
                 selectedShop?.id === shop.id 
-                  ? 'bg-primary/10 border border-primary/20 shadow-sm' 
-                  : 'hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
+                  ? 'bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 shadow-sm' 
+                  : 'hover:bg-slate-50 dark:hover:bg-slate-800/80 border border-transparent'
               }`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${
-                selectedShop?.id === shop.id ? 'bg-primary text-white' : 
-                shop.id === 0 ? 'bg-blue-500 text-white' : 'bg-primary/10 text-primary'
+                selectedShop?.id === shop.id ? 'bg-primary text-white shadow-md shadow-primary/30' : 
+                shop.id === 0 ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-primary dark:group-hover:text-blue-400'
               }`}>
                 {shop.id === 0 ? <ShieldCheck size={24} /> : <MessageCircle size={24} />}
               </div>
               <div className="flex-1 text-left min-w-0">
-                <h4 className={`font-bold text-sm truncate ${selectedShop?.id === shop.id ? 'text-primary' : 'text-slate-900 dark:text-white'}`}>
+                <h4 className={`font-bold text-sm truncate transition-colors ${selectedShop?.id === shop.id ? 'text-primary dark:text-blue-400' : 'text-slate-900 dark:text-slate-200 group-hover:text-primary dark:group-hover:text-blue-400'}`}>
                   {shop.name}
                 </h4>
                 <p className="text-xs text-slate-500 truncate">
@@ -145,8 +145,8 @@ export default function Messaging() {
             />
         ) : (
           <div className="text-center p-8 max-w-sm">
-            <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-slate-800">
-              <MessageCircle size={40} className="text-primary/20" />
+            <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-slate-700">
+              <MessageCircle size={40} className="text-primary/20 dark:text-blue-400/40" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Trung tâm tin nhắn</h3>
             <p className="text-sm text-slate-500">Chọn một cửa hàng từ danh sách bên trái để bắt đầu trao đổi hoặc xem lại lịch sử tư vấn.</p>

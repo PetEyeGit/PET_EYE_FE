@@ -1124,8 +1124,8 @@ export default function ClinicDetail() {
                     key={f}
                     onClick={() => setReviewFilter(f)}
                     className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors ${reviewFilter === f
-                      ? 'bg-[#1a2b4c] text-white border-[#1a2b4c]'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#1a2b4c] hover:text-[#1a2b4c]'
+                      ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] dark:bg-teal-500 dark:border-teal-500'
+                      : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] dark:hover:border-teal-400 dark:hover:text-teal-400'
                       }`}
                   >
                     {f}
@@ -1214,7 +1214,7 @@ export default function ClinicDetail() {
               </div>
 
               <div className="text-center mt-6">
-                <button className="px-6 py-2.5 rounded-full border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <button className="px-6 py-2.5 rounded-full border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-100 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   Xem thêm {reviewCount} đánh giá
                 </button>
               </div>
@@ -1406,10 +1406,10 @@ export default function ClinicDetail() {
                                     onClick={() => isAvailable && setSelectedTime(time)}
                                     title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
                                     className={`py-2 text-xs font-semibold rounded border transition-all relative ${isSelected
-                                        ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
+                                        ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md dark:bg-teal-500 dark:border-teal-500'
                                         : isAvailable
-                                          ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
-                                          : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
+                                          ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-500 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] dark:hover:border-teal-400 dark:hover:text-teal-400 cursor-pointer'
+                                          : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
                                       }`}
                                   >
                                     {time}
@@ -1489,10 +1489,10 @@ export default function ClinicDetail() {
                                     onClick={() => isAvailable && setSelectedTime(time)}
                                     title={!isAvailable ? 'Không còn nhân viên rảnh trong khung giờ này' : undefined}
                                     className={`py-2 text-xs font-semibold rounded border transition-all relative ${isSelected
-                                        ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md'
+                                        ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] shadow-md dark:bg-teal-500 dark:border-teal-500'
                                         : isAvailable
-                                          ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] cursor-pointer'
-                                          : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
+                                          ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-500 text-slate-700 dark:text-slate-200 hover:border-[#1a2b4c] hover:text-[#1a2b4c] dark:hover:border-teal-400 dark:hover:text-teal-400 cursor-pointer'
+                                          : 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed line-through'
                                       }`}
                                   >
                                     {time}
@@ -1691,8 +1691,8 @@ export default function ClinicDetail() {
                     onClick={handleBookClick}
                     disabled={!canBook}
                     className={`w-full h-12 flex items-center justify-center gap-2 rounded-xl font-bold transition-all text-base ${canBook
-                        ? "bg-[#1a2b4c] text-white hover:bg-[#243d6b] hover:scale-[1.02] shadow-lg shadow-[#1a2b4c]/25 cursor-pointer"
-                        : "bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed"
+                        ? "bg-[#1a2b4c] dark:bg-teal-500 text-white hover:bg-[#243d6b] dark:hover:bg-teal-400 hover:scale-[1.02] shadow-lg shadow-[#1a2b4c]/25 dark:shadow-teal-900/50 cursor-pointer"
+                        : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border dark:border-slate-700 cursor-not-allowed"
                       }`}
                   >
                     <span className="material-symbols-outlined">calendar_month</span>
@@ -1716,7 +1716,7 @@ export default function ClinicDetail() {
                           window.location.href = `tel:${shop?.phone || ''}`;
                         }
                       }}
-                      className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors">
+                      className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-500 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 font-semibold text-sm transition-colors shadow-sm">
                       <span className="material-symbols-outlined text-lg">call</span>
                       Gọi điện
                     </button>
@@ -1729,7 +1729,7 @@ export default function ClinicDetail() {
                           navigate('/messages');
                         }
                       }}
-                      className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm transition-colors"
+                      className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-500 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 font-semibold text-sm transition-colors shadow-sm"
                     >
                       <span className="material-symbols-outlined text-lg">chat</span>
                       Nhắn tin

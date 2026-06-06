@@ -189,10 +189,10 @@ export default function VetSearch() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 backdrop-blur-md shadow-lg shadow-emerald-500/10">
               <CheckCircle2 size={12} />
-              Dịch vụ đã được xác thực
+              Cơ sở đã được xác thực
             </span>
             <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight drop-shadow-sm">
-              Tìm cơ sở <span className="text-gradient">Thú y</span> <br />
+              Tìm cơ sở <span className="text-gradient dark:text-white">thú y</span> <br />
               &amp; Dịch vụ quanh bạn
             </h1>
           </motion.div>
@@ -205,7 +205,7 @@ export default function VetSearch() {
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
               <div className="md:col-span-5 relative">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-primary w-5 h-5" />
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-primary dark:text-white w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Tên cơ sở, dịch vụ..."
@@ -215,7 +215,7 @@ export default function VetSearch() {
                 />
               </div>
               <div className="md:col-span-4 relative border-l border-slate-100 dark:border-slate-800 hidden md:block">
-                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary w-5 h-5" />
+                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary dark:text-white w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Khu vực..."
@@ -272,16 +272,16 @@ export default function VetSearch() {
         <div className="flex flex-col lg:flex-row gap-10">
           {/* ── Sidebar ── */}
           <aside className="hidden lg:block w-72 shrink-0 space-y-6">
-            <div className="glass p-6 rounded-[32px] space-y-8 sticky top-28">
+            <div className="glass dark:glass-dark p-6 rounded-[32px] space-y-8 sticky top-28">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <SlidersHorizontal size={18} className="text-primary" />
+                  <SlidersHorizontal size={18} className="text-primary dark:text-white" />
                   Bộ lọc
                 </h3>
                 {(minRating > 0 || distanceKm !== 10) && (
                   <button
                     onClick={() => { setMinRating(0); setDistanceKm(10); }}
-                    className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
+                    className="text-[10px] font-black text-primary dark:text-white uppercase tracking-wider hover:underline"
                   >
                     Đặt lại
                   </button>
@@ -298,7 +298,7 @@ export default function VetSearch() {
                       key={opt.value}
                       onClick={() => setMinRating(opt.value)}
                       className={`w-full flex items-center justify-between p-3 rounded-xl transition-all border-2 ${minRating === opt.value
-                          ? 'bg-primary/5 border-primary text-primary'
+                          ? 'bg-primary/5 dark:bg-primary/20 border-primary text-primary'
                           : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}
                     >
@@ -316,17 +316,17 @@ export default function VetSearch() {
                   <div className="flex justify-between items-center mb-4">
                     <button 
                       onClick={() => setDistanceKm(prev => Math.max(1, prev - 1))}
-                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       <span className="text-lg font-bold">-</span>
                     </button>
                     <div className="flex items-end">
-                      <span className="text-2xl font-black text-primary">{distanceKm}</span>
-                      <span className="text-xs font-bold text-slate-400 pb-1 ml-1">km</span>
+                      <span className="text-2xl font-black text-primary dark:text-white">{distanceKm}</span>
+                      <span className="text-xs font-bold text-slate-400 pb-1 ml-1 dark:text-white">km</span>
                     </div>
                     <button 
                       onClick={() => setDistanceKm(prev => Math.min(30, prev + 1))}
-                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     >
                       <span className="text-lg font-bold">+</span>
                     </button>
@@ -337,9 +337,9 @@ export default function VetSearch() {
                     max={30}
                     value={distanceKm}
                     onChange={(e) => setDistanceKm(Number(e.target.value))}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary bg-slate-100 dark:bg-slate-800"
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary bg-slate-100 dark:bg-slate-800 "
                   />
-                  <div className="flex justify-between text-[10px] font-black text-slate-300 mt-2">
+                  <div className="flex justify-between text-[10px] font-black text-slate-300 dark:text-white mt-2">
                     <span>1 KM</span>
                     <span>30 KM</span>
                   </div>
@@ -367,16 +367,16 @@ export default function VetSearch() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="relative glass rounded-2xl p-1 flex">
+                <div className="relative glass dark:glass-dark rounded-2xl p-1 flex">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 dark:text-white hover:text-slate-600 dark:hover:text-slate-300'}`}
                   >
                     <ListIcon size={18} />
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-primary text-white shadow-lg' : 'text-slate-400 dark:text-white hover:text-slate-600 dark:hover:text-slate-300'}`}
                   >
                     <Grid size={18} />
                   </button>
@@ -384,7 +384,7 @@ export default function VetSearch() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="glass border-none rounded-2xl text-xs font-black px-4 py-3 text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
+                  className="glass dark:glass-dark border-none rounded-2xl text-xs font-black px-4 py-3 text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
                 >
                   {SORT_OPTIONS.map((opt) => <option key={opt}>{opt}</option>)}
                 </select>
@@ -398,7 +398,7 @@ export default function VetSearch() {
               {isLoading ? (
                 <>
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className={`glass rounded-[32px] overflow-hidden ${viewMode === 'list' ? 'flex h-56' : 'h-[400px]'}`}>
+                    <div key={i} className={`glass dark:glass-dark rounded-[32px] overflow-hidden ${viewMode === 'list' ? 'flex h-56' : 'h-[400px]'}`}>
                       <div className="bg-slate-100 dark:bg-slate-800 animate-pulse shrink-0 w-full h-full" />
                     </div>
                   ))}
@@ -428,7 +428,7 @@ export default function VetSearch() {
                         </div>
 
                         {shop.shopType && (
-                          <span className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-primary text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest">
+                          <span className="absolute bottom-4 left-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-primary text-[9px] font-bold px-3 py-1.5 rounded-xl uppercase tracking-widest dark:text-white">
                             {SHOP_TYPE_TABS.find(t => t.value === shop.shopType)?.label ?? shop.shopType}
                           </span>
                         )}
@@ -456,7 +456,7 @@ export default function VetSearch() {
                             </div>
                           )}
                           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
-                            <MapPin size={14} className="text-slate-400" />
+                            <MapPin size={14} className="text-slate-400 dark:text-white" />
                             <span className="truncate">{shop.address}{shop.city ? `, ${shop.city}` : ''}</span>
                           </div>
 
@@ -469,12 +469,12 @@ export default function VetSearch() {
 
                         <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                            <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-white">
                               <Phone size={14} />
                             </div>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{shop.phone}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                          <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all dark:text-white">
                             Xem chi tiết
                             <ChevronRight size={14} />
                           </div>
@@ -491,7 +491,7 @@ export default function VetSearch() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-32 glass rounded-[40px] space-y-6"
+                className="text-center py-32 glass dark:glass-dark rounded-[40px] space-y-6"
               >
                 <div className="w-24 h-24 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto text-slate-300">
                   <Search size={48} />

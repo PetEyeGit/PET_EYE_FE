@@ -8,14 +8,15 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Import assets
 import heroDogImage from '../../assets/landing/hero_dog_v2.png';
 import heroCatImage from '../../assets/landing/hero_cat_v2.png';
-import heroImage from '../../assets/landing/landing_hero_pet_care_1778855096349.png';
 import cameraPreview from '../../assets/landing/live_camera_preview_1778855116615.png';
 import spaImage from '../../assets/landing/pet_spa_grooming_1778855139420.png';
 import mockMapBg from '../../assets/landing/mock_map_bg.png';
+import mockMapBgDark from '../../assets/landing/mock_map_bg_dark.png';
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -34,6 +35,7 @@ const staggerContainer = {
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isDark } = useTheme();
   
   // GPS State
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -149,10 +151,10 @@ export default function Home() {
             <motion.div variants={staggerContainer} initial="initial" animate="animate" className="flex flex-col gap-8 text-center lg:text-left">
               <motion.div variants={fadeIn} className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full w-fit mx-auto lg:mx-0">
                 <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 dark:bg-white"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary dark:bg-white"></span>
                 </span>
-                <span className="text-[17px] font-black uppercase tracking-widest text-primary dark:text-indigo-300">
+                <span className="text-[17px] font-black uppercase tracking-widest text-primary dark:text-white">
                   HỆ SINH THÁI THÚ Y TOÀN DIỆN
                 </span>
               </motion.div>
@@ -264,7 +266,7 @@ export default function Home() {
           <motion.div 
             animate={{ y: [0, 10, 0] }} 
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white group-hover:scale-110 transition-all duration-300"
+            className="w-12 h-12 rounded-full bg-white dark:bg-white/10 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-slate-100 dark:border-white/20 flex items-center justify-center text-primary dark:text-blue-400 group-hover:bg-primary dark:group-hover:bg-blue-500 group-hover:border-primary dark:group-hover:border-blue-500 group-hover:text-white dark:group-hover:text-white group-hover:scale-110 transition-all duration-300"
           >
             <PawPrint size={20} className="rotate-180" />
           </motion.div>
@@ -279,9 +281,9 @@ export default function Home() {
               <span className="inline-flex items-center bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider w-fit">
                 Đánh giá cao nhất
               </span>
-              <h2 className="text-3xl md:text-4xl xl:text-5xl font-black text-slate-900 dark:text-white leading-[1.1]">
+              <h2 className="text-3xl md:text-4xl xl:text-5xl font-black text-blue-950 dark:text-white leading-[1.1]">
                 Khám phá cơ sở <br />
-                <span className="text-blue-950">Được yêu thích</span>
+                <span className="text-blue-950 dark:text-white">Được yêu thích</span>
               </h2>
             </div>
             <button onClick={() => navigate('/search')} className="flex items-center gap-2 font-black text-sm text-slate-400 hover:text-primary transition-colors group">
@@ -306,7 +308,7 @@ export default function Home() {
                       <img src={spaImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Placeholder" />
                     )}
                     <div className="absolute top-4 left-4 flex gap-2">
-                      <span className="bg-white/90 backdrop-blur text-slate-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{shop.shopType}</span>
+                      <span className="bg-white/90 backdrop-blur text-blue-950 dark:text-white dark:bg-slate-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{shop.shopType}</span>
                     </div>
                     {shop.ratingAvg > 0 && (
                       <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-xl text-xs font-black flex items-center gap-1 shadow-lg">
@@ -317,8 +319,8 @@ export default function Home() {
                   <div className="p-6 flex-1 flex flex-col">
                     <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight mb-2 line-clamp-2">{shop.shopName}</h3>
                     <div className="flex items-start gap-2 text-slate-500 mb-4">
-                      <MapPin size={16} className="shrink-0 mt-0.5 text-primary" />
-                      <span className="text-sm font-medium line-clamp-2">{shop.address}, {shop.city}</span>
+                      <MapPin size={16} className="shrink-0 mt-0.5 text-primary dark: text-white" />
+                      <span className="text-sm dark:text-white font-medium line-clamp-2 ">{shop.address}, {shop.city}</span>
                     </div>
                     <div className="mt-auto flex flex-wrap gap-1.5 pt-4 border-t border-slate-200 dark:border-slate-700">
                       {shop.serviceNames?.slice(0,3).map((svc: string, idx: number) => (
@@ -340,9 +342,9 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-full lg:w-[75%] h-full pointer-events-none">
           {/* Actual Map Background */}
           <img 
-            src={mockMapBg} 
+            src={isDark ? mockMapBgDark : mockMapBg} 
             alt="Map Background" 
-            className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-30 mix-blend-multiply dark:mix-blend-screen grayscale-[20%]" 
+            className="absolute inset-0 w-full h-full object-cover opacity-60 dark:opacity-90 mix-blend-multiply dark:mix-blend-normal grayscale-[20%] dark:grayscale-0" 
           />
           {/* Fade out left side to blend into background */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-50 dark:from-slate-950 via-slate-50/50 dark:via-slate-950/50 to-transparent" />
@@ -356,10 +358,10 @@ export default function Home() {
           
           {/* Center User Pin */}
           <div className="absolute top-1/2 left-[65%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
-            <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/50 border-4 border-white dark:border-slate-800">
+            <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_0_30px_rgba(37,99,235,0.6)] border-4 border-white dark:border-blue-900/50">
               <Navigation size={24} className="fill-current -rotate-45" />
             </div>
-            <div className="mt-2 px-4 py-1.5 bg-white dark:bg-slate-900 rounded-full shadow-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider">Bạn ở đây</div>
+            <div className="mt-2 px-4 py-1.5 bg-white dark:bg-slate-800 rounded-full shadow-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider border border-transparent dark:border-slate-700">Bạn ở đây</div>
           </div>
 
           {/* Mock Pins */}
@@ -379,12 +381,12 @@ export default function Home() {
               style={{ top: pin.t, left: pin.l }}
             >
               <div className="relative">
-                <span className="absolute -inset-2 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center text-primary shadow-xl border-2 border-primary">
-                  <PawPrint size={18} className="fill-primary/20" />
+                <span className="absolute -inset-2 rounded-full bg-primary/20 dark:bg-blue-400/20 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-blue-400 shadow-xl border-2 border-primary dark:border-blue-500/50">
+                  <PawPrint size={18} className="fill-primary/20 dark:fill-blue-500/20" />
                 </div>
               </div>
-              <div className="mt-2 px-3 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur rounded-full shadow-sm text-[9px] font-black text-slate-500">
+              <div className="mt-2 px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-full shadow-sm text-[9px] font-black text-slate-500 dark:text-slate-300 border border-transparent dark:border-slate-700/50">
                 {pin.dist} km
               </div>
             </motion.div>
@@ -398,9 +400,9 @@ export default function Home() {
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-xs mb-6">
                   <Navigation size={14} /> Hệ thống định vị
                 </div>
-                <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-slate-900 dark:text-white leading-[1.1]">
+                <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1]">
                   Tìm cơ sở <br className="hidden lg:block" />
-                  <span className="text-blue-950 dark:text-blue-400">Gần bạn nhất</span>
+                  <span className="text-blue-950 dark:text-white">Gần bạn nhất</span>
                 </h2>
                 <p className="mt-6 text-slate-600 dark:text-slate-300 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
                   Cho phép truy cập vị trí hoặc nhập địa chỉ để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
@@ -423,7 +425,7 @@ export default function Home() {
                     )}
                     TÌM QUANH ĐÂY BẰNG GPS
                   </button>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 italic flex items-center gap-1">
+                  <p className="text-xs text-slate-500 dark:text-white mt-4 italic flex items-center gap-1">
                     <span className="material-symbols-outlined text-[14px]">info</span> 
                     Hệ thống sẽ tự động quét bản đồ
                   </p>
@@ -513,9 +515,9 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-6 md:space-y-8 2xl:space-y-10">
               <div className="space-y-4 2xl:space-y-6">
                 <span className="inline-flex items-center gap-2 bg-secondary/20 text-secondary px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">
-                  <Video size={16} /> Tính năng độc quyền
+                  <Video size={30} /> Tính năng độc quyền
                 </span>
-                <h2 className="text-3xl md:text-4xl 2xl:text-6xl font-black text-white leading-[1.1]">
+                <h2 className="text-4xl md:text-5xl 2xl:text-6xl font-black text-white leading-[1.1]">
                   An tâm tuyệt đối <br /> với <span className="text-gradient">Live Camera</span>
                 </h2>
                 <p className="text-base md:text-lg 2xl:text-xl text-slate-400 leading-relaxed font-medium">Theo dõi trực tiếp mọi khoảnh khắc của bé yêu 24/7 từ điện thoại. Bạn sẽ luôn cảm thấy gần gũi dù đang ở bất cứ đâu.</p>
@@ -586,7 +588,7 @@ export default function Home() {
             <span className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">
               <Sparkles size={16} /> Đơn giản & Nhanh chóng
             </span>
-            <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white tracking-tight">Sử dụng PetEye <span className="text-blue-950">Chỉ với 3 bước</span></h2>
+            <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white tracking-tight">Sử dụng PetEye <span className="text-blue-600 dark:text-white">Chỉ với 3 bước</span></h2>
           </div>
           
           <div className="relative max-w-6xl mx-auto mt-12 lg:mt-20">
@@ -724,10 +726,10 @@ export default function Home() {
                 <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1] mb-2">
                   Phản hồi từ <br />
                   người dùng <br />
-                  <span className="text-primary text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black">PetEye</span>
+                  <span className="text-primary text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black dark: text-white">PetEye</span>
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-medium mt-6 leading-relaxed max-w-sm">
-                  Luyện với AI, nhận góp ý từ hệ thống và cảm nhận sự chuyên nghiệp từ các đối tác của chúng tôi.
+                  Kết nối yêu thương, chăm sóc tận tâm. Khám phá lý do hàng ngàn khách hàng luôn tin tưởng và lựa chọn PetEye.
                 </p>
               </div>
               
@@ -739,7 +741,7 @@ export default function Home() {
                   <div className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-900 bg-primary text-white flex items-center justify-center text-xs font-bold">+</div>
                 </div>
                 <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  <span className="text-primary font-black text-base">10,000+</span> Lượt đặt lịch thành công.
+                  <span className="text-primary font-black text-base dark: text-white">1000+</span> Lượt đặt lịch thành công.
                 </div>
               </div>
             </div>

@@ -31,7 +31,7 @@ function scrollTo(id: string) {
 function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
   return (
-    <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors flex items-center justify-center">
+    <button onClick={toggleTheme} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 dark:hover:bg-slate-700 transition-colors flex items-center justify-center">
       {isDark ? <Sun size={18} /> : <Moon size={18} />}
     </button>
   );
@@ -69,13 +69,22 @@ function GuestNavbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500
+      className={`sticky top-0 z-50 transition-[background-color,backdrop-filter,box-shadow,border-color] duration-300
         ${scrolled
-          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md shadow-sm py-2'
-          : 'bg-transparent py-5'}`}
+          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800'
+          : 'bg-transparent border-b border-transparent'}`}
     >
-      <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-8">
-        <Link to="/" className="shrink-0 hover:scale-105 transition-transform duration-300">
+      <div className="py-3.5 max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-8">
+        <Link 
+          to="/" 
+          onClick={(e) => {
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className="shrink-0 hover:scale-105 transition-transform duration-300"
+        >
           <Logo />
         </Link>
 
@@ -198,15 +207,24 @@ function AuthNavbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500
+      className={`sticky top-0 z-50 transition-[background-color,backdrop-filter,box-shadow,border-color] duration-300
         ${scrolled
-          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 py-2'
-          : 'bg-transparent py-4'}`}
+          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10'
+          : 'bg-transparent border-b border-transparent'}`}
     >
-      <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">
+      <div className="py-3.5 max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">
 
         {/* ── Logo ──────────────────────────────── */}
-        <Link to="/" className="shrink-0 group">
+        <Link 
+          to="/" 
+          onClick={(e) => {
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className="shrink-0 group"
+        >
           <Logo className="group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
@@ -263,7 +281,7 @@ function AuthNavbar() {
           <div ref={notifRef} className="relative">
             <button onClick={() => { setNotifOpen(v => !v); setUserOpen(false); }}
               className={`relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all
-                ${notifOpen ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-500 hover:text-primary hover:bg-primary/5'}`}>
+                ${notifOpen ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100/50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:bg-primary/5 dark:hover:bg-slate-700'}`}>
               <Bell size={19} />
               {unreadCount > 0 && (
                 <span className="absolute top-2 right-2 w-3.5 h-3.5 bg-rose-500 text-[9px] font-black text-white flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 shadow-sm">
@@ -349,7 +367,7 @@ function AuthNavbar() {
                 >
                   <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 mb-2">
                     <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user!.name}</p>
-                    <p className="text-[11px] font-bold text-primary mt-1">
+                    <p className="text-[11px] font-bold text-primary mt-1 dark:text-blue-400 mt-1">
                       Hạng {fullUserInfo?.currentTier?.name || 'Đồng'} • {Math.floor((fullUserInfo?.totalSpending || 0) / 1000).toLocaleString('en-US')} xu
                     </p>
                   </div>
@@ -364,8 +382,8 @@ function AuthNavbar() {
                   ].map(item => (
                     <Link key={item.to} to={item.to} onClick={() => setUserOpen(false)}
                       className={`flex items-center gap-3.5 px-6 py-3 text-[13.5px] font-bold transition-all
-                        ${active(item.to) ? 'text-primary bg-primary/5' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary'}`}>
-                      <span className="shrink-0">{item.icon}</span>
+                        ${active(item.to) ? 'text-primary bg-primary/5 dark:bg-primary/10 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-blue-400'}`}>
+                      <span className="shrink-0 opacity-80">{item.icon}</span>
                       <span className="flex-1">{item.label}</span>
                       {item.badge && (
                         <span className="text-[8px] font-black text-white bg-rose-500 px-2 py-0.5 rounded-lg animate-pulse">{item.badge}</span>
