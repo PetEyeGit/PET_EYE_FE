@@ -32,7 +32,7 @@ export default function FacebookCallback() {
         } else if (userData.role === 'STAFF') {
           navigate('/staff/dashboard');
         } else {
-          navigate('/home');
+          navigate('/');
         }
       } catch (err) {
         console.error(err);

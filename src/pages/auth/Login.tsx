@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { authService } from '../../services/auth.service';
+import Logo from '../../components/Logo';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function Login() {
     }
     setUserSession(userData);
     if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
-    else navigateToTarget('/home');
+    else navigateToTarget('/');
   };
 
   const loginGoogle = useGoogleLogin({
@@ -146,7 +147,7 @@ export default function Login() {
         }
         // USER hoặc ADMIN
         if (userData.role === 'ADMIN') navigateToTarget('/admin/dashboard');
-        else navigateToTarget('/home');
+        else navigateToTarget('/');
 
       } else {
         // Trang shop: chỉ cho phép SHOP_OWNER, STAFF và ADMIN
@@ -196,12 +197,9 @@ export default function Login() {
         {/* Content */}
         <div className="absolute inset-0 p-12 flex flex-col justify-between z-10">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-              <span className="text-white font-black text-lg">P</span>
-            </div>
-            <span className="text-white font-black text-xl tracking-tight">Peteye</span>
-            <span className="px-2 py-0.5 rounded-full bg-white/20 text-white/90 text-[9px] font-black uppercase tracking-widest border border-white/20">Partner</span>
+          <div className="flex items-center gap-3 scale-90 origin-left">
+            <Link to="/"> <Logo forceWhite={true} /></Link>
+            <span className="px-2 py-0.5 rounded-full bg-white/20 text-white/90 text-[9px] font-black uppercase tracking-widest border border-white/20 -ml-1 mt-1">Partner</span>
           </div>
 
           {/* Bottom texts */}
@@ -271,11 +269,8 @@ export default function Login() {
               </div>
               <span className="text-xs font-black">Quay lại trang chủ</span>
             </Link>
-            <div className="flex md:hidden items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#1a2b4c] flex items-center justify-center">
-                <span className="text-white font-black text-sm">P</span>
-              </div>
-              <span className="text-[#1a2b4c] dark:text-white font-black text-sm">Peteye</span>
+            <div className="flex md:hidden items-center gap-2 scale-75 origin-right">
+              <Logo />
             </div>
           </div>
 

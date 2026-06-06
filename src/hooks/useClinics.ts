@@ -16,9 +16,11 @@ function useDebounce<T>(value: T, delay = 400): T {
 export function useClinics() {
   const [searchParams] = useSearchParams();
   const initialType = searchParams.get('type') || 'Tất cả';
+  const initialCity = searchParams.get('city') || '';
+  const initialQ = searchParams.get('q') || '';
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [cityQuery, setCityQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQ);
+  const [cityQuery, setCityQuery] = useState(initialCity);
   // activeService stores the BE shopType value ('Tất cả' | 'CLINIC' | 'SPA' | ...)
   const [activeService, setActiveService] = useState(initialType);
   const [minRating, setMinRating] = useState(0);

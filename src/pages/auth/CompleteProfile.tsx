@@ -14,7 +14,7 @@ export default function CompleteProfile() {
 
   if (!user || !user.requiresEmailUpdate) {
     // Redirect if not needed
-    navigate('/home');
+    navigate('/user/dashboard');
     return null;
   }
 
@@ -30,7 +30,7 @@ export default function CompleteProfile() {
       const updatedUser = await authService.updateEmail(email, phone);
       setUserSession(updatedUser);
       toast.success('Cập nhật thông tin thành công!');
-      navigate('/home');
+      navigate('/user/dashboard');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Cập nhật thất bại');
     } finally {

@@ -80,7 +80,7 @@ function AppLayout() {
   const isStaffRoute = location.pathname.startsWith(STAFF_ROUTES_PREFIX);
   const isAdminRoute = location.pathname.startsWith(ADMIN_ROUTES_PREFIX);
   const isNoNavbarRoute = NO_NAVBAR_ROUTES.includes(location.pathname);
-  const isHomePage = location.pathname === '/home';
+  const isHomePage = location.pathname === '/user/dashboard';
   const isCameraPage = location.pathname === '/camera';
   
   // Show customer navbar for:
@@ -96,7 +96,7 @@ function AppLayout() {
       case 'SHOP_OWNER': return "/shop/dashboard";
       case 'STAFF': return "/staff/dashboard";
       case 'ADMIN': return "/admin/dashboard";
-      default: return "/home";
+      default: return "/user/dashboard";
     }
   };
 
@@ -113,8 +113,8 @@ function AppLayout() {
         )}
 
         <Routes>
-          <Route path="/" element={user ? <Navigate to={getRedirectPath()} replace /> : <Home />} />
-          <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" replace />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/user/dashboard" element={user ? <HomePage /> : <Navigate to="/" replace />} />
           <Route path="/about" element={<About />} />
           <Route path="/terms" element={<Legal />} />
           <Route path="/privacy" element={<Legal />} />

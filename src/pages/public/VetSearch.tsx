@@ -40,6 +40,16 @@ const RATING_OPTIONS = [
   { value: 4.5, label: '4.5★ trở lên' },
 ];
 
+const SERVICE_FILTER_OPTIONS = [
+  'Khám bệnh',
+  'Tiêm phòng',
+  'Cắt tỉa lông',
+  'Tắm sấy',
+  'Khách sạn',
+  'Siêu âm',
+  'Xét nghiệm',
+];
+
 function StarRow({ rating }: { rating: number }) {
   return (
     <span className="flex items-center gap-0.5">
@@ -74,6 +84,7 @@ export default function VetSearch() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -98,9 +109,17 @@ export default function VetSearch() {
     return [...shopsWithDistance].filter((shop: any) => {
       // Filter by distance if we have user location
       if (userLocation && shop.distanceKm !== undefined) {
-        return shop.distanceKm <= distanceKm;
+        if (shop.distanceKm > distanceKm) return false;
       }
-      // If we don't have user location, we show all shops (ignore distance filter)
+      
+      // Filter by selected services
+      if (selectedServices.length > 0) {
+        if (!shop.serviceNames || shop.serviceNames.length === 0) return false;
+        const hasService = selectedServices.some(selected => 
+          shop.serviceNames.some((sn: string) => sn.toLowerCase().includes(selected.toLowerCase()))
+        );
+        if (!hasService) return false;
+      }
       return true;
     }).sort((a: any, b: any) => {
       if (sortBy === 'Gần nhất' && a.distanceKm !== undefined && b.distanceKm !== undefined) {
@@ -265,14 +284,41 @@ export default function VetSearch() {
                   <SlidersHorizontal size={18} className="text-primary" />
                   Bộ lọc
                 </h3>
-                {(minRating > 0 || distanceKm !== 10) && (
+                {(minRating > 0 || distanceKm !== 10 || selectedServices.length > 0) && (
                   <button
-                    onClick={() => { setMinRating(0); setDistanceKm(10); }}
+                    onClick={() => { setMinRating(0); setDistanceKm(10); setSelectedServices([]); }}
                     className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
                   >
                     Đặt lại
                   </button>
                 )}
+              </div>
+
+              {/* Service filter */}
+              <div className="space-y-4">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {SERVICE_FILTER_OPTIONS.map((svc) => (
+                    <label key={svc} className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors">
+                      <div className="relative flex items-center justify-center">
+                        <input 
+                          type="checkbox" 
+                          className="peer appearance-none w-5 h-5 border-2 border-slate-200 dark:border-slate-700 rounded bg-transparent checked:bg-primary checked:border-primary transition-all cursor-pointer"
+                          checked={selectedServices.includes(svc)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedServices(prev => [...prev, svc]);
+                            } else {
+                              setSelectedServices(prev => prev.filter(s => s !== svc));
+                            }
+                          }}
+                        />
+                        <CheckCircle2 size={12} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+                      </div>
+                      <span className="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-slate-900 dark:peer-checked:text-white">{svc}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Rating filter */}
@@ -489,7 +535,7 @@ export default function VetSearch() {
                   <p className="text-slate-400 font-medium">Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm</p>
                 </div>
                 <button
-                  onClick={() => { setSearchQuery(''); setCityQuery(''); setActiveService('Tất cả'); setMinRating(0); }}
+                  onClick={() => { setSearchQuery(''); setCityQuery(''); setActiveService('Tất cả'); setMinRating(0); setSelectedServices([]); }}
                   className="px-8 py-4 bg-primary text-white text-xs font-black rounded-2xl hover:bg-primary-dark transition-all shadow-xl shadow-primary/20 uppercase tracking-widest"
                 >
                   Xóa tất cả bộ lọc

@@ -45,7 +45,7 @@ export default function BookingSuccess() {
         <div className="text-center">
           <span className="material-symbols-outlined text-5xl text-slate-300 block mb-3">error</span>
           <p className="text-slate-500 font-semibold mb-4">Không có thông tin đặt lịch.</p>
-          <Link to="/home" className="px-5 py-2.5 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] transition-colors">
+          <Link to="/user/dashboard" className="px-5 py-2.5 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] transition-colors">
             Về trang chủ
           </Link>
         </div>
@@ -317,7 +317,7 @@ export default function BookingSuccess() {
             Lịch của tôi
           </Link>
           <Link
-            to="/home"
+            to="/user/dashboard"
             className="flex items-center justify-center gap-2 py-3.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm"
           >
             <span className="material-symbols-outlined text-base">home</span>

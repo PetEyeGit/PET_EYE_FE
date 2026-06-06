@@ -967,7 +967,7 @@ export default function PetProfile() {
 
       <motion.div variants={fadeIn} className="mb-10">
         <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">
-          <Link to="/home" className="hover:text-primary transition-colors">Trang chủ</Link>
+          <Link to="/user/dashboard" className="hover:text-primary transition-colors">Trang chủ</Link>
           <ChevronRight className="w-3 h-3" />
           <Link to="/profile/pets" className="hover:text-primary transition-colors">Thú cưng</Link>
           <ChevronRight className="w-3 h-3" />

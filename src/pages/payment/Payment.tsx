@@ -178,7 +178,7 @@ export default function Payment() {
       {/* Breadcrumb */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center gap-2 text-xs text-slate-400">
-          <Link to="/home" className="hover:text-[#1a2b4c] flex items-center gap-1">
+          <Link to="/user/dashboard" className="hover:text-[#1a2b4c] flex items-center gap-1">
             <span className="material-symbols-outlined text-sm">home</span>Trang chủ
           </Link>
           <span className="material-symbols-outlined text-sm">chevron_right</span>
