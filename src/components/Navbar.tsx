@@ -47,7 +47,16 @@ function GuestNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 24);
+    let ticking = false;
+    const fn = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 24);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
@@ -62,7 +71,7 @@ function GuestNavbar() {
     <header
       className={`sticky top-0 z-50 transition-all duration-500
         ${scrolled
-          ? 'glass py-2 shadow-2xl shadow-slate-200/20'
+          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md shadow-sm py-2'
           : 'bg-transparent py-5'}`}
     >
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-8">
@@ -164,14 +173,22 @@ function AuthNavbar() {
   const active = (p: string) => location.pathname === p;
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
+    let ticking = false;
+    const fn = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
   const NAV = [
     { to: '/search', label: 'Tìm cơ sở' },
-    { to: '/profile/bookings', label: 'Lịch hẹn' },
   ];
 
   const QUICK = [
@@ -183,7 +200,7 @@ function AuthNavbar() {
     <header
       className={`sticky top-0 z-50 transition-all duration-500
         ${scrolled
-          ? 'glass py-2 border-b border-white/10'
+          ? 'bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 py-2'
           : 'bg-transparent py-4'}`}
     >
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 flex items-center gap-6">

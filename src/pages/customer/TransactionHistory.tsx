@@ -8,6 +8,8 @@ export default function TransactionHistory() {
   const [selectedTx, setSelectedTx] = useState<TransactionResponse | null>(null);
   const [filter, setFilter] = useState('ALL');
   const [downloading, setDownloading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -19,6 +21,12 @@ export default function TransactionHistory() {
     if (filter === 'ALL') return true;
     return tx.status === filter;
   });
+
+  const totalPages = Math.ceil(filteredTx.length / itemsPerPage);
+  const paginatedTx = filteredTx.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleDownloadPdf = async () => {
     // Sử dụng trình duyệt native để in ra PDF (hỗ trợ oklch, font đẹp, sắc nét 100%)
@@ -56,7 +64,10 @@ export default function TransactionHistory() {
         {['ALL', 'SUCCESS', 'PENDING', 'FAILED'].map(f => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => {
+              setFilter(f);
+              setCurrentPage(1);
+            }}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
               filter === f 
                 ? 'bg-[#1a2b4c] text-white shadow-lg' 
@@ -79,7 +90,7 @@ export default function TransactionHistory() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredTx.map(tx => (
+          {paginatedTx.map(tx => (
             <div 
               key={tx.id} 
               onClick={() => setSelectedTx(tx)}
@@ -118,6 +129,43 @@ export default function TransactionHistory() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">chevron_left</span>
+          </button>
+          
+          <div className="flex gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentPage(idx + 1)}
+                className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${
+                  currentPage === idx + 1
+                    ? 'bg-[#1a2b4c] text-white shadow-md'
+                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {idx + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">chevron_right</span>
+          </button>
         </div>
       )}
 

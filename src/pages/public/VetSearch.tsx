@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useClinics } from '../../hooks/useClinics';
 import { ShopPublicResponse } from '../../services/shop.service';
 import {
@@ -11,7 +11,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { NearbyShopResponse } from '../../services/clinic.service';
 import ShopMap from '../../components/ShopMap';
 import NearbyShops from '../../components/NearbyShops';
-import { useEffect, useMemo } from 'react';
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // km
@@ -40,15 +39,7 @@ const RATING_OPTIONS = [
   { value: 4.5, label: '4.5★ trở lên' },
 ];
 
-const SERVICE_FILTER_OPTIONS = [
-  'Khám bệnh',
-  'Tiêm phòng',
-  'Cắt tỉa lông',
-  'Tắm sấy',
-  'Khách sạn',
-  'Siêu âm',
-  'Xét nghiệm',
-];
+
 
 function StarRow({ rating }: { rating: number }) {
   return (
@@ -65,6 +56,11 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export default function VetSearch() {
+  const [searchParams] = useSearchParams();
+  const radiusParam = searchParams.get('radius');
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+
   const {
     clinics,
     isLoading,
@@ -78,22 +74,27 @@ export default function VetSearch() {
     setMinRating,
   } = useClinics();
 
-  const [sortBy, setSortBy] = useState('Đánh giá cao nhất');
+  const [sortBy, setSortBy] = useState(latParam ? 'Gần nhất' : 'Đánh giá cao nhất');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [distanceKm, setDistanceKm] = useState(30);
+  const [distanceKm, setDistanceKm] = useState(radiusParam ? parseInt(radiusParam, 10) : 30);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(
+    latParam && lngParam ? { lat: parseFloat(latParam), lng: parseFloat(lngParam) } : null
+  );
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showRadiusModal, setShowRadiusModal] = useState(!!radiusParam);
+
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => console.warn('Geolocation error:', err)
-      );
+    if (!latParam || !lngParam) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (err) => console.warn('Geolocation error:', err)
+        );
+      }
     }
-  }, []);
+  }, [latParam, lngParam]);
 
   const shopsWithDistance = useMemo(() => {
     return clinics.map((shop: ShopPublicResponse) => {
@@ -112,14 +113,7 @@ export default function VetSearch() {
         if (shop.distanceKm > distanceKm) return false;
       }
       
-      // Filter by selected services
-      if (selectedServices.length > 0) {
-        if (!shop.serviceNames || shop.serviceNames.length === 0) return false;
-        const hasService = selectedServices.some(selected => 
-          shop.serviceNames.some((sn: string) => sn.toLowerCase().includes(selected.toLowerCase()))
-        );
-        if (!hasService) return false;
-      }
+
       return true;
     }).sort((a: any, b: any) => {
       if (sortBy === 'Gần nhất' && a.distanceKm !== undefined && b.distanceKm !== undefined) {
@@ -284,9 +278,9 @@ export default function VetSearch() {
                   <SlidersHorizontal size={18} className="text-primary" />
                   Bộ lọc
                 </h3>
-                {(minRating > 0 || distanceKm !== 10 || selectedServices.length > 0) && (
+                {(minRating > 0 || distanceKm !== 10) && (
                   <button
-                    onClick={() => { setMinRating(0); setDistanceKm(10); setSelectedServices([]); }}
+                    onClick={() => { setMinRating(0); setDistanceKm(10); }}
                     className="text-[10px] font-black text-primary uppercase tracking-wider hover:underline"
                   >
                     Đặt lại
@@ -294,32 +288,6 @@ export default function VetSearch() {
                 )}
               </div>
 
-              {/* Service filter */}
-              <div className="space-y-4">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                  {SERVICE_FILTER_OPTIONS.map((svc) => (
-                    <label key={svc} className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors">
-                      <div className="relative flex items-center justify-center">
-                        <input 
-                          type="checkbox" 
-                          className="peer appearance-none w-5 h-5 border-2 border-slate-200 dark:border-slate-700 rounded bg-transparent checked:bg-primary checked:border-primary transition-all cursor-pointer"
-                          checked={selectedServices.includes(svc)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedServices(prev => [...prev, svc]);
-                            } else {
-                              setSelectedServices(prev => prev.filter(s => s !== svc));
-                            }
-                          }}
-                        />
-                        <CheckCircle2 size={12} className="absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
-                      </div>
-                      <span className="text-sm font-bold text-slate-600 dark:text-slate-300 peer-checked:text-slate-900 dark:peer-checked:text-white">{svc}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
 
               {/* Rating filter */}
               <div className="space-y-4">
@@ -595,6 +563,44 @@ export default function VetSearch() {
                 <div className="flex-1 overflow-y-auto p-6">
                   <NearbyShops shops={allShopsForList} loading={isLoading} />
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Radius Confirmation Modal */}
+      <AnimatePresence>
+        {showRadiusModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+            onClick={() => setShowRadiusModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl w-full max-w-md p-8 relative overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+              <button onClick={() => setShowRadiusModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+              <div className="flex flex-col items-center text-center mt-2">
+                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-full flex items-center justify-center mb-6 relative">
+                  <div className="absolute inset-0 bg-blue-400/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
+                  <Navigation size={36} className="fill-blue-500/20" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3">Đã kích hoạt bộ lọc</h3>
+                <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  Hệ thống đang hiển thị tất cả các cơ sở thú y quanh bạn trong bán kính <span className="font-black text-primary text-lg">{radiusParam} km</span>.
+                </p>
+                <button 
+                  onClick={() => setShowRadiusModal(false)}
+                  className="mt-8 w-full py-4 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all active:scale-95"
+                >
+                  Tuyệt vời, Khám phá ngay
+                </button>
               </div>
             </motion.div>
           </motion.div>
