@@ -186,4 +186,12 @@ export const bookingService = {
     );
     return response.data.result!;
   },
+
+  /**
+   * Xuất hóa đơn thủ công — Shop Owner / Staff gọi khi đơn COMPLETED hoặc CASH
+   * Backend sẽ gửi email hóa đơn đến khách hàng
+   */
+  sendInvoice: async (bookingId: number): Promise<void> => {
+    await apiClient.post(`/bookings/${bookingId}/send-invoice`);
+  },
 };

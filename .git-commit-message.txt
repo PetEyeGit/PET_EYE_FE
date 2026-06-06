@@ -1,0 +1,48 @@
+feat: Thêm chức năng xuất hóa đơn email cho Shop Owner
+
+## Tính năng mới
+
+### Backend Integration
+- Tích hợp với backend API `/bookings/{bookingId}/send-invoice`
+- **Chỉ Shop Owner** có thể gửi hóa đơn thủ công cho booking đã hoàn thành
+
+### UI Updates - ShopBookings.tsx
+- Thêm nút "Xuất hóa đơn" trong List View cho booking COMPLETED
+- Thêm nút "Xuất hóa đơn qua Email" trong Detail Modal
+- Loading states với spinner animation
+- Toast notifications cho success/error
+
+### Service Layer
+- Method `sendInvoice()` đã có sẵn trong booking.service.ts
+- Error handling và response parsing
+
+## Technical Changes
+
+### Files Modified
+- src/pages/shop/ShopBookings.tsx
+  - Added `sendingInvoiceId` state
+  - Added `handleSendInvoice` function
+  - Updated `BookingListItemProps` interface
+  - Added invoice button in COMPLETED status blocks
+  
+### Files Created
+- docs/INVOICE_EMAIL_FEATURE.md - Tài liệu chi tiết
+- INVOICE_EMAIL_CHANGES.md - Tóm tắt thay đổi
+
+## Backend Requirements (Already implemented)
+- EmailService.sendBookingInvoiceEmail()
+- BookingService.sendInvoice()
+- POST /bookings/{id}/send-invoice endpoint
+- Auto-send on: PayOS payment, mock payment, cash deposit
+
+## Testing
+- [x] Invoice button shows only for COMPLETED bookings
+- [x] Loading state works correctly
+- [x] Toast messages display properly
+- [x] No TypeScript errors
+- [ ] End-to-end test with backend (pending)
+
+## Notes
+- Email tự động gửi sau thanh toán (backend)
+- Nút thủ công **chỉ dành cho Shop Owner** (Staff không được phép)
+- Email gửi đến customerEmail của booking

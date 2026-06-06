@@ -34,8 +34,10 @@ interface BookingListItemProps {
     booking: any;
     staffList: StaffResponse[];
     updatingId: number | null;
+    sendingInvoiceId: number | null;
     onAssign: (bookingId: number, staffId: number | 'unassign') => void;
     handleUpdateStatus: (bookingId: number, status: string) => void;
+    handleSendInvoice: (bookingId: number) => void;
     setSelectedBooking: (booking: any) => void;
 }
 
@@ -45,7 +47,7 @@ const CARE_LOG_TYPES = [
     { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
-function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdateStatus, setSelectedBooking }: BookingListItemProps) {
+function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setSelectedBooking }: BookingListItemProps) {
     const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
@@ -145,9 +147,19 @@ function BookingListItem({ booking, staffList, updatingId, onAssign, handleUpdat
                     )}
 
                     {booking.status === 'COMPLETED' && (
-                        <div className={`p-4 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
-                            <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
-                            <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
+                        <div className="flex flex-col gap-2">
+                            <div className={`p-4 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+                                <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
+                                <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
+                            </div>
+                            <button 
+                                onClick={() => handleSendInvoice(booking.bookingId)}
+                                disabled={sendingInvoiceId === booking.bookingId}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {sendingInvoiceId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
+                                Xuất hóa đơn
+                            </button>
                         </div>
                     )}
                 </div>
@@ -165,6 +177,7 @@ export default function ShopBookings() {
     const [searchTerm, setSearchTerm] = useState('');
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+    const [sendingInvoiceId, setSendingInvoiceId] = useState<number | null>(null);
     
     // Staff Change Request States
     const [showReasonModal, setShowReasonModal] = useState(false);
@@ -299,6 +312,19 @@ export default function ShopBookings() {
             toast.error(err.response?.data?.message || 'Gửi yêu cầu thất bại');
         } finally {
             setUpdatingId(null);
+        }
+    };
+
+    // Xuất hóa đơn thủ công — chỉ dành cho COMPLETED + CASH
+    const handleSendInvoice = async (bookingId: number) => {
+        setSendingInvoiceId(bookingId);
+        try {
+            await bookingService.sendInvoice(bookingId);
+            toast.success('Đã gửi hóa đơn tới email khách hàng!');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Gửi hóa đơn thất bại. Vui lòng thử lại.');
+        } finally {
+            setSendingInvoiceId(null);
         }
     };
 
@@ -456,8 +482,10 @@ export default function ShopBookings() {
                                         booking={booking}
                                         staffList={staffList}
                                         updatingId={updatingId}
+                                        sendingInvoiceId={sendingInvoiceId}
                                         onAssign={handleAssignStaff}
                                         handleUpdateStatus={handleUpdateStatus}
+                                        handleSendInvoice={handleSendInvoice}
                                         setSelectedBooking={setSelectedBooking}
                                     />
                                 ))}
@@ -833,21 +861,38 @@ export default function ShopBookings() {
                                         </div>
                                     )}
 
-                                    <div className="pt-6 flex gap-3">
-                                        <button 
-                                            onClick={() => setSelectedBooking(null)}
-                                            className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
-                                        >
-                                            Đóng
-                                        </button>
-                                        {selectedBooking.status === 'CONFIRMED' && (
+                                    <div className="pt-6 flex flex-col gap-3">
+                                        {/* Nút xuất hóa đơn — Cash COMPLETED hoặc bất kỳ COMPLETED */}
+                                        {selectedBooking.status === 'COMPLETED' && (
                                             <button 
-                                                onClick={() => handleUpdateStatus((selectedBooking.bookingId || selectedBooking.id), 'CANCELLED')}
-                                                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                                                onClick={() => handleSendInvoice(selectedBooking.bookingId || selectedBooking.id)}
+                                                disabled={sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id)}
+                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                                             >
-                                                Hủy đơn
+                                                {sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id) ? (
+                                                    <Loader2 size={12} className="animate-spin" />
+                                                ) : (
+                                                    <Mail size={12} />
+                                                )}
+                                                Xuất hóa đơn qua Email
                                             </button>
                                         )}
+                                        <div className="flex gap-3">
+                                            <button 
+                                                onClick={() => setSelectedBooking(null)}
+                                                className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
+                                            >
+                                                Đóng
+                                            </button>
+                                            {selectedBooking.status === 'CONFIRMED' && (
+                                                <button 
+                                                    onClick={() => handleUpdateStatus((selectedBooking.bookingId || selectedBooking.id), 'CANCELLED')}
+                                                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                                                >
+                                                    Hủy đơn
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
