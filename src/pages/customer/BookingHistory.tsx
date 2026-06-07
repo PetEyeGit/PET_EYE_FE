@@ -882,7 +882,38 @@ export default function BookingHistory() {
 
             {/* Cancel Request Modal */}
             <AnimatePresence>
-                {showCancelModal && selectedBooking && (
+                {showCancelModal && selectedBooking && (() => {
+                    const paymentMethod = selectedBooking.paymentMethod || 'CASH';
+                    const isPayOS = paymentMethod === 'PAYOS';
+                    const isDepositOnly = !isPayOS;
+
+                    const depositAmount = selectedBooking.servicePrice * 0.1;
+                    const paidAmount = isPayOS ? selectedBooking.servicePrice : depositAmount;
+
+                    const appointmentTime = selectedBooking.appointmentDatetime ? parseISO(selectedBooking.appointmentDatetime) : new Date();
+                    const hoursToAppointment = (appointmentTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+                    const isBefore5Hours = hoursToAppointment >= 5;
+
+                    let refundAmount = 0;
+                    let penaltyAmount = 0;
+                    let oweAmount = 0;
+
+                    if (isBefore5Hours) {
+                        if (isPayOS) {
+                            refundAmount = paidAmount - depositAmount;
+                        }
+                    } else {
+                        penaltyAmount = selectedBooking.servicePrice * 0.5;
+                        if (isPayOS) {
+                            refundAmount = paidAmount - depositAmount - penaltyAmount;
+                            if (refundAmount < 0) refundAmount = 0;
+                        } else {
+                            oweAmount = penaltyAmount;
+                        }
+                    }
+
+                    return (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -895,9 +926,9 @@ export default function BookingHistory() {
                             exit={{ opacity: 0, scale: 0.94, y: 28 }}
                             className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
                         >
-                            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 p-8 text-white shrink-0">
+                            <div className="bg-gradient-to-r from-[#1a2b4c] to-blue-900 p-8 text-white shrink-0">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-[#1a2b4c]/30">
                                         <XCircle size={32} className="text-white" />
                                     </div>
                                     <div className="space-y-2">
@@ -924,6 +955,74 @@ export default function BookingHistory() {
                                         <p className="mt-1 text-xl font-black text-slate-900 dark:text-white">{formatVND(selectedBooking.servicePrice)}</p>
                                     </div>
                                 </div>
+
+                                {/* Chi tiết tính toán hoàn tiền */}
+                                {true && (
+                                    <div className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-6 space-y-4">
+                                        <div className="flex items-center gap-2 mb-2 text-slate-800 dark:text-slate-200">
+                                            <Wallet size={18} />
+                                            <h4 className="font-black tracking-tight text-base">Thông tin thanh toán & hoàn tiền</h4>
+                                        </div>
+                                        
+                                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Tổng tiền dịch vụ:</span>
+                                                <span className="font-bold text-slate-800 dark:text-slate-200">{formatVND(selectedBooking.servicePrice)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Đã thanh toán:</span>
+                                                <span className="font-bold text-slate-900 dark:text-white flex items-center">
+                                                    {formatVND(paidAmount)}
+                                                    <span className="text-[9px] uppercase ml-2 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold tracking-widest">
+                                                        {isPayOS ? 'Toàn bộ' : 'Cọc 10%'}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Thời gian đến giờ hẹn:</span>
+                                                <span className={`font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest flex items-center gap-1 ${isBefore5Hours ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+                                                    <Clock size={12} />
+                                                    {hoursToAppointment > 0 ? `Còn ${Math.floor(hoursToAppointment)} giờ` : 'Đã quá giờ'}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="border-t border-slate-200 dark:border-slate-800 my-3 pt-3" />
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium text-slate-500">Phí giữ chỗ (Mất cọc):</span>
+                                                <span className="font-bold text-rose-500">-{formatVND(depositAmount)}</span>
+                                            </div>
+                                            {!isBefore5Hours && (
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <span className="font-medium flex items-center gap-1.5 text-slate-500"><AlertCircle size={14} className="text-rose-500" /> Phạt hủy muộn (50%):</span>
+                                                    <span className="font-bold text-rose-500">-{formatVND(penaltyAmount)}</span>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="border-t border-slate-200 dark:border-slate-800 my-3 pt-3" />
+                                            
+                                            <div className="flex flex-col gap-2 bg-white dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
+                                                <div className="flex justify-between items-center text-lg">
+                                                    <span className="font-black text-slate-900 dark:text-white text-base">Tổng tiền hoàn lại:</span>
+                                                    <span className="font-black text-emerald-500 text-xl">{formatVND(refundAmount)}</span>
+                                                </div>
+                                                {oweAmount > 0 && (
+                                                    <div className="flex justify-between items-center pt-3 mt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
+                                                        <span className="font-black text-rose-500 text-sm flex items-center gap-1.5"><AlertCircle size={14}/> Cần đền bù cho Shop:</span>
+                                                        <span className="font-black text-rose-500">{formatVND(oweAmount)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="mt-4 bg-slate-100/80 dark:bg-slate-800/50 rounded-xl p-3 flex gap-2.5 items-start">
+                                                <Info size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                                                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                                                    Hủy trước 5 giờ chỉ mất phí giữ chỗ (10%). Hủy sau 5 giờ mất phí giữ chỗ và 50% tiền dịch vụ bồi thường cho cửa hàng.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-4">
@@ -1040,7 +1139,7 @@ export default function BookingHistory() {
                                     <button
                                         onClick={handleSubmitCancelRequest}
                                         disabled={cancelMutation.isPending}
-                                        className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
+                                        className="px-6 py-4 rounded-3xl bg-[#1a2b4c] text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-[#1a2b4c]/30 hover:bg-[#1a2b4c]/90 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
                                         {cancelMutation.isLoading || directCancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
                                     </button>
@@ -1048,7 +1147,7 @@ export default function BookingHistory() {
                             </div>
                         </motion.div>
                     </div>
-                )}
+                )})()}
             </AnimatePresence>
 
             {/* Update Bank Modal */}
