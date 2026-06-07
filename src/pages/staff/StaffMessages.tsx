@@ -39,38 +39,14 @@ export default function StaffMessages() {
     enabled: !!shopId
   });
 
-  const { data: customers = [] } = useQuery({
-    queryKey: ['my-shop-customers', shopId],
-    queryFn: () => shopService.getShopCustomers(shopId!),
-    enabled: !!shopId
-  });
-
-  const { messages, connected, sendMessage } = useShopChat(
+  const { messages, connected, isTyping, sendMessage, sendTypingEvent } = useShopChat(
     shopId ?? null,
     user?.token,
     activeChannel.type,
-    (activeChannel.type === 'DIRECT' || activeChannel.type === 'CUSTOMER_CHAT') ? (activeChannel.id as string) : undefined
+    activeChannel.type === 'DIRECT' ? (activeChannel.id as string) : undefined
   );
 
   const [input, setInput] = useState('');
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.state?.customerEmail) {
-      setActiveChannel({
-        type: 'CUSTOMER_CHAT',
-        id: location.state.customerEmail,
-        title: `Khách hàng: ${location.state.customerName || location.state.customerEmail}`
-      });
-    }
-  }, [location.state]);
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !connected) return;
-    sendMessage(input);
-    setInput('');
-  };
 
   return (
     <div className="flex h-[calc(100vh-140px)] bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-xl border border-slate-100 dark:border-slate-800 m-4 sm:m-6">
@@ -130,35 +106,7 @@ export default function StaffMessages() {
             </div>
           </button>
 
-          <div className="px-3 pt-4 mb-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Khách hàng</span>
-          </div>
 
-          {customers.length === 0 ? (
-            <div className="px-6 py-4 text-[11px] text-slate-400 italic">Không có khách hàng</div>
-          ) : customers.map(customer => (
-            <button 
-              key={customer.email}
-              onClick={() => setActiveChannel({ 
-                type: 'CUSTOMER_CHAT', 
-                id: customer.email, 
-                title: customer.fullName
-              })}
-              className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
-                activeChannel.id === customer.email 
-                ? 'bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-100 dark:ring-slate-700' 
-                : 'hover:bg-white/50 dark:hover:bg-slate-800/50'
-              }`}
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <MessageCircle size={20} className="text-primary" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate">{customer.fullName}</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{customer.email}</p>
-              </div>
-            </button>
-          ))}
 
           <div className="px-3 pt-4 mb-2">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đồng nghiệp</span>
@@ -195,6 +143,8 @@ export default function StaffMessages() {
         input={input}
         setInput={setInput}
         onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
+        isTyping={isTyping}
+        onTyping={(typing) => sendTypingEvent(typing)}
         headerInfo={{
             title: activeChannel.title,
             icon: activeChannel.type === 'INTERNAL_STAFF' ? <Users size={24} className="text-emerald-500" /> : 

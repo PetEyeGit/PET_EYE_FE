@@ -7,7 +7,7 @@ export default function About() {
   const location = useLocation();
 
   // Scroll to section based on hash
- useEffect(() => {
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -28,10 +28,10 @@ export default function About() {
 
   return (
     <div className="bg-slate-50 min-h-screen pt-24">
-      
+
       {/* Hero Section */}
       <section className="relative max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-24">
-        <motion.div 
+        <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeIn}
@@ -54,7 +54,7 @@ export default function About() {
       {/* Brand Story Section */}
       <section id="story" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div 
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
@@ -76,7 +76,7 @@ export default function About() {
               </p>
             </div>
           </motion.div>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -84,9 +84,9 @@ export default function About() {
             className="relative"
           >
             <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-              <img 
-                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=1000" 
-                alt="Chó và người chủ" 
+              <img
+                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=1000"
+                alt="Chó và người chủ"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -110,7 +110,7 @@ export default function About() {
       <section className="bg-slate-50 py-24 mb-32 relative overflow-hidden">
         {/* Background glow for core values */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-        
+
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-20">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
@@ -122,7 +122,7 @@ export default function About() {
             <p className="text-lg text-slate-600 md:text-xl font-medium">Những tiêu chuẩn chúng tôi không bao giờ thỏa hiệp trong quá trình phục vụ bạn và thú cưng.</p>
           </div>
 
-          <motion.div 
+          <motion.div
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
@@ -134,21 +134,21 @@ export default function About() {
               { icon: Heart, title: "Tận tâm", desc: "Đặt sức khỏe và sự thoải mái của thú cưng lên hàng đầu trong mọi dịch vụ.", color: "from-sky-400 to-blue-500", iconBg: "from-sky-500 to-blue-600", shadow: "hover:shadow-sky-500/20" },
               { icon: Zap, title: "Nhanh & Tiện lợi", desc: "Đặt lịch, thanh toán và theo dõi dễ dàng chỉ qua vài thao tác trên điện thoại.", color: "from-cyan-400 to-blue-500", iconBg: "from-cyan-500 to-blue-600", shadow: "hover:shadow-cyan-500/20" }
             ].map((item, index) => (
-              <motion.div 
-                key={index} 
-                variants={fadeIn} 
+              <motion.div
+                key={index}
+                variants={fadeIn}
                 whileHover={{ y: -10 }}
                 className={`relative bg-white rounded-3xl p-10 shadow-xl ${item.shadow} transition-all duration-300 border border-slate-100 overflow-hidden group`}
               >
                 <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${item.color} rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity duration-500 translate-x-1/3 -translate-y-1/3`}></div>
-                
+
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-lg bg-gradient-to-br ${item.iconBg} text-white transform group-hover:scale-110 transition-transform duration-300`}>
                   <item.icon size={32} />
                 </div>
-                
+
                 <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-primary transition-colors">{item.title}</h3>
                 <p className="text-slate-600 leading-relaxed text-lg">{item.desc}</p>
-                
+
                 {/* Bottom decorative line */}
                 <div className={`absolute bottom-0 left-0 w-0 h-1.5 bg-gradient-to-r ${item.iconBg} group-hover:w-full transition-all duration-500 ease-out`}></div>
               </motion.div>
@@ -157,69 +157,48 @@ export default function About() {
         </div>
       </section>
 
-      {/* Careers Section */}
-      <section id="careers" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeIn}
-          className="bg-slate-900 rounded-3xl p-10 md:p-16 lg:p-20 text-white relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/30 rounded-full blur-[100px] translate-x-1/3 -translate-y-1/3"></div>
-          
-          <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-slate-200 font-semibold text-sm mb-6 border border-white/10">
-                <Briefcase size={16} /> Tuyển dụng
-              </div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
-                Gia nhập đội ngũ <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500">PetEye</span>
-              </h2>
-              <p className="text-slate-300 text-lg leading-relaxed mb-8 max-w-lg">
-                Chúng tôi luôn tìm kiếm những con người đam mê công nghệ và yêu thương động vật để cùng nhau xây dựng hệ sinh thái thú cưng tốt nhất Việt Nam.
-              </p>
-              <Link to="/about" className="inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-full font-semibold hover:bg-slate-100 transition-colors">
-                Xem vị trí đang tuyển <ArrowRight size={18} />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=600" alt="Team" className="rounded-2xl h-48 w-full object-cover" />
-                <img src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=600" alt="Office" className="rounded-2xl h-32 w-full object-cover" />
-              </div>
-              <div className="space-y-4 pt-8">
-                <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600" alt="Team work" className="rounded-2xl h-32 w-full object-cover" />
-                <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600" alt="Meeting" className="rounded-2xl h-48 w-full object-cover" />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
 
       {/* Partner Section */}
       <section id="partner" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
             className="order-2 lg:order-1"
           >
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-orange-50 rounded-3xl p-6 border border-orange-100 flex flex-col justify-center items-center text-center">
-                <span className="text-4xl font-bold text-orange-600 mb-2">200+</span>
-                <span className="text-slate-700 font-medium">Đối tác tin cậy</span>
+            <div className="grid grid-cols-2 gap-4 lg:gap-6 relative">
+              {/* Decorative background blob */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-tr from-primary/10 via-orange-500/5 to-purple-500/10 rounded-full blur-3xl -z-10"></div>
+
+              {/* Column 1 */}
+              <div className="space-y-4 lg:space-y-6">
+                <div className="bg-orange-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-orange-100 flex flex-col justify-center items-center text-center shadow-xl shadow-orange-500/5 hover:-translate-y-2 transition-all duration-300">
+                  <span className="text-4xl lg:text-5xl font-black text-orange-600 mb-2 drop-shadow-sm">200+</span>
+                  <span className="text-slate-700 font-bold text-sm lg:text-base">Đối tác tin cậy</span>
+                </div>
+                <div className="bg-emerald-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-emerald-100 flex flex-col justify-center items-center text-center shadow-xl shadow-emerald-500/5 hover:-translate-y-2 transition-all duration-300">
+                  <span className="text-4xl lg:text-5xl font-black text-emerald-600 mb-2 drop-shadow-sm">15+</span>
+                  <span className="text-slate-700 font-bold text-sm lg:text-base">Tỉnh/Thành phố</span>
+                </div>
               </div>
-              <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 flex flex-col justify-center items-center text-center mt-10">
-                <span className="text-4xl font-bold text-blue-600 mb-2">50k+</span>
-                <span className="text-slate-700 font-medium">Khách hàng</span>
+
+              {/* Column 2 (Staggered) */}
+              <div className="space-y-4 lg:space-y-6 mt-8 lg:mt-12">
+                <div className="bg-blue-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-blue-100 flex flex-col justify-center items-center text-center shadow-xl shadow-blue-500/5 hover:-translate-y-2 transition-all duration-300">
+                  <span className="text-4xl lg:text-5xl font-black text-blue-600 mb-2 drop-shadow-sm">50k+</span>
+                  <span className="text-slate-700 font-bold text-sm lg:text-base">Khách hàng</span>
+                </div>
+                <div className="bg-purple-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-purple-100 flex flex-col justify-center items-center text-center shadow-xl shadow-purple-500/5 hover:-translate-y-2 transition-all duration-300">
+                  <span className="text-4xl lg:text-5xl font-black text-purple-600 mb-2 drop-shadow-sm">98%</span>
+                  <span className="text-slate-700 font-bold text-sm lg:text-base">Đánh giá tốt</span>
+                </div>
               </div>
             </div>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -244,7 +223,7 @@ export default function About() {
 
       {/* News Section */}
       <section id="news" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
-        <motion.div 
+        <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
@@ -254,20 +233,20 @@ export default function About() {
           {/* Decorative shapes */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
-          
+
           <div className="relative z-10 text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
               <Newspaper size={16} /> Tin tức & Cộng đồng
             </div>
-            
+
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">
               Cập nhật <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">tin tức mới nhất</span>
             </h2>
-            
+
             <p className="text-slate-600 text-lg md:text-xl mb-10 leading-relaxed font-medium">
               Khám phá những kiến thức chăm sóc thú cưng bổ ích và các sự kiện hấp dẫn từ hệ sinh thái PetEye.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <a href="https://web.facebook.com/profile.php?id=61590306674838" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
                 Tham gia Facebook

@@ -72,45 +72,45 @@ export default function BookingSuccess() {
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-lg shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-700">
 
           {/* Top banner */}
-          <div className="bg-gradient-to-r from-[#1a2b4c] to-indigo-600 px-5 pt-6 pb-6 text-center relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#1a2b4c] to-indigo-600 px-4 pt-4 pb-4 text-center relative overflow-hidden">
             {/* Decorative circles */}
-            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/5 rounded-full" />
-            <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-white/5 rounded-full" />
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/5 rounded-full" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full" />
 
             {/* Animated checkmark */}
-            <div className="relative w-16 h-16 mx-auto mb-3">
-              <div className="w-16 h-16 bg-white/15 rounded-full flex items-center justify-center animate-[ping_1s_ease-out_1]">
-                <div className="absolute w-16 h-16 bg-white/10 rounded-full" />
+            <div className="relative w-12 h-12 mx-auto mb-2">
+              <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center animate-[ping_1s_ease-out_1]">
+                <div className="absolute w-12 h-12 bg-white/10 rounded-full" />
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                  <span className="material-symbols-outlined text-2xl text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+                  <span className="material-symbols-outlined text-xl text-green-500" style={{ fontVariationSettings: "'FILL' 1" }}>
                     check_circle
                   </span>
                 </div>
               </div>
             </div>
 
-            <h1 className="text-xl font-black text-white mb-0.5">Đặt lịch thành công!</h1>
-            <p className="text-indigo-200 text-xs">Chúng tôi sẽ nhắc bạn trước giờ hẹn 🐾</p>
+            <h1 className="text-lg font-black text-white mb-0.5">Đặt lịch thành công!</h1>
+            <p className="text-indigo-200 text-[10px]">Chúng tôi sẽ nhắc bạn trước giờ hẹn 🐾</p>
 
             {/* Booking ID badge */}
-            <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-white/15 backdrop-blur rounded-full text-white text-[11px] font-bold shadow-sm">
-              <span className="material-symbols-outlined text-xs">confirmation_number</span>
+            <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1 bg-white/15 backdrop-blur rounded-full text-white text-[10px] font-bold shadow-sm">
+              <span className="material-symbols-outlined text-[10px]">confirmation_number</span>
               Mã đặt lịch #{booking.id}
             </div>
           </div>
 
           {/* Shop info strip */}
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+          <div className="flex items-center gap-2.5 px-3 py-2 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
             <div
-              className="w-10 h-10 rounded-xl bg-cover bg-center shrink-0 bg-slate-100 dark:bg-slate-700 shadow-sm"
+              className="w-8 h-8 rounded-lg bg-cover bg-center shrink-0 bg-slate-100 dark:bg-slate-700 shadow-sm"
               style={{ backgroundImage: bookingInfo.shopImage ? `url(${bookingInfo.shopImage})` : 'url(https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=200&auto=format&fit=crop)' }}
             />
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-900 dark:text-white text-sm truncate leading-tight">{bookingInfo.shopName}</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
-                <span className="material-symbols-outlined text-[12px] text-teal-500">location_on</span>
+              <p className="font-bold text-slate-900 dark:text-white text-[13px] truncate leading-tight">{bookingInfo.shopName}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                <span className="material-symbols-outlined text-[10px] text-teal-500">location_on</span>
                 {bookingInfo.shopAddress}
               </p>
             </div>
@@ -120,7 +120,7 @@ export default function BookingSuccess() {
           </div>
 
           {/* Body */}
-          <div className="px-4 py-4 flex flex-col gap-3">
+          <div className="px-3 py-3 flex flex-col gap-2">
 
             {/* Schedule section */}
             {(() => {
@@ -140,31 +140,27 @@ export default function BookingSuccess() {
                 <div className="flex flex-col gap-2">
                   {hasNormal && (
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="material-symbols-outlined text-sm text-[#1a2b4c] dark:text-indigo-400">calendar_month</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Ngày hẹn</span>
+                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[#1a2b4c] dark:text-indigo-400 shrink-0">calendar_month</span>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ngày hẹn</p>
+                          <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-snug truncate">{normalDatePart}</p>
                         </div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug truncate">{normalDatePart}</p>
                       </div>
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="material-symbols-outlined text-sm text-[#1a2b4c] dark:text-indigo-400">schedule</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Giờ hẹn</span>
+                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[#1a2b4c] dark:text-indigo-400 shrink-0">schedule</span>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ hẹn</p>
+                          <p className="text-[11px] font-bold text-slate-900 dark:text-white">
+                            {!isBoardingTime ? timeStr : '—'}
+                          </p>
                         </div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white">
-                          {!isBoardingTime ? timeStr : '—'}
-                        </p>
                       </div>
                     </div>
                   )}
 
                   {hasBoarding && (
-                    <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 border border-indigo-100 dark:border-indigo-800">
-                      <div className="flex items-center gap-1 mb-2">
-                        <span className="material-symbols-outlined text-sm text-indigo-600 dark:text-indigo-400">hotel</span>
-                        <span className="text-[9px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Lịch lưu trú</span>
-                      </div>
+                    <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-2 border border-indigo-100 dark:border-indigo-800">
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                         <div className="bg-white dark:bg-indigo-900/40 rounded-lg p-2 text-center shadow-sm">
                           <p className="text-[9px] font-bold text-indigo-400 uppercase mb-0.5">Nhận phòng</p>
@@ -188,19 +184,19 @@ export default function BookingSuccess() {
 
                   {!hasNormal && !hasBoarding && (
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="material-symbols-outlined text-sm text-[#1a2b4c] dark:text-indigo-400">calendar_month</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Ngày hẹn</span>
+                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[#1a2b4c] dark:text-indigo-400 shrink-0">calendar_month</span>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Ngày hẹn</p>
+                          <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-snug truncate">{dateStr}</p>
                         </div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug">{dateStr}</p>
                       </div>
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="material-symbols-outlined text-sm text-[#1a2b4c] dark:text-indigo-400">schedule</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Giờ / Thời gian</span>
+                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[#1a2b4c] dark:text-indigo-400 shrink-0">schedule</span>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Giờ / Thời gian</p>
+                          <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{timeStr}</p>
                         </div>
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white">{timeStr}</p>
                       </div>
                     </div>
                   )}
@@ -210,20 +206,20 @@ export default function BookingSuccess() {
 
             {/* Pet & Staff */}
             <div className={`grid ${bookingInfo.staffId ? "grid-cols-2 gap-2" : "grid-cols-1"}`}>
-              <div className="flex items-center gap-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-3 py-2 border border-amber-100/50 dark:border-amber-800/30">
-                <span className="text-xl">🐾</span>
-                <div>
-                  <p className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Thú cưng</p>
-                  <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{bookingInfo.petName}</p>
+              <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-2.5 py-1.5 border border-amber-100/50 dark:border-amber-800/30">
+                <span className="text-base">🐾</span>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-0.5">Thú cưng</p>
+                  <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">{bookingInfo.petName}</p>
                 </div>
               </div>
 
               {bookingInfo.staffId && (
-               <div className="flex items-center gap-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2 border border-blue-100/50 dark:border-blue-800/30">
-                  <span className="material-symbols-outlined text-xl text-blue-600 dark:text-blue-400">support_agent</span>
+               <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg px-2.5 py-1.5 border border-blue-100/50 dark:border-blue-800/30">
+                  <span className="material-symbols-outlined text-base text-blue-600 dark:text-blue-400">support_agent</span>
                   <div className="min-w-0">
-                    <p className="text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Nhân viên</p>
-                    <p className="text-[13px] font-bold text-slate-900 dark:text-white truncate">
+                    <p className="text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-0.5">Nhân viên</p>
+                    <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
                       {bookingInfo.staffName || `Mã số #${bookingInfo.staffId}`}
                     </p>
                   </div>
@@ -232,30 +228,21 @@ export default function BookingSuccess() {
             </div>
 
             {/* Services list */}
-            <div className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
-              <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700">
-                <span className="material-symbols-outlined text-[14px] text-[#1a2b4c] dark:text-indigo-400">receipt_long</span>
-                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  Dịch vụ đã đặt ({serviceList.length})
-                </span>
-              </div>
-
+            <div className="rounded-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
               <div className="divide-y divide-slate-100 dark:divide-slate-700">
                 {serviceList.map((svc: BookingServiceItem, i: number) => (
-                  <div key={svc.id || i} className="flex items-center justify-between px-3 py-1.5 gap-2">
+                  <div key={svc.id || i} className="flex items-center justify-between px-3 py-1.5 gap-2 bg-white dark:bg-slate-800">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-indigo-50 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[13px] text-indigo-600 dark:text-indigo-400">
-                          {svc.name.toLowerCase().includes('lưu trú') || svc.name.toLowerCase().includes('boarding')
-                            ? 'hotel'
-                            : svc.name.toLowerCase().includes('camera')
-                              ? 'videocam'
-                              : 'content_cut'}
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-700 dark:text-slate-200 leading-tight truncate">{svc.name}</span>
+                      <span className="material-symbols-outlined text-[13px] text-indigo-600 dark:text-indigo-400">
+                        {svc.name.toLowerCase().includes('lưu trú') || svc.name.toLowerCase().includes('boarding')
+                          ? 'hotel'
+                          : svc.name.toLowerCase().includes('camera')
+                            ? 'videocam'
+                            : 'content_cut'}
+                      </span>
+                      <span className="text-[11px] text-slate-700 dark:text-slate-200 leading-tight truncate">{svc.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white shrink-0">
+                    <span className="text-[11px] font-bold text-slate-900 dark:text-white shrink-0">
                       {svc.price.toLocaleString('vi-VN')}đ
                     </span>
                   </div>
@@ -267,12 +254,12 @@ export default function BookingSuccess() {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-medium text-white/70">Phương thức thanh toán</span>
                   <span className="text-[10px] font-bold text-white/90">
-                    {isCashDeposit ? 'Tiền mặt tại quầy (đã cọc 10%)' : 'Chuyển khoản (PayOS)'}
+                    {isCashDeposit ? 'Tiền mặt' : 'Chuyển khoản'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/10 pt-1">
-                  <span className="text-xs font-bold text-white/80">Tổng cộng</span>
-                  <span className="text-sm font-black text-white">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                  <span className="text-[11px] font-bold text-white/80">Tổng cộng</span>
+                  <span className="text-[13px] font-black text-white">{totalPrice.toLocaleString('vi-VN')}đ</span>
                 </div>
               </div>
             </div>
@@ -292,7 +279,7 @@ export default function BookingSuccess() {
             <div className="flex items-start gap-2 bg-teal-50 dark:bg-teal-900/20 rounded-xl px-3 py-2 border border-teal-100 dark:border-teal-800">
               <span className="material-symbols-outlined text-sm text-teal-600 dark:text-teal-400 mt-0.5">tips_and_updates</span>
               <p className="text-[11px] text-teal-700 dark:text-teal-300 leading-tight">
-                Đến trước <strong>15 phút</strong>. Nếu cần hủy, hãy thực hiện trước <strong>24 giờ</strong>.
+                Đến trước <strong> 15 phút </strong>. Nếu cần hủy, hãy thực hiện trước <strong>24 giờ</strong>.
               </p>
             </div>
           </div>
@@ -301,7 +288,7 @@ export default function BookingSuccess() {
         {/* ── Actions ── */}
         <div className="grid grid-cols-2 gap-2.5">
           <Link
-            to="/bookings/my"
+            to="/profile/bookings/my"
             className="flex items-center justify-center gap-1.5 py-2.5 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] transition-all shadow-md shadow-[#1a2b4c]/20 text-xs"
           >
             <span className="material-symbols-outlined text-sm">event_note</span>

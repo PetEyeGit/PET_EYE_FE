@@ -406,7 +406,7 @@ export default function Home() {
                   <span className="text-gradient">Gần bạn nhất</span>
                 </h2>
                 <p className="mt-6 text-slate-600 dark:text-slate-300 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
-                  Cho phép truy cập vị trí hoặc nhập địa chỉ để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
+                  Cho phép truy cập vị trí để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
                 </p>
               </div>
 
@@ -519,7 +519,7 @@ export default function Home() {
                   <Video size={30} /> Tính năng độc quyền
                 </span>
                 <h2 className="text-4xl md:text-5xl 2xl:text-6xl font-black text-white leading-[1.1]">
-                  An tâm tuyệt đối <br /> với <span className="text-gradient">Live Camera</span>
+                  An tâm tuyệt đối <br /> với <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-secondary">Live Camera</span>
                 </h2>
                 <p className="text-base md:text-lg 2xl:text-xl text-slate-400 leading-relaxed font-medium">Theo dõi trực tiếp mọi khoảnh khắc của bé yêu 24/7 từ điện thoại. Bạn sẽ luôn cảm thấy gần gũi dù đang ở bất cứ đâu.</p>
               </div>
@@ -594,7 +594,15 @@ export default function Home() {
           
           <div className="relative max-w-6xl mx-auto mt-12 lg:mt-20">
             {/* Connecting Path Line (Desktop) */}
-            <div className="hidden lg:block absolute top-[40%] left-[10%] w-[80%] h-[2px] bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent -translate-y-1/2 z-0" />
+            <div className="hidden lg:block absolute top-[40%] left-[15%] w-[70%] border-t-[3px] border-dashed border-slate-300 dark:border-slate-700 z-0" />
+            
+            {/* Arrow Connectors */}
+            <div className="hidden lg:flex absolute top-[40%] left-[33.33%] -translate-y-1/2 -translate-x-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-lg items-center justify-center z-20 text-slate-400 border border-slate-100 dark:border-slate-700 animate-pulse">
+              <ArrowRight size={24} className="text-primary dark:text-blue-400" />
+            </div>
+            <div className="hidden lg:flex absolute top-[40%] left-[66.66%] -translate-y-1/2 -translate-x-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-full shadow-lg items-center justify-center z-20 text-slate-400 border border-slate-100 dark:border-slate-700 animate-pulse" style={{ animationDelay: '500ms' }}>
+              <ArrowRight size={24} className="text-primary dark:text-blue-400" />
+            </div>
             
             <div className="grid lg:grid-cols-3 gap-8 relative z-10 items-stretch">
               {/* Step 1 */}
@@ -608,6 +616,10 @@ export default function Home() {
                 <div className="absolute -top-8 -right-8 text-[180px] font-black text-slate-50 dark:text-slate-800/30 leading-none select-none z-0 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6">1</div>
                 
                 <div className="relative z-10 flex flex-col h-full">
+                  <div className="inline-flex items-center justify-center bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 text-xs font-black px-4 py-2 rounded-full mb-6 w-fit uppercase tracking-widest shadow-sm">
+                    Bước 1
+                  </div>
+                  
                   {/* Mock UI */}
                   <div className="w-full h-36 lg:h-40 bg-slate-50 dark:bg-slate-950/50 rounded-3xl mb-6 lg:mb-8 p-4 lg:p-5 border border-slate-100 dark:border-slate-800 flex flex-col justify-center gap-3 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/10 transition-colors duration-500">
                     <div className="w-full h-10 bg-white dark:bg-slate-800 rounded-full shadow-sm flex items-center px-4 gap-3 animate-pulse" style={{animationDuration: '3s'}}>
@@ -642,6 +654,10 @@ export default function Home() {
                 <div className="absolute -top-8 -right-8 text-[180px] font-black text-slate-50 dark:text-slate-800/30 leading-none select-none z-0 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6">2</div>
                 
                 <div className="relative z-10 flex flex-col h-full">
+                  <div className="inline-flex items-center justify-center bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400 text-xs font-black px-4 py-2 rounded-full mb-6 w-fit uppercase tracking-widest shadow-sm">
+                    Bước 2
+                  </div>
+
                   <div className="w-full h-36 lg:h-40 bg-slate-50 dark:bg-slate-950/50 rounded-3xl mb-6 lg:mb-8 p-4 lg:p-5 border border-slate-100 dark:border-slate-800 flex flex-col justify-center group-hover:bg-purple-50 dark:group-hover:bg-purple-900/10 transition-colors duration-500">
                     <div className="grid grid-cols-3 gap-2">
                       {['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].map((time, idx) => (
@@ -671,6 +687,10 @@ export default function Home() {
                 <div className="absolute -top-8 -right-8 text-[180px] font-black text-slate-50 dark:text-slate-800/30 leading-none select-none z-0 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-6">3</div>
                 
                 <div className="relative z-10 flex flex-col h-full">
+                  <div className="inline-flex items-center justify-center bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400 text-xs font-black px-4 py-2 rounded-full mb-6 w-fit uppercase tracking-widest shadow-sm">
+                    Bước 3
+                  </div>
+
                   <div className="w-full h-36 lg:h-40 bg-slate-50 dark:bg-slate-950/50 rounded-3xl mb-6 lg:mb-8 p-4 lg:p-5 border border-slate-100 dark:border-slate-800 flex flex-col justify-center items-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/10 transition-colors duration-500">
                     <div className="flex gap-1 mb-4">
                       {[1,2,3,4,5].map((s, idx) => (
@@ -687,7 +707,7 @@ export default function Home() {
                     </div>
                   </div>
                   <h4 className="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3">Trải nghiệm & Review</h4>
-                  <p className="text-sm lg:text-base text-slate-500 dark:text-slate-400 leading-relaxed font-medium mt-auto">Trực tiếp theo dõi thú cưng qua hệ thống camera độc quyền và chia sẻ đánh giá để tích điểm thưởng.</p>
+                  <p className="text-sm lg:text-base text-slate-500 dark:text-slate-400 leading-relaxed font-medium mt-auto">Tận hưởng dịch vụ chăm sóc chuyên nghiệp tại cơ sở và để lại đánh giá nhằm giúp cộng đồng có thêm nhiều sự lựa chọn uy tín.</p>
                 </div>
               </motion.div>
             </div>

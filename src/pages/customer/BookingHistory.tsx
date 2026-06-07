@@ -128,29 +128,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
         }
     };
 
-    const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
-        queryKey: ['staffChangeRequest', booking.id],
-        queryFn: () => taskService.getPendingStaffChangeRequest(booking.id),
-        enabled: !!booking.id
-    });
 
     const { data: careLogs = [] } = useQuery({
         queryKey: ['bookingCareLogs', booking.id],
         queryFn: () => careLogService.getLogs(booking.id),
         enabled: !!booking.id && (booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED'),
     });
-
-    const handleRespond = async (status: 'ACCEPTED' | 'REJECTED') => {
-        if (!staffChangeRequest) return;
-        try {
-            await taskService.respondToStaffChange(staffChangeRequest.id, status);
-            toast.success(status === 'ACCEPTED' ? 'Đã đồng ý đổi nhân viên' : 'Đã từ chối đổi nhân viên');
-            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-            refetchRequest();
-        } catch {
-            toast.error('Thao tác thất bại');
-        }
-    };
 
     if (!isExpanded) {
         return (
@@ -297,47 +280,6 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                     </div>
                 </div>
 
-                {/* Staff Change Request Alert */}
-                {staffChangeRequest && (
-                    <div className="mb-4 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-700/30 rounded-3xl flex flex-col gap-4 shadow-sm backdrop-blur-sm">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
-                                <UserPlus size={20} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                    <p className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Đổi nhân viên phục vụ</p>
-                                    <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-200/50 dark:border-amber-700/30">
-                                        Chờ duyệt
-                                    </span>
-                                </div>
-                                <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                                    Shop đề xuất đổi nhân viên sang <span className="font-extrabold text-slate-900 dark:text-white underline decoration-amber-300 decoration-2 underline-offset-2">{staffChangeRequest.proposedStaff?.fullName}</span>.
-                                </p>
-                                {staffChangeRequest.reason && (
-                                    <div className="mt-2 p-2.5 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-amber-100 dark:border-slate-700/50 text-[11px] text-slate-600 dark:text-slate-300 italic flex gap-1.5 items-start">
-                                        <span className="text-amber-500 font-bold not-italic">Lý do:</span>
-                                        <span>"{staffChangeRequest.reason}"</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex gap-2 justify-end pt-1">
-                            <button
-                                onClick={() => handleRespond('REJECTED')}
-                                className="px-5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5"
-                            >
-                                <X size={12} /> Từ chối
-                            </button>
-                            <button
-                                onClick={() => handleRespond('ACCEPTED')}
-                                className="px-5 py-2 bg-primary text-white rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-primary/20 flex items-center gap-1.5"
-                            >
-                                <Check size={12} /> Đồng ý
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Care Logs Timeline Section */}
                 <AnimatePresence>

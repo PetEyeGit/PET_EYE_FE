@@ -60,6 +60,13 @@ export default function ShopAddBookingModal({
     enabled: isOpen && !!shopId,
   });
 
+  // Fetch shop bookings to check busy pets
+  const { data: shopBookings = [] } = useQuery({
+    queryKey: ['shopBookings', shopId],
+    queryFn: () => bookingService.getShopBookings(),
+    enabled: isOpen && !!shopId,
+  });
+
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -140,12 +147,29 @@ export default function ShopAddBookingModal({
       onClose();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Tạo lịch hẹn thất bại');
+      const code = error.response?.data?.code;
+      const message = error.response?.data?.message;
+      if (code === 5013 || message?.includes('pet already has an active booking') || message?.includes('Thú cưng này đã có lịch')) {
+        toast.error('Thú cưng này đã có lịch đặt trong thời gian yêu cầu');
+      } else if (code === 5014 || message?.includes('staff member is already booked') || message?.includes('Nhân viên này đã có lịch')) {
+        toast.error('Nhân viên này đã có lịch đặt trong thời gian yêu cầu');
+      } else if (code === 5015 || message?.includes('No staff available') || message?.includes('Không có nhân viên nào')) {
+        toast.error('Không có nhân viên nào rảnh trong khung giờ này. Vui lòng chọn giờ khác.');
+      } else {
+        toast.error(message || 'Tạo lịch hẹn thất bại');
+      }
     }
   });
 
   const handleSubmit = () => {
     if (!selectedPetId) return toast.error('Vui lòng chọn thú cưng');
+    
+    const isSelectedPetBusy = shopBookings.some((b: any) => 
+      b.petId === selectedPetId && 
+      ['WAITING_SHOP_APPROVAL', 'CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT'].includes(b.status)
+    );
+    if (isSelectedPetBusy) return toast.error('Thú cưng được chọn đang có dịch vụ chưa hoàn thành!');
+
     if (selectedServices.length === 0) return toast.error('Vui lòng chọn dịch vụ');
     if (hasNormalServices && !selectedTime) return toast.error('Vui lòng chọn giờ hẹn cho dịch vụ thường');
     if (isHotelSelected && checkInDate >= checkOutDate) return toast.error('Ngày trả phòng phải sau ngày nhận phòng');
@@ -241,29 +265,46 @@ export default function ShopAddBookingModal({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {pets.map((pet) => (
+                  {pets.map((pet) => {
+                    const isBusy = shopBookings.some((b: any) => 
+                      b.petId === pet.id && 
+                      ['WAITING_SHOP_APPROVAL', 'CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT'].includes(b.status)
+                    );
+                    
+                    return (
                     <button
                       key={pet.id}
+                      disabled={isBusy}
                       onClick={() => setSelectedPetId(pet.id)}
-                      className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all text-left ${
-                        selectedPetId === pet.id
-                          ? (isDark ? 'border-indigo-500 bg-indigo-500/10' : 'border-indigo-600 bg-indigo-50')
-                          : (isDark ? 'border-slate-800 hover:border-slate-700' : 'border-slate-100 hover:border-slate-200')
+                      className={`flex flex-col gap-2 p-3 rounded-2xl border-2 transition-all text-left relative overflow-hidden ${
+                        isBusy 
+                          ? (isDark ? 'border-slate-800 bg-slate-800/50 opacity-50 cursor-not-allowed' : 'border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed')
+                          : selectedPetId === pet.id
+                            ? (isDark ? 'border-indigo-500 bg-indigo-500/10' : 'border-indigo-600 bg-indigo-50')
+                            : (isDark ? 'border-slate-800 hover:border-slate-700' : 'border-slate-100 hover:border-slate-200')
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shrink-0">
-                        {pet.avatar ? (
-                          <img src={pet.avatar} alt={pet.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-lg">🐾</div>
-                        )}
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                          {pet.avatar ? (
+                            <img src={pet.avatar} alt={pet.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-lg">🐾</div>
+                          )}
+                        </div>
+                        <div className="overflow-hidden flex-1">
+                          <p className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{pet.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{pet.species} - {pet.weight}kg</p>
+                        </div>
                       </div>
-                      <div className="overflow-hidden">
-                        <p className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{pet.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{pet.species} - {pet.weight}kg</p>
-                      </div>
+                      
+                      {isBusy && (
+                        <div className="w-full mt-1 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center justify-center gap-1">
+                          <AlertCircle size={10} /> Đang có dịch vụ
+                        </div>
+                      )}
                     </button>
-                  ))}
+                  )})}
                 </div>
               )}
             </section>

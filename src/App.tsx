@@ -97,7 +97,7 @@ function AppLayout() {
       case 'SHOP_OWNER': return "/shop/dashboard";
       case 'STAFF': return "/staff/dashboard";
       case 'ADMIN': return "/admin/dashboard";
-      default: return "/user/dashboard";
+      default: return "/";
     }
   };
 

@@ -140,11 +140,10 @@ export default function CameraView() {
     // Real data states
     const [realLogs, setRealLogs] = useState<CareLogResponse[]>([]);
     
-    // Chat hook
     const { messages: chatMessages, connected, sendMessage: sendWsMessage } = useShopChat(
         activeCam?.shopId || null,
         token,
-        'CUSTOMER_CHAT',
+        'CAMERA_CHAT',
         user?.email
     );
 

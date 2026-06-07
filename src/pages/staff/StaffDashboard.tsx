@@ -87,7 +87,7 @@ const StaffChatTab = ({ bookingDetails, user, selectedTask }: { bookingDetails: 
     const { messages, connected, sendMessage } = useShopChat(
         shopId,
         user?.token,
-        'CUSTOMER_CHAT',
+        'CAMERA_CHAT',
         customerEmail
     );
 

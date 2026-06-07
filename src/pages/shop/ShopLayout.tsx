@@ -5,6 +5,7 @@ import ShopHeader from '../../components/shop/ShopHeader';
 import { MessageCircle, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import ChatWindow from '../../components/chat/ChatWindow';
+import ShopRealtimeNotification from '../../components/shop/ShopRealtimeNotification';
 import { shopService } from '../../services/shop.service';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
@@ -73,12 +74,15 @@ function ShopLayoutInner() {
       )}
 
       {shopId && (
-        <ChatWindow 
-          shopId={shopId} 
-          isOpen={isChatOpen} 
-          onClose={() => setIsChatOpen(false)}
-          title="Hỗ trợ Shop Owner"
-        />
+        <>
+          <ChatWindow 
+            shopId={shopId} 
+            isOpen={isChatOpen} 
+            onClose={() => setIsChatOpen(false)}
+            title="Hỗ trợ Shop Owner"
+          />
+          <ShopRealtimeNotification shopId={shopId} />
+        </>
       )}
     </div>
   );

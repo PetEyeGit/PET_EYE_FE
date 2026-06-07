@@ -227,6 +227,8 @@ export default function ShopRegister() {
                   placeholder="Ví dụ: PetCare Sài Gòn"
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền tên cửa hàng')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                 />
               </div>
 
@@ -239,6 +241,8 @@ export default function ShopRegister() {
                   onChange={(e) => setFormData({ ...formData, shopType: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn loại hình kinh doanh')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                 >
                   <option value="">Chọn loại hình</option>
                   {shopTypes.map((type) => (
@@ -261,6 +265,13 @@ export default function ShopRegister() {
                       placeholder="shop@example.com"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        if (target.validity.valueMissing) target.setCustomValidity('Vui lòng điền email');
+                        else if (target.validity.typeMismatch) target.setCustomValidity('Vui lòng nhập email hợp lệ');
+                        else target.setCustomValidity('');
+                      }}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -278,6 +289,8 @@ export default function ShopRegister() {
                       placeholder="0901234567"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền số điện thoại')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -301,6 +314,8 @@ export default function ShopRegister() {
                     rows={3}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none resize-none"
                     required
+                    onInvalid={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('Vui lòng điền địa chỉ')}
+                    onInput={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('')}
                   />
                 </div>
               </div>
@@ -314,6 +329,8 @@ export default function ShopRegister() {
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn thành phố')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                 >
                   <option value="">Chọn thành phố</option>
                   {cities.map((city) => (
@@ -333,6 +350,8 @@ export default function ShopRegister() {
                   rows={5}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none resize-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('Vui lòng điền mô tả cửa hàng')}
+                  onInput={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('')}
                 />
                 <p className="text-xs text-slate-500 mt-2">Tối thiểu 10 ký tự ({formData.description.length}/10)</p>
               </div>
@@ -356,6 +375,8 @@ export default function ShopRegister() {
                       placeholder="••••••••"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền mật khẩu')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -373,6 +394,8 @@ export default function ShopRegister() {
                       placeholder="••••••••"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền xác nhận mật khẩu')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -402,6 +425,8 @@ export default function ShopRegister() {
                         : 'border-slate-200 focus:border-[#1a2b4c]'
                     }`}
                     required
+                    onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền mã số doanh nghiệp/giấy phép kinh doanh')}
+                    onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   />
                   <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold ${
                     formData.licenseNumber.length === 10 || formData.licenseNumber.length === 13

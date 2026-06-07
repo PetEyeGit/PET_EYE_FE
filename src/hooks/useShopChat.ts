@@ -21,6 +21,7 @@ export function useShopChat(
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState<{ typing: boolean, senderEmail?: string }>({ typing: false });
   const clientRef = useRef<Client | null>(null);
 
   useEffect(() => {
@@ -89,6 +90,8 @@ export function useShopChat(
     
     if (channelType === 'CUSTOMER_CHAT') {
       topic = `/topic/chat/${shopId}/customer/${recipientEmail}`;
+    } else if (channelType === 'CAMERA_CHAT') {
+      topic = `/topic/chat/${shopId}/camera/${recipientEmail}`;
     } else if (channelType === 'DIRECT') {
       // 1-1 chat. Identifier is the staff's email.
       const staffEmail = userRole === 'SHOP_OWNER' ? recipientEmail : currentEmail;
@@ -105,9 +108,21 @@ export function useShopChat(
       }
     });
 
+    const typingTopic = topic.replace(`/topic/chat/${shopId}/`, `/topic/chat/${shopId}/typing/`);
+    const subTyping = client.subscribe(typingTopic, (frame) => {
+      try {
+        const data = JSON.parse(frame.body);
+        if (data.senderEmail !== currentEmail) {
+          setIsTyping({ typing: data.isTyping, senderEmail: data.senderEmail });
+        }
+      } catch (err) {}
+    });
+
     return () => {
         console.log('Unsubscribing from:', topic);
         sub.unsubscribe();
+        subTyping.unsubscribe();
+        setIsTyping({ typing: false });
     };
   }, [connected, shopId, channelType, recipientEmail, currentEmail, userRole]);
 
@@ -129,5 +144,14 @@ export function useShopChat(
     });
   }, [connected, shopId, channelType, recipientEmail]);
 
-  return { messages, connected, loading, sendMessage };
+  const sendTypingEvent = useCallback((typing: boolean) => {
+    const client = clientRef.current;
+    if (!client || !connected || shopId === null) return;
+    client.publish({
+      destination: '/app/chat/typing',
+      body: JSON.stringify({ shopId, channelType, recipientEmail, content: typing ? 'true' : 'false' }),
+    });
+  }, [connected, shopId, channelType, recipientEmail]);
+
+  return { messages, connected, loading, isTyping, sendMessage, sendTypingEvent };
 }

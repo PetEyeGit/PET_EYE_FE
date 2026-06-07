@@ -296,7 +296,7 @@ export default function ProfilePets() {
               
               <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-4 border-t border-slate-100/50 dark:border-slate-800/50">
                 <Link
-                  to={`/clinic/1`}
+                  to={`/search`}
                   className="flex-1 py-3.5 text-center bg-[#1a2b4c] hover:bg-[#2d4a82] text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Calendar size={14} />

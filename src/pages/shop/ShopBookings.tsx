@@ -191,11 +191,7 @@ export default function ShopBookings() {
     // Add Booking State
     const [addBookingData, setAddBookingData] = useState<{ isOpen: boolean; customerId: number; customerName: string; shopId: number; defaultPetId: number } | null>(null);
 
-    // Staff Change Request States
-    const [showReasonModal, setShowReasonModal] = useState(false);
-    const [pendingStaffChange, setPendingStaffChange] = useState<{ bookingId: number, staffId: number } | null>(null);
-    const [changeReason, setChangeReason] = useState('');
-    
+
     // Calendar States
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
@@ -255,77 +251,22 @@ export default function ShopBookings() {
     };
 
     const handleAssignStaff = async (bookingId: number, staffId: number | 'unassign') => {
-        const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId)
-                     || calendarBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
-        const currentStaffId = booking ? (booking.staffId || ((booking as any).staff && (booking as any).staff.id)) : null;
-        // Only require staff change request flow if the booking status is WAITING_SHOP_APPROVAL, CONFIRMED or IN_PROGRESS
-        const isChange = booking && 
-            (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && 
-            currentStaffId && 
-            currentStaffId !== staffId;
-        
-        // Prevent direct unassignment if a staff is already assigned
-        if (booking && (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS')) {
-            if (staffId === 'unassign' && currentStaffId) {
-                toast.error('Không thể gỡ nhân viên khi đã có nhân viên phụ trách');
-                return;
-            }
-        }
-
-        if (isChange && staffId !== 'unassign') {
-            setPendingStaffChange({ bookingId, staffId });
-            setShowReasonModal(true);
-            return;
-        }
+        if (staffId === 'unassign') return; // Not allowed
 
         setUpdatingId(bookingId);
         try {
-            if (staffId === 'unassign') {
-                await taskService.unassignTask(bookingId);
-                toast.success('Đã gỡ nhân viên');
-            } else {
-                await taskService.assignTask(bookingId, staffId);
-                toast.success('Đã giao việc thành công');
-            }
+            await taskService.assignTask(bookingId, staffId as number);
+            toast.success('Đã giao việc thành công');
             refetchList();
             refetchCalendar();
-            await queryClient.invalidateQueries({
-                queryKey: ['pendingStaffChangeRequest', bookingId]
-            });
-        } catch {
-            toast.error('Giao việc thất bại');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Giao việc thất bại');
         } finally {
             setUpdatingId(null);
         }
     };
 
-    const submitStaffChangeRequest = async () => {
-        if (!pendingStaffChange || !changeReason) {
-            toast.error('Vui lòng nhập lý do đổi nhân viên');
-            return;
-        }
-        setUpdatingId(pendingStaffChange.bookingId);
-        try {
-            await taskService.requestStaffChange(
-                pendingStaffChange.bookingId, 
-                pendingStaffChange.staffId, 
-                changeReason
-            );
-            toast.success('Đã gửi yêu cầu đổi nhân viên tới khách hàng');
-            setShowReasonModal(false);
-            setChangeReason('');
-            setPendingStaffChange(null);
-            refetchList();
-            refetchCalendar();
-            await queryClient.invalidateQueries({
-                queryKey: ['pendingStaffChangeRequest', pendingStaffChange.bookingId]
-            });
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Gửi yêu cầu thất bại');
-        } finally {
-            setUpdatingId(null);
-        }
-    };
+
 
     // Xuất hóa đơn thủ công — chỉ dành cho COMPLETED + CASH
     const handleSendInvoice = async (bookingId: number) => {
@@ -914,60 +855,7 @@ export default function ShopBookings() {
                 )}
             </AnimatePresence>
 
-            {/* Staff Change Reason Modal */}
-            <AnimatePresence>
-                {showReasonModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => {
-                                setShowReasonModal(false);
-                                setPendingStaffChange(null);
-                                setChangeReason('');
-                            }}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden p-6"
-                        >
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Lý do đổi nhân viên</h3>
-                            <p className="text-xs text-slate-500 mb-4">Vui lòng nhập lý do đổi nhân viên để thông báo cho khách hàng.</p>
-                            
-                            <textarea
-                                value={changeReason}
-                                onChange={(e) => setChangeReason(e.target.value)}
-                                placeholder="Ví dụ: Nhân viên cũ bận việc đột xuất, Nhân viên này có chuyên môn tốt hơn..."
-                                className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[100px]"
-                            />
-                            
-                            <div className="mt-6 flex gap-3">
-                                <button 
-                                    onClick={() => {
-                                        setShowReasonModal(false);
-                                        setPendingStaffChange(null);
-                                        setChangeReason('');
-                                    }}
-                                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
-                                >
-                                    Hủy
-                                </button>
-                                <button 
-                                    onClick={submitStaffChangeRequest}
-                                    disabled={!changeReason.trim()}
-                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Gửi yêu cầu
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+
 
             {/* Modal Đặt lịch thêm */}
             <ShopAddBookingModal 

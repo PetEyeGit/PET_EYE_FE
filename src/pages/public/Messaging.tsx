@@ -29,17 +29,18 @@ export default function Messaging() {
   const { data: pastShops = [] } = useQuery({
     queryKey: ['my-conversations', user?.id],
     queryFn: async () => {
-        const res = await apiClient.get<ApiResponse<{id: number, shopName: string}[]>>('/chat/my-conversations');
+        const res = await apiClient.get<ApiResponse<{id: number, shopName: string, lastMessage?: string, unreadCount?: number}[]>>('/chat/my-conversations');
         return res.data.result ?? [];
     },
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 5000 // Refetch every 5 seconds to update badges
   });
 
   // Extract unique shops from bookings and past conversations
-  const mergedShops = Array.from(new Map([
-    ...bookings.map(b => [b.shopId, { id: b.shopId, name: b.shopName }]),
-    ...pastShops.map(s => [s.id, { id: s.id, name: s.shopName }])
-  ]).values());
+  const mergedShopsMap = new Map();
+  bookings.forEach(b => mergedShopsMap.set(b.shopId, { id: b.shopId, name: b.shopName }));
+  pastShops.forEach(s => mergedShopsMap.set(s.id, { id: s.id, name: s.shopName, lastMessage: s.lastMessage, unreadCount: s.unreadCount }));
+  const mergedShops = Array.from(mergedShopsMap.values());
 
   // Merge with Admin Support and potential URL selection
   const adminSupport = { id: 0, name: 'Trung tâm hỗ trợ khách hàng', type: 'ADMIN_SUPPORT' };
@@ -65,7 +66,7 @@ export default function Messaging() {
     }
   }, [shopIdParam, shopNameParam, bookings.length]);
 
-  const { messages, connected, loading, sendMessage } = useShopChat(
+  const { messages, connected, loading, isTyping, sendMessage, sendTypingEvent } = useShopChat(
     selectedShop?.id ?? null,
     user?.token,
     'CUSTOMER_CHAT',
@@ -110,13 +111,18 @@ export default function Messaging() {
                 {shop.id === 0 ? <ShieldCheck size={24} /> : <MessageCircle size={24} />}
               </div>
               <div className="flex-1 text-left min-w-0">
-                <h4 className={`font-bold text-sm truncate transition-colors ${selectedShop?.id === shop.id ? 'text-primary dark:text-blue-400' : 'text-slate-900 dark:text-slate-200 group-hover:text-primary dark:group-hover:text-blue-400'}`}>
+                <h4 className={`font-bold text-sm truncate transition-colors ${selectedShop?.id === shop.id ? 'text-primary dark:text-blue-400' : 'text-slate-900 dark:text-slate-200 group-hover:text-primary dark:group-hover:text-blue-400'} ${(shop as any).unreadCount > 0 ? 'font-black' : ''}`}>
                   {shop.name}
                 </h4>
-                <p className="text-xs text-slate-500 truncate">
-                  {shop.id === 0 ? 'Hỗ trợ trực tuyến 24/7' : 'Nhấn để nhắn tin với shop'}
+                <p className={`text-xs truncate ${(shop as any).unreadCount > 0 ? 'font-bold text-slate-800 dark:text-white' : 'text-slate-500'}`}>
+                  {shop.id === 0 ? 'Hỗ trợ trực tuyến 24/7' : ((shop as any).lastMessage || 'Nhấn để nhắn tin với shop')}
                 </p>
               </div>
+              {(shop as any).unreadCount > 0 && selectedShop?.id !== shop.id && (
+                <div className="absolute right-4 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
+                  {(shop as any).unreadCount}
+                </div>
+              )}
               {selectedShop?.id === shop.id && (
                 <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               )}
@@ -137,6 +143,8 @@ export default function Messaging() {
                 input={input}
                 setInput={setInput}
                 onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
+                isTyping={isTyping}
+                onTyping={(typing) => sendTypingEvent(typing)}
                 headerInfo={{
                     title: selectedShop.name,
                     icon: <MessageCircle size={20} className="text-primary" />
