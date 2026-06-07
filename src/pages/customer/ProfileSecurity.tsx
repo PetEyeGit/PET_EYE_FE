@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService } from '../../services/user.service';
 
@@ -13,6 +14,7 @@ export default function ProfileSecurity() {
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [emailReminder, setEmailReminder] = useState(true);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -46,8 +48,8 @@ export default function ProfileSecurity() {
     return (
         <main className="flex-1 flex flex-col gap-6">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bảo mật & Mật khẩu</h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Quản lý mật khẩu và cài đặt bảo mật tài khoản.</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Cài đặt bảo mật & Thông báo</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">Quản lý mật khẩu và tùy chọn nhận thông báo hệ thống.</p>
             </div>
 
             {saved && (
@@ -145,6 +147,37 @@ export default function ProfileSecurity() {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            {/* Notification Preferences */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                    <h2 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400">notifications_active</span>
+                        Tùy chọn thông báo
+                    </h2>
+                </div>
+                <div className="p-6 space-y-5">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Nhắc lịch hẹn qua Email</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hệ thống sẽ tự động gửi email nhắc nhở cho bạn trước 24 giờ so với thời gian bắt đầu dịch vụ.</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only peer" 
+                                checked={emailReminder}
+                                onChange={(e) => {
+                                    setEmailReminder(e.target.checked);
+                                    toast.success(e.target.checked ? 'Đã bật nhắc lịch hẹn qua email' : 'Đã tắt nhắc lịch hẹn qua email');
+                                    // TODO: Integrate with backend to update user preferences
+                                }}
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#1a2b4c]"></div>
+                        </label>
+                    </div>
+                </div>
             </div>
         </main>
     );
