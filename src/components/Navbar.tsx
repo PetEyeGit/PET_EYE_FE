@@ -88,13 +88,13 @@ function GuestNavbar() {
           <Logo />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
+        {/* <nav className="hidden lg:flex items-center gap-1">
           <Link to="/search"
             className="h-10 px-5 rounded-xl flex items-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-secondary dark:hover:text-secondary hover:bg-secondary/5 transition-all">
             Tìm cơ sở
           </Link>
 
-        </nav>
+        </nav> */}
 
         <div className="flex-1" />
 
