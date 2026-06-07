@@ -194,4 +194,25 @@ export const bookingService = {
   sendInvoice: async (bookingId: number): Promise<void> => {
     await apiClient.post(`/bookings/${bookingId}/send-invoice`);
   },
+
+  /** 
+   * Shop creates booking directly for a customer.
+   * Assumes backend endpoint /bookings/shop-create exists.
+   */
+  createBookingByShop: async (data: {
+    customerId: number;
+    shopId: number;
+    serviceIds: number[];
+    petId: number;
+    appointmentDatetime: string;
+    checkIn?: string;
+    checkOut?: string;
+    staffId?: number;
+    note?: string;
+  }): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(
+      '/bookings/shop-create', data
+    );
+    return response.data.result!;
+  },
 };

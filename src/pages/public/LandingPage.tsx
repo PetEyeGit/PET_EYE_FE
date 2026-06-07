@@ -281,9 +281,9 @@ export default function Home() {
               <span className="inline-flex items-center bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider w-fit">
                 Đánh giá cao nhất
               </span>
-              <h2 className="text-3xl md:text-4xl xl:text-5xl font-black text-blue-950 dark:text-white leading-[1.1]">
+              <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1]">
                 Khám phá cơ sở <br />
-                <span className="text-blue-950 dark:text-white">Được yêu thích</span>
+                <span className="text-gradient">Được yêu thích</span>
               </h2>
             </div>
             <button onClick={() => navigate('/search')} className="flex items-center gap-2 font-black text-sm text-slate-400 hover:text-primary transition-colors group">
@@ -402,7 +402,7 @@ export default function Home() {
                 </div>
                 <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1]">
                   Tìm cơ sở <br className="hidden lg:block" />
-                  <span className="text-blue-950 dark:text-white">Gần bạn nhất</span>
+                  <span className="text-gradient">Gần bạn nhất</span>
                 </h2>
                 <p className="mt-6 text-slate-600 dark:text-slate-300 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
                   Cho phép truy cập vị trí hoặc nhập địa chỉ để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
@@ -588,7 +588,7 @@ export default function Home() {
             <span className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider">
               <Sparkles size={16} /> Đơn giản & Nhanh chóng
             </span>
-            <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white tracking-tight">Sử dụng PetEye <span className="text-blue-600 dark:text-white">Chỉ với 3 bước</span></h2>
+            <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white tracking-tight">Sử dụng PetEye <span className="text-gradient">Chỉ với 3 bước</span></h2>
           </div>
           
           <div className="relative max-w-6xl mx-auto mt-12 lg:mt-20">
@@ -726,7 +726,7 @@ export default function Home() {
                 <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1] mb-2">
                   Phản hồi từ <br />
                   người dùng <br />
-                  <span className="text-primary text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black dark: text-white">PetEye</span>
+                  <span className="text-gradient text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black">PetEye</span>
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-medium mt-6 leading-relaxed max-w-sm">
                   Kết nối yêu thương, chăm sóc tận tâm. Khám phá lý do hàng ngàn khách hàng luôn tin tưởng và lựa chọn PetEye.
@@ -909,7 +909,7 @@ export default function Home() {
       <section className="py-12 md:py-16 xl:py-24 px-6 bg-slate-50 dark:bg-slate-950">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8 xl:mb-16">
-            <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white mb-4">Câu hỏi thường gặp</h2>
+            <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white mb-4"><span className="text-gradient">Câu hỏi thường gặp</span></h2>
             <p className="text-slate-500">Mọi thắc mắc của bạn đều được giải đáp.</p>
           </div>
           <div className="space-y-4">

@@ -7,6 +7,7 @@ import { bookingService } from '../../services/booking.service';
 import { careLogService } from '../../services/care-log.service';
 import toast from 'react-hot-toast';
 import StaffAssignmentSelect from '../../components/StaffAssignmentSelect';
+import ShopAddBookingModal from '../../components/shop/ShopAddBookingModal';
 import { 
     Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle, 
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
@@ -39,6 +40,7 @@ interface BookingListItemProps {
     handleUpdateStatus: (bookingId: number, status: string) => void;
     handleSendInvoice: (bookingId: number) => void;
     setSelectedBooking: (booking: any) => void;
+    onAddBooking: (data: any) => void;
 }
 
 const CARE_LOG_TYPES = [
@@ -47,7 +49,7 @@ const CARE_LOG_TYPES = [
     { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
-function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setSelectedBooking }: BookingListItemProps) {
+function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setSelectedBooking, onAddBooking }: BookingListItemProps) {
     const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
@@ -120,6 +122,13 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                     <button onClick={() => setSelectedBooking(booking)} className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white shadow-indigo-900/10'}`}>
                         <Info size={12} /> Xem chi tiết
                     </button>
+                    
+                    <button 
+                        onClick={() => onAddBooking({ customerId: booking.customerId || booking.userId, customerName: booking.customerName || 'Khách hàng', shopId: booking.shopId, defaultPetId: booking.petId })} 
+                        className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border ${isDark ? 'border-pink-500/30 text-pink-400 hover:bg-pink-500/10' : 'border-pink-200 text-pink-600 hover:bg-pink-50'}`}
+                    >
+                        <Plus size={12} /> Đặt lịch thêm
+                    </button>
 
                     {booking.status === 'WAITING_SHOP_APPROVAL' && (
                         <div className="flex flex-col gap-2">
@@ -179,6 +188,9 @@ export default function ShopBookings() {
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
     const [sendingInvoiceId, setSendingInvoiceId] = useState<number | null>(null);
     
+    // Add Booking State
+    const [addBookingData, setAddBookingData] = useState<{ isOpen: boolean; customerId: number; customerName: string; shopId: number; defaultPetId: number } | null>(null);
+
     // Staff Change Request States
     const [showReasonModal, setShowReasonModal] = useState(false);
     const [pendingStaffChange, setPendingStaffChange] = useState<{ bookingId: number, staffId: number } | null>(null);
@@ -487,6 +499,7 @@ export default function ShopBookings() {
                                         handleUpdateStatus={handleUpdateStatus}
                                         handleSendInvoice={handleSendInvoice}
                                         setSelectedBooking={setSelectedBooking}
+                                        onAddBooking={(data) => setAddBookingData({ ...data, isOpen: true })}
                                     />
                                 ))}
                             </div>
@@ -955,6 +968,20 @@ export default function ShopBookings() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Modal Đặt lịch thêm */}
+            <ShopAddBookingModal 
+                isOpen={addBookingData?.isOpen || false}
+                onClose={() => setAddBookingData(prev => prev ? { ...prev, isOpen: false } : null)}
+                customerId={addBookingData?.customerId || 0}
+                customerName={addBookingData?.customerName || ''}
+                shopId={addBookingData?.shopId || 0}
+                defaultPetId={addBookingData?.defaultPetId || 0}
+                onSuccess={() => {
+                    refetchList();
+                    refetchCalendar();
+                }}
+            />
         </div>
     );
 }
