@@ -31,7 +31,7 @@ export default function StaffAssignmentSelect({ bookingId, status, currentStaffI
     return onAssign(bookingId, Number(value));
   };
 
-  const label = staffList.find(s => s.id === currentStaffId)?.fullName || (currentStaffId ? 'Đổi nhân viên' : 'Chọn nhân viên');
+  const label = staffList.find(s => s.id === currentStaffId)?.fullName || 'Chọn nhân viên';
 
   return (
     <div ref={ref} className="relative inline-block w-full">
@@ -50,8 +50,11 @@ export default function StaffAssignmentSelect({ bookingId, status, currentStaffI
 
       {open && (
         <ul role="listbox" tabIndex={-1} className="absolute z-50 right-0 left-0 mt-2 max-h-60 overflow-auto rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
-          <li role="option" onClick={() => handleSelect('none')} className={`px-3 py-2 text-sm cursor-pointer ${highlight === 0 ? 'bg-slate-100 dark:bg-slate-700' : ''}`}> {currentStaffId ? 'Đổi nhân viên' : 'Chọn nhân viên'} </li>
-          {currentStaffId && <li role="option" onClick={() => handleSelect('unassign')} className="px-3 py-2 text-sm cursor-pointer">Gỡ nhân viên</li>}
+          {!currentStaffId && (
+            <li role="option" onClick={() => handleSelect('none')} className={`px-3 py-2 text-sm cursor-pointer ${highlight === 0 ? 'bg-slate-100 dark:bg-slate-700' : ''}`}>
+              Chọn nhân viên
+            </li>
+          )}
           {staffList.map((s, idx) => (
             <li key={s.id} role="option" onClick={() => handleSelect(String(s.id))} className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 ${highlight === idx + 1 ? 'bg-slate-100 dark:bg-slate-700' : ''}`}>
               {s.fullName}
