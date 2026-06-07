@@ -8,13 +8,15 @@ import { careLogService } from '../../services/care-log.service';
 import toast from 'react-hot-toast';
 import StaffAssignmentSelect from '../../components/StaffAssignmentSelect';
 import ShopAddBookingModal from '../../components/shop/ShopAddBookingModal';
-import { 
-    Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle, 
+import { toPng } from 'html-to-image';
+import jsPDF from 'jspdf';
+import {
+    Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle,
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
     LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Plus,
     Timer, MessageCircle, MoreVertical, CheckCircle2, Video,
     MapPin, Phone, Mail, Scissors, Info, X, Play,
-    Activity, Utensils, Syringe, Heart, Sparkles
+    Activity, Utensils, Syringe, Heart, Sparkles, FileText, Download, Send, PawPrint
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
@@ -39,6 +41,7 @@ interface BookingListItemProps {
     onAssign: (bookingId: number, staffId: number | 'unassign') => void;
     handleUpdateStatus: (bookingId: number, status: string) => void;
     handleSendInvoice: (bookingId: number) => void;
+    setViewInvoiceBooking: (booking: any) => void;
     setSelectedBooking: (booking: any) => void;
     onAddBooking: (data: any) => void;
 }
@@ -49,7 +52,7 @@ const CARE_LOG_TYPES = [
     { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
-function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setSelectedBooking, onAddBooking }: BookingListItemProps) {
+function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setViewInvoiceBooking, setSelectedBooking, onAddBooking }: BookingListItemProps) {
     const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
@@ -122,9 +125,9 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                     <button onClick={() => setSelectedBooking(booking)} className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg ${isDark ? 'bg-indigo-600 text-white shadow-indigo-500/20' : 'bg-[#1a2b4c] text-white shadow-indigo-900/10'}`}>
                         <Info size={12} /> Xem chi tiết
                     </button>
-                    
-                    <button 
-                        onClick={() => onAddBooking({ customerId: booking.customerId || booking.userId, customerName: booking.customerName || 'Khách hàng', shopId: booking.shopId, defaultPetId: booking.petId })} 
+
+                    <button
+                        onClick={() => onAddBooking({ customerId: booking.customerId || booking.userId, customerName: booking.customerName || 'Khách hàng', shopId: booking.shopId, defaultPetId: booking.petId })}
                         className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border ${isDark ? 'border-pink-500/30 text-pink-400 hover:bg-pink-500/10' : 'border-pink-200 text-pink-600 hover:bg-pink-50'}`}
                     >
                         <Plus size={12} /> Đặt lịch thêm
@@ -161,13 +164,12 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                                 <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
                                 <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
                             </div>
-                            <button 
-                                onClick={() => handleSendInvoice(booking.bookingId)}
-                                disabled={sendingInvoiceId === booking.bookingId}
-                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                            <button
+                                onClick={() => setViewInvoiceBooking(booking)}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg"
                             >
-                                {sendingInvoiceId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
-                                Xuất hóa đơn
+                                <FileText size={12} />
+                                Xem hóa đơn
                             </button>
                         </div>
                     )}
@@ -187,7 +189,38 @@ export default function ShopBookings() {
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
     const [sendingInvoiceId, setSendingInvoiceId] = useState<number | null>(null);
-    
+    const [viewInvoiceBooking, setViewInvoiceBooking] = useState<any | null>(null);
+
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('invoice-receipt-content');
+        if (!element) return;
+
+        toast.loading('Đang tạo PDF...', { id: 'pdf-toast' });
+        try {
+            // Using html-to-image to handle modern CSS (like oklch) correctly
+            const imgData = await toPng(element, {
+                backgroundColor: isDark ? '#0f172a' : '#ffffff',
+                pixelRatio: 2
+            });
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // Calculate dimensions to fit A4 width
+            const canvasWidth = element.offsetWidth;
+            const canvasHeight = element.offsetHeight;
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`PetEye_HoaDon_${viewInvoiceBooking.bookingId || viewInvoiceBooking.id}.pdf`);
+
+            toast.success('Đã tải biên lai PDF thành công!', { id: 'pdf-toast' });
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Có lỗi xảy ra khi tải PDF', { id: 'pdf-toast' });
+        }
+    };
+
     // Add Booking State
     const [addBookingData, setAddBookingData] = useState<{ isOpen: boolean; customerId: number; customerName: string; shopId: number; defaultPetId: number } | null>(null);
 
@@ -293,7 +326,7 @@ export default function ShopBookings() {
     // Group filteredList by bookingId to avoid duplicate booking cards when multiple service-items exist
     const groupedFilteredList = (() => {
         const map = new Map<number, any>();
-        const precedence = ['IN_PROGRESS','CONFIRMED','PENDING_PAYMENT','WAITING_REFUND','COMPLETED','CANCELLED','CANCEL_REQUESTED'];
+        const precedence = ['IN_PROGRESS', 'CONFIRMED', 'PENDING_PAYMENT', 'WAITING_REFUND', 'COMPLETED', 'CANCELLED', 'CANCEL_REQUESTED'];
 
         for (const item of filteredList) {
             const bid = item.bookingId || (item as any).id;
@@ -331,7 +364,7 @@ export default function ShopBookings() {
                     if (new Date(item.appointmentDatetime).getTime() > new Date(existing.appointmentDatetime).getTime()) {
                         existing.appointmentDatetime = item.appointmentDatetime;
                     }
-                } catch (e) {}
+                } catch (e) { }
 
                 // merge completedServiceIds
                 const existingCompleted = new Set<number>((existing.completedServiceIds) || []);
@@ -366,14 +399,14 @@ export default function ShopBookings() {
 
                     <div className="flex items-center gap-3">
                         <div className={`flex items-center p-1 rounded-xl transition-all ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
-                            <button 
+                            <button
                                 onClick={() => setViewMode('list')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewMode === 'list' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <ListIcon size={14} />
                                 Danh sách
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setViewMode('calendar')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewMode === 'calendar' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                             >
@@ -386,7 +419,7 @@ export default function ShopBookings() {
 
                 <AnimatePresence mode="wait">
                     {viewMode === 'list' ? (
-                        <motion.div 
+                        <motion.div
                             key="list"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -411,9 +444,8 @@ export default function ShopBookings() {
                                             <button
                                                 key={t.v}
                                                 onClick={() => setFilter(t.v)}
-                                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-                                                    filter === t.v ? (isDark ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg glow-indigo' : 'bg-[#1a2b4c] text-white border-[#1a2b4c]') : (isDark ? 'bg-slate-800/50 text-slate-400 border-white/10 hover:bg-slate-700/50' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50')
-                                                }`}
+                                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${filter === t.v ? (isDark ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg glow-indigo' : 'bg-[#1a2b4c] text-white border-[#1a2b4c]') : (isDark ? 'bg-slate-800/50 text-slate-400 border-white/10 hover:bg-slate-700/50' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50')
+                                                    }`}
                                             >
                                                 {t.l}
                                             </button>
@@ -430,7 +462,7 @@ export default function ShopBookings() {
                                         <p className="text-slate-400 font-bold">Đang đồng bộ dữ liệu...</p>
                                     </div>
                                 ) : groupedFilteredList.map((booking) => (
-                                    <BookingListItem 
+                                    <BookingListItem
                                         key={booking.bookingId}
                                         booking={booking}
                                         staffList={staffList}
@@ -439,6 +471,7 @@ export default function ShopBookings() {
                                         onAssign={handleAssignStaff}
                                         handleUpdateStatus={handleUpdateStatus}
                                         handleSendInvoice={handleSendInvoice}
+                                        setViewInvoiceBooking={setViewInvoiceBooking}
                                         setSelectedBooking={setSelectedBooking}
                                         onAddBooking={(data) => setAddBookingData({ ...data, isOpen: true })}
                                     />
@@ -446,7 +479,7 @@ export default function ShopBookings() {
                             </div>
                         </motion.div>
                     ) : (
-                        <motion.div 
+                        <motion.div
                             key="calendar"
                             initial={{ opacity: 0, scale: 0.99 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -496,7 +529,7 @@ export default function ShopBookings() {
                                         const statusCfg = dayStatus ? STATUS_CONFIG[dayStatus] : null;
 
                                         return (
-                                            <div 
+                                            <div
                                                 key={idx}
                                                 onClick={() => setSelectedDay(day)}
                                                 className={`min-h-[85px] p-2.5 border-b border-r cursor-pointer transition-all relative ${isDark ? 'border-white/5' : 'border-slate-50'}
@@ -552,8 +585,8 @@ export default function ShopBookings() {
 
                                 <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-4">
                                     {selectedDay && getBookingsForDay(selectedDay).map((b, i) => (
-                                        <div 
-                                            key={i} 
+                                        <div
+                                            key={i}
                                             onClick={() => setSelectedBooking(b)}
                                             className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all group cursor-pointer"
                                         >
@@ -582,7 +615,7 @@ export default function ShopBookings() {
                                             <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 space-y-3">
                                                 <div>
                                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Khách: <span className="text-slate-700 dark:text-slate-300 ml-1">{b.customerName || 'Khách lẻ'}</span></p>
-                                                    <StaffAssignmentSelect 
+                                                    <StaffAssignmentSelect
                                                         bookingId={b.id}
                                                         status={b.status}
                                                         currentStaffId={b.staffId}
@@ -623,20 +656,20 @@ export default function ShopBookings() {
             <AnimatePresence>
                 {selectedBooking && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedBooking(null)}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
                         >
-                            <button 
+                            <button
                                 onClick={() => setSelectedBooking(null)}
                                 className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 hover:rotate-90 transition-all z-10"
                             >
@@ -683,7 +716,7 @@ export default function ShopBookings() {
                             {/* Right: Detailed Info */}
                             <div className="flex-1 p-8 overflow-y-auto">
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">Thông tin chi tiết</h3>
-                                
+
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -818,28 +851,23 @@ export default function ShopBookings() {
                                     <div className="pt-6 flex flex-col gap-3">
                                         {/* Nút xuất hóa đơn — Cash COMPLETED hoặc bất kỳ COMPLETED */}
                                         {selectedBooking.status === 'COMPLETED' && (
-                                            <button 
-                                                onClick={() => handleSendInvoice(selectedBooking.bookingId || selectedBooking.id)}
-                                                disabled={sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id)}
-                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                            <button
+                                                onClick={() => setViewInvoiceBooking(selectedBooking)}
+                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                                             >
-                                                {sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id) ? (
-                                                    <Loader2 size={12} className="animate-spin" />
-                                                ) : (
-                                                    <Mail size={12} />
-                                                )}
-                                                Xuất hóa đơn qua Email
+                                                <FileText size={12} />
+                                                Xem hóa đơn
                                             </button>
                                         )}
                                         <div className="flex gap-3">
-                                            <button 
+                                            <button
                                                 onClick={() => setSelectedBooking(null)}
                                                 className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
                                             >
                                                 Đóng
                                             </button>
                                             {selectedBooking.status === 'CONFIRMED' && (
-                                                <button 
+                                                <button
                                                     onClick={() => handleUpdateStatus((selectedBooking.bookingId || selectedBooking.id), 'CANCELLED')}
                                                     className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
                                                 >
@@ -857,8 +885,121 @@ export default function ShopBookings() {
 
 
 
+            {/* Modal Xem hóa đơn */}
+            <AnimatePresence>
+                {viewInvoiceBooking && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className={`w-full max-w-[400px] rounded-[1.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+                        >
+                            {/* Header */}
+                            <div className="px-5 py-4 flex items-center justify-between shrink-0">
+                                <h3 className={`text-[15px] font-bold ${isDark ? 'text-white' : 'text-[#1a2b4c]'}`}>
+                                    Chi tiết giao dịch
+                                </h3>
+                                <button onClick={() => setViewInvoiceBooking(null)} className="p-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                <div id="invoice-receipt-content" className={`px-6 pb-6 pt-2 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                                    <div className="flex flex-col items-center mt-2 mb-6">
+                                        <div className="w-14 h-14 bg-[#1a2b4c] rounded-full flex items-center justify-center mb-3 shadow-md">
+                                            <PawPrint className="text-white" size={26} fill="white" />
+                                        </div>
+                                        <h2 className="text-lg font-black text-[#1a2b4c] dark:text-white uppercase tracking-wider mb-0.5">PetEye</h2>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-5">Biên lai điện tử</p>
+
+                                        <p className="text-xs text-slate-500 font-medium mb-1">Số tiền giao dịch</p>
+                                        <h1 className="text-3xl font-black text-[#1a2b4c] dark:text-white mb-2 tracking-tight">
+                                            {new Intl.NumberFormat('vi-VN').format(viewInvoiceBooking.services ? viewInvoiceBooking.services.reduce((acc: number, cur: any) => acc + (cur.servicePrice || 0), 0) : (viewInvoiceBooking.servicePrice || 0))}đ
+                                        </h1>
+                                        <div className="px-3 py-1 bg-green-50/80 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                            Thành công
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-6 space-y-4">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Mã giao dịch</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right break-all">MOCK-{viewInvoiceBooking.bookingId || viewInvoiceBooking.id}</span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Thời gian</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                {format(parseISO(viewInvoiceBooking.appointmentDatetime), "dd/MM/yyyy HH:mm:ss")}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Phương thức</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right uppercase">
+                                                {viewInvoiceBooking.paymentMethod || 'MOCK'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Cửa hàng</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right uppercase">
+                                                {viewInvoiceBooking.shopName || 'PET_PHU_QUY'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Dịch vụ</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                {viewInvoiceBooking.services && viewInvoiceBooking.services.length > 0
+                                                    ? viewInvoiceBooking.services.map((s: any) => s.serviceName).join(', ')
+                                                    : viewInvoiceBooking.serviceName}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Nội dung</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                Mock payment for booking #{viewInvoiceBooking.bookingId || viewInvoiceBooking.id}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-[#1a2b4c] dark:border-slate-700 pt-4 text-center">
+                                        <p className="text-[10px] text-slate-500 italic mb-1">Cảm ơn bạn đã sử dụng dịch vụ của PetEye!</p>
+                                        <p className="text-[9px] text-slate-400">Hotline: 1900 9999 - email: support@peteye.vn</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Bar */}
+                            <div className="p-4 bg-white dark:bg-slate-900 flex gap-3 shrink-0 rounded-b-[1.5rem]">
+                                <button
+                                    onClick={() => handleSendInvoice(viewInvoiceBooking.bookingId || viewInvoiceBooking.id)}
+                                    disabled={sendingInvoiceId === (viewInvoiceBooking.bookingId || viewInvoiceBooking.id)}
+                                    className="flex-1 py-3 bg-white dark:bg-slate-800 text-[#1a2b4c] dark:text-white border border-slate-200 dark:border-slate-700 rounded-[12px] text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {sendingInvoiceId === (viewInvoiceBooking.bookingId || viewInvoiceBooking.id) ? <Loader2 size={14} className="animate-spin" /> : null}
+                                    Xuất hóa đơn
+                                </button>
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    className="flex-[1.5] py-3 bg-[#1a2b4c] text-white rounded-[12px] text-xs font-bold hover:bg-[#111d33] transition-all flex items-center justify-center gap-2 shadow-lg"
+                                >
+                                    <Download size={14} />
+                                    Tải biên lai PDF
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Modal Đặt lịch thêm */}
-            <ShopAddBookingModal 
+            <ShopAddBookingModal
                 isOpen={addBookingData?.isOpen || false}
                 onClose={() => setAddBookingData(prev => prev ? { ...prev, isOpen: false } : null)}
                 customerId={addBookingData?.customerId || 0}
