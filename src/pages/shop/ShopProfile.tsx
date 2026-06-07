@@ -29,6 +29,7 @@ export default function ShopProfile() {
     openTime: '08:00',
     closeTime: '20:00',
     workingDays: [] as string[],
+    offDays: [] as string[],
     logoUrl: '',
     bannerUrl: '',
     galleryUrls: '',
@@ -62,6 +63,7 @@ export default function ShopProfile() {
         openTime: data.openTime || prev.openTime,
         closeTime: data.closeTime || prev.closeTime,
         workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
+        offDays: data.offDays ? data.offDays.split(',') : prev.offDays,
         logoUrl: data.logoUrl || prev.logoUrl,
         bannerUrl: data.bannerUrl || prev.bannerUrl,
         galleryUrls: data.galleryUrls || prev.galleryUrls,
@@ -93,6 +95,7 @@ export default function ShopProfile() {
         openTime: shopInfo.openTime,
         closeTime: shopInfo.closeTime,
         workingDays: shopInfo.workingDays.join(','),
+        offDays: shopInfo.offDays.join(','),
         logoUrl: shopInfo.logoUrl,
         bannerUrl: shopInfo.bannerUrl,
         galleryUrls: shopInfo.galleryUrls,
@@ -114,6 +117,7 @@ export default function ShopProfile() {
         openTime: data.openTime || prev.openTime,
         closeTime: data.closeTime || prev.closeTime,
         workingDays: data.workingDays ? data.workingDays.split(',') : prev.workingDays,
+        offDays: data.offDays ? data.offDays.split(',') : prev.offDays,
         logoUrl: data.logoUrl || prev.logoUrl,
         bannerUrl: data.bannerUrl || prev.bannerUrl,
         galleryUrls: data.galleryUrls || prev.galleryUrls,
@@ -194,6 +198,61 @@ export default function ShopProfile() {
         ? shopInfo.workingDays.filter(d => d !== day)
         : [...shopInfo.workingDays, day],
     });
+  };
+
+  const [newOffStartDate, setNewOffStartDate] = useState('');
+  const [newOffEndDate, setNewOffEndDate] = useState('');
+
+  const addOffDateRange = () => {
+    if (!newOffStartDate) return;
+    
+    let datesToAdd: string[] = [];
+    const start = new Date(newOffStartDate);
+    
+    if (newOffEndDate) {
+      const end = new Date(newOffEndDate);
+      if (end < start) {
+        toast.error('Ngày kết thúc không được nhỏ hơn ngày bắt đầu!');
+        return;
+      }
+      let current = new Date(start);
+      while (current <= end) {
+        // Handle timezone issues to get correct YYYY-MM-DD
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, '0');
+        const day = String(current.getDate()).padStart(2, '0');
+        datesToAdd.push(`${year}-${month}-${day}`);
+        current.setDate(current.getDate() + 1);
+      }
+    } else {
+      datesToAdd.push(newOffStartDate);
+    }
+    
+    const currentOffDays = [...shopInfo.offDays];
+    let addedCount = 0;
+    
+    datesToAdd.forEach(date => {
+      if (!currentOffDays.includes(date)) {
+        currentOffDays.push(date);
+        addedCount++;
+      }
+    });
+    
+    if (addedCount === 0) {
+      toast.error('Các ngày đã chọn đều đã có trong danh sách nghỉ!');
+      return;
+    }
+    
+    setShopInfo({ ...shopInfo, offDays: currentOffDays.sort() });
+    setNewOffStartDate('');
+    setNewOffEndDate('');
+    if (datesToAdd.length > 1) {
+      toast.success(`Đã thêm ${addedCount} ngày nghỉ vào danh sách!`);
+    }
+  };
+
+  const removeOffDate = (dateToRemove: string) => {
+    setShopInfo({ ...shopInfo, offDays: shopInfo.offDays.filter(d => d !== dateToRemove) });
   };
 
   console.log('Rendering ShopProfile with logo:', shopInfo.logoUrl);
@@ -620,6 +679,65 @@ export default function ShopProfile() {
                 <p className={`text-xs mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Nếu khách hàng đến trễ quá thời gian này, nhân viên sẽ có quyền hủy lịch hẹn và cửa hàng sẽ giữ lại tiền cọc (No-Show).
                 </p>
+              </div>
+
+              {/* Shop Off Days */}
+              <div className={`mt-6 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <label className={`block text-sm font-bold mb-2 flex items-center gap-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <span className="material-symbols-outlined text-[18px]">event_busy</span>
+                  Cấu hình ngày nghỉ (Shop Off)
+                </label>
+                <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Khách hàng sẽ không thể đặt lịch vào các ngày này. Chọn 1 ngày hoặc chọn từ ngày - đến ngày.
+                </p>
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
+                  <div>
+                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Từ ngày</label>
+                    <input
+                      type="date"
+                      value={newOffStartDate}
+                      onChange={(e) => setNewOffStartDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]} 
+                      className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 transition-all w-full sm:w-auto ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đến ngày (không bắt buộc)</label>
+                    <input
+                      type="date"
+                      value={newOffEndDate}
+                      onChange={(e) => setNewOffEndDate(e.target.value)}
+                      min={newOffStartDate || new Date().toISOString().split('T')[0]}
+                      className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 transition-all w-full sm:w-auto ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addOffDateRange}
+                    disabled={!newOffStartDate}
+                    className={`px-6 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 mt-2 sm:mt-0 ${isDark ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-primary hover:bg-blue-700 text-white'}`}
+                  >
+                    Thêm
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {shopInfo.offDays.length === 0 ? (
+                    <span className={`text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chưa có ngày nghỉ nào được thiết lập.</span>
+                  ) : (
+                    shopInfo.offDays.map((date) => (
+                      <div key={date} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                        {date.split('-').reverse().join('/')}
+                        <button
+                          type="button"
+                          onClick={() => removeOffDate(date)}
+                          className="hover:text-red-500 transition-colors flex items-center justify-center"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>

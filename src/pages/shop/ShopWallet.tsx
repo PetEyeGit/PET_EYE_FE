@@ -69,7 +69,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
   });
 
   const handleSubmit = () => {
-    if (!form.amount || form.amount < 10000) { toast.error('Số tiền tối thiểu 10,000đ'); return; }
+    if (!form.amount || form.amount < 200000) { toast.error('Số tiền tối thiểu 200,000đ'); return; }
     if (form.amount > available) { toast.error('Số tiền vượt quá số dư khả dụng'); return; }
     if (!form.bankName) { toast.error('Vui lòng chọn ngân hàng'); return; }
     if (!form.bankAccount.trim()) { toast.error('Vui lòng nhập số tài khoản'); return; }
@@ -98,7 +98,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
             <div className="relative">
               <input
                 type="number"
-                min={10000}
+                min={200000}
                 max={available}
                 value={form.amount || ''}
                 onChange={e => setForm(f => ({ ...f, amount: Number(e.target.value) }))}

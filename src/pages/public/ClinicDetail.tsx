@@ -400,11 +400,15 @@ export default function ClinicDetail() {
     : 0);
 
   // ── Can book ────────────────────────────────────────────────────────────────
-  // - Boarding only: cần checkIn + checkOut
-  // - Dịch vụ thường only: cần ít nhất 1 service + date + time
+  // - Boarding only: cần checkIn + checkOut và không trùng ngày nghỉ
+  // - Dịch vụ thường only: cần ít nhất 1 service + date + time và không trùng ngày nghỉ
   // - Cả 2: cần đủ cả boarding dates VÀ date+time cho dịch vụ thường
-  const boardingReady = isHotelSelected ? (!!checkInDate && !!checkOutDate && checkInDate < checkOutDate) : true;
-  const normalReady = hasNormalServices ? (!!selectedDate && !!selectedTime) : true;
+  const isSelectedDateOff = shop?.offDays ? shop.offDays.split(',').includes(selectedDate) : false;
+  const isCheckInOff = shop?.offDays ? shop.offDays.split(',').includes(checkInDate) : false;
+  const isCheckOutOff = shop?.offDays ? shop.offDays.split(',').includes(checkOutDate) : false;
+
+  const boardingReady = isHotelSelected ? (!!checkInDate && !!checkOutDate && checkInDate < checkOutDate && !isCheckInOff && !isCheckOutOff) : true;
+  const normalReady = hasNormalServices ? (!!selectedDate && !!selectedTime && !isSelectedDateOff) : true;
 
   // Fetch staff availability whenever date+time changes (for normal services)
   const appointmentDatetimeForQuery = hasNormalServices && selectedDate && selectedTime
@@ -1356,8 +1360,14 @@ export default function ClinicDetail() {
                                 setCheckOutDate(d.toISOString().split('T')[0]);
                               }
                             }}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500"
+                            className={`w-full bg-slate-50 dark:bg-slate-800 border ${isCheckInOff ? 'border-red-500 focus:ring-red-500' : 'border-indigo-200 dark:border-indigo-700 focus:ring-indigo-500'} rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1`}
                           />
+                          {isCheckInOff && (
+                            <p className="text-red-500 text-[10px] mt-1 font-semibold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">error</span>
+                              Shop nghỉ ngày này
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="text-[10px] font-semibold text-slate-400 mb-1 block">Trả phòng</label>
@@ -1366,8 +1376,14 @@ export default function ClinicDetail() {
                             min={(() => { const d = new Date(checkInDate + 'T00:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()}
                             value={checkOutDate}
                             onChange={e => setCheckOutDate(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-indigo-500"
+                            className={`w-full bg-slate-50 dark:bg-slate-800 border ${isCheckOutOff ? 'border-red-500 focus:ring-red-500' : 'border-indigo-200 dark:border-indigo-700 focus:ring-indigo-500'} rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1`}
                           />
+                          {isCheckOutOff && (
+                            <p className="text-red-500 text-[10px] mt-1 font-semibold flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">error</span>
+                              Shop nghỉ ngày này
+                            </p>
+                          )}
                         </div>
                       </div>
                       {boardingDays > 0 && (
@@ -1392,8 +1408,14 @@ export default function ClinicDetail() {
                           value={selectedDate}
                           onChange={e => { setSelectedDate(e.target.value); setSelectedTime(null); }}
                           disabled={!hasNormalServices}
-                          className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]"
+                          className={`w-full bg-slate-50 dark:bg-slate-800 border ${isSelectedDateOff ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-200 dark:border-slate-700'} rounded-xl px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:ring-1 focus:ring-[#1a2b4c]`}
                         />
+                        {isSelectedDateOff && (
+                           <p className="text-red-500 text-xs mt-2 font-bold flex items-center gap-1">
+                             <span className="material-symbols-outlined text-[16px]">error</span>
+                             Shop tạm nghỉ ngày này, hãy chọn ngày khác.
+                           </p>
+                        )}
                       </div>
 
                       <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
