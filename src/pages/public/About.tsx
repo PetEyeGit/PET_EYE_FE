@@ -1,262 +1,256 @@
 import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Heart, Zap, Users, ArrowRight, Briefcase, Handshake, Newspaper } from 'lucide-react';
+import { 
+  Shield, Heart, Zap, Users, ArrowRight, Briefcase, Handshake, Newspaper, Eye, CheckCircle2, Star, Clock, Target, Check, Video, Quote
+} from 'lucide-react';
 
 export default function About() {
   const location = useLocation();
 
-  // Scroll to section based on hash
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
   };
 
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.2
-      }
+      transition: { staggerChildren: 0.2 }
     }
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pt-24">
+    <div className="bg-slate-50 min-h-screen overflow-hidden">
+      
+      {/* 1. Brand Story - Image Background with Text Overlay */}
+      <section className="relative pt-40 pb-32 md:pt-56 md:pb-48 flex items-center justify-center overflow-hidden bg-slate-900">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/images/about_brand_story.png" 
+            alt="Người chơi với thú cưng" 
+            className="w-full h-full object-cover object-center opacity-40"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 to-slate-900/90"></div>
+        </div>
 
-      {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-24">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-          className="relative rounded-3xl overflow-hidden bg-primary/5 border border-primary/10 p-10 md:p-16 lg:p-24 flex flex-col items-center text-center"
-        >
-          {/* Background decorative elements */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-secondary/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3"></div>
-
-          <h1 className="relative z-10 text-4xl md:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tighter mb-8 leading-tight">
-            Nền tảng kết nối <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-blue-500 to-secondary">yêu thương</span>
-          </h1>
-          <p className="relative z-10 text-lg md:text-2xl text-slate-600 max-w-3xl leading-relaxed font-medium">
-            PetEye ra đời với sứ mệnh mang lại cuộc sống tốt đẹp nhất cho thú cưng thông qua hệ sinh thái dịch vụ toàn diện, minh bạch và an toàn.
-          </p>
-        </motion.div>
-      </section>
-
-      {/* Brand Story Section */}
-      <section id="story" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={fadeIn}
-            className="space-y-6"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
-              <Heart size={16} /> Câu chuyện thương hiệu
+        <div className="max-w-5xl mx-auto px-6 relative z-10 text-center">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white font-semibold rounded-full text-sm mb-8 border border-white/20 shadow-lg">
+              <Heart size={16} className="text-rose-400" /> Câu chuyện thương hiệu
             </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
-              Khởi nguồn từ tình yêu với <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">những người bạn nhỏ</span>
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-8 leading-tight drop-shadow-xl tracking-tight">
+              Khởi nguồn từ tình yêu với <br className="hidden md:block"/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">những người bạn nhỏ</span>
             </h2>
-            <div className="space-y-4 text-slate-600 leading-relaxed text-lg">
+            <div className="space-y-6 text-xl md:text-2xl text-slate-200 leading-relaxed font-medium max-w-4xl mx-auto">
               <p>
-                PetEye được hình thành từ một trăn trở đơn giản của những người nuôi thú cưng: Làm thế nào để tìm được các cơ sở thú y, spa uy tín một cách nhanh chóng và theo dõi thú cưng của mình mọi lúc mọi nơi?
+                Khởi nguồn từ một trăn trở đơn giản: Làm thế nào để tìm được cơ sở thú y, spa uy tín một cách nhanh chóng và có thể theo dõi thú cưng của mình mọi lúc mọi nơi?
               </p>
               <p>
-                Chúng tôi hiểu rằng, thú cưng không chỉ là vật nuôi, mà là một thành viên quan trọng trong gia đình. Vì vậy, PetEye tiên phong ứng dụng công nghệ để tạo ra một môi trường minh bạch, nơi bạn có thể yên tâm gửi gắm tình yêu thương.
+                Chúng tôi hiểu rằng, thú cưng không chỉ là vật nuôi, mà là một thành viên quan trọng trong gia đình. Vì vậy, PetEye tiên phong ứng dụng công nghệ để tạo ra một môi trường minh bạch, nơi bạn có thể yên tâm gửi gắm trọn vẹn tình yêu thương.
               </p>
-            </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative"
-          >
-            <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=1000"
-                alt="Chó và người chủ"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            {/* Glassmorphism card floating */}
-            <div className="absolute -bottom-8 -left-8 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-white/40 max-w-xs hidden md:block">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                  <Shield size={24} />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900">An toàn tuyệt đối</p>
-                  <p className="text-sm text-slate-500">Giám sát 24/7 với camera</p>
-                </div>
-              </div>
             </div>
           </motion.div>
         </div>
+        
+        {/* Wave transition bottom */}
+        <div className="absolute -bottom-[2px] left-0 w-full overflow-hidden leading-none z-10 rotate-180">
+            <svg className="relative block w-full h-[50px] text-slate-50" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path>
+            </svg>
+        </div>
       </section>
 
-      {/* Core Values */}
-      <section className="bg-slate-50 py-24 mb-32 relative overflow-hidden">
-        {/* Background glow for core values */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
-
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
-              <Zap size={16} /> Tiêu chuẩn PetEye
-            </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 tracking-tight">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">Giá trị cốt lõi</span>
+      {/* 2. Vision & Core Values - Staggered Layout */}
+      <section className="py-24 md:py-32 bg-slate-50 relative">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+          
+          {/* Vision Block - Left Aligned */}
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn}
+            className="max-w-3xl mb-32 relative"
+          >
+            <div className="absolute -left-10 -top-10 text-[120px] text-blue-500/10 font-serif leading-none">"</div>
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter relative z-10">
+              Trở thành một trong những <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">nền tảng công nghệ đáng tin cậy</span> hàng đầu.
             </h2>
-            <p className="text-lg text-slate-600 md:text-xl font-medium">Những tiêu chuẩn chúng tôi không bao giờ thỏa hiệp trong quá trình phục vụ bạn và thú cưng.</p>
+            <p className="text-2xl md:text-3xl text-slate-600 font-medium leading-relaxed relative z-10">
+              Kết nối chủ nuôi với hệ sinh thái dịch vụ thú cưng minh bạch và chất lượng.
+            </p>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="w-16 h-1 bg-gradient-to-r from-primary to-blue-500 rounded-full"></div>
+              <div className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 uppercase tracking-widest">Tầm nhìn PetEye</div>
+            </div>
+          </motion.div>
+
+          {/* Core Values - Staggered Grid */}
+          <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+            <div className="md:w-1/3 mb-12 md:mb-0">
+               <h3 className="text-6xl md:text-7xl lg:text-8xl font-black text-slate-900 leading-none tracking-tighter mb-4">Giá trị<br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">cốt lõi</span></h3>
+               <p className="text-slate-500 font-medium text-lg">Những trụ cột vững chắc tạo nên sự khác biệt của chúng tôi.</p>
+            </div>
+            
+            <motion.div 
+              variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              className="md:w-2/3 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
+            >
+              {[
+                { icon: Shield, title: "Minh bạch", desc: "Thông tin xác thực, đánh giá thực tế, theo dõi trực tuyến.", color: "text-blue-600", bg: "bg-blue-50", offset: "lg:-translate-y-12" },
+                { icon: CheckCircle2, title: "Tin cậy", desc: "Mọi đối tác được sàng lọc nghiêm ngặt vì sự an toàn.", color: "text-emerald-600", bg: "bg-emerald-50", offset: "lg:translate-y-0" },
+                { icon: Zap, title: "Thuận tiện", desc: "Tìm kiếm, so sánh và đặt lịch dễ dàng trên một nền tảng.", color: "text-purple-600", bg: "bg-purple-50", offset: "lg:translate-y-12" }
+              ].map((val, i) => (
+                <motion.div key={i} variants={fadeIn} className={`bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 ${val.offset} hover:-translate-y-2 transition-transform duration-300`}>
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${val.bg} ${val.color}`}>
+                    <val.icon size={28} />
+                  </div>
+                  <h4 className="text-2xl font-bold text-slate-900 mb-3">{val.title}</h4>
+                  <p className="text-slate-600 font-medium leading-relaxed">{val.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
 
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-3 gap-8 md:gap-10"
-          >
+        </div>
+      </section>
+
+      {/* 3. Why Choose PetEye - Staggered Left/Right alternating */}
+      <section className="py-24 md:py-32 bg-white relative overflow-hidden">
+        {/* Background decors */}
+        <div className="absolute top-40 right-0 w-64 h-64 bg-orange-100 rounded-full blur-[80px] -z-10"></div>
+        <div className="absolute bottom-40 left-0 w-64 h-64 bg-blue-100 rounded-full blur-[80px] -z-10"></div>
+
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+          <div className="text-center max-w-4xl mx-auto mb-20 md:mb-32">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
+              Vì sao hàng nghìn chủ nuôi <br className="hidden md:block"/>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">lựa chọn PetEye?</span>
+            </h2>
+          </div>
+
+          <div className="space-y-24 md:space-y-32">
             {[
-              { icon: Shield, title: "Minh bạch & Uy tín", desc: "Mọi đối tác trên PetEye đều được kiểm định chặt chẽ về chất lượng và giấy phép hoạt động.", color: "from-blue-400 to-indigo-500", iconBg: "from-blue-500 to-indigo-600", shadow: "hover:shadow-blue-500/20" },
-              { icon: Heart, title: "Tận tâm", desc: "Đặt sức khỏe và sự thoải mái của thú cưng lên hàng đầu trong mọi dịch vụ.", color: "from-sky-400 to-blue-500", iconBg: "from-sky-500 to-blue-600", shadow: "hover:shadow-sky-500/20" },
-              { icon: Zap, title: "Nhanh & Tiện lợi", desc: "Đặt lịch, thanh toán và theo dõi dễ dàng chỉ qua vài thao tác trên điện thoại.", color: "from-cyan-400 to-blue-500", iconBg: "from-cyan-500 to-blue-600", shadow: "hover:shadow-cyan-500/20" }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                variants={fadeIn}
-                whileHover={{ y: -10 }}
-                className={`relative bg-white rounded-3xl p-10 shadow-xl ${item.shadow} transition-all duration-300 border border-slate-100 overflow-hidden group`}
+              { icon: Shield, title: "Đối tác được xác thực", desc: "Chúng tôi kiểm duyệt thông tin và tiêu chuẩn hoạt động trước khi đưa đối tác lên nền tảng.", color: "text-blue-500", bg: "bg-blue-50", align: "left" },
+              { icon: Video, title: "Theo dõi trực tuyến", desc: "Xem thú cưng mọi lúc tại các cơ sở hỗ trợ Camera Monitoring.", color: "text-rose-500", bg: "bg-rose-50", align: "right" },
+              { icon: Star, title: "Đánh giá minh bạch", desc: "Tham khảo phản hồi thực tế từ cộng đồng chủ nuôi một cách khách quan.", color: "text-amber-500", bg: "bg-amber-50", align: "left" },
+              { icon: Clock, title: "Đặt lịch nhanh chóng", desc: "Tìm kiếm, so sánh và đặt lịch chỉ trong vài phút.", color: "text-emerald-500", bg: "bg-emerald-50", align: "right" }
+            ].map((feature, i) => (
+              <motion.div 
+                key={i} 
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn}
+                className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${feature.align === 'right' ? 'md:flex-row-reverse' : ''}`}
               >
-                <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${item.color} rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity duration-500 translate-x-1/3 -translate-y-1/3`}></div>
-
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-lg bg-gradient-to-br ${item.iconBg} text-white transform group-hover:scale-110 transition-transform duration-300`}>
-                  <item.icon size={32} />
+                <div className="md:w-1/2 flex justify-center">
+                   <div className={`w-40 h-40 md:w-56 md:h-56 rounded-full flex items-center justify-center ${feature.bg} ${feature.color} shadow-2xl shadow-slate-200/50 relative group`}>
+                      <div className="absolute inset-0 bg-white/40 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+                      <feature.icon size={80} className="relative z-10 group-hover:scale-110 transition-transform duration-500" />
+                   </div>
                 </div>
-
-                <h3 className="text-2xl font-bold text-slate-900 mb-4 group-hover:text-primary transition-colors">{item.title}</h3>
-                <p className="text-slate-600 leading-relaxed text-lg">{item.desc}</p>
-
-                {/* Bottom decorative line */}
-                <div className={`absolute bottom-0 left-0 w-0 h-1.5 bg-gradient-to-r ${item.iconBg} group-hover:w-full transition-all duration-500 ease-out`}></div>
+                <div className={`md:w-1/2 text-center md:text-left ${feature.align === 'right' ? 'md:text-right' : ''}`}>
+                  <h4 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">{feature.title}</h4>
+                  <p className="text-xl text-slate-600 leading-relaxed font-medium">{feature.desc}</p>
+                </div>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
+
         </div>
       </section>
 
+      {/* 4. Commitments - Diagonal split or staggered */}
+      <section className="py-24 md:py-32 bg-slate-900 relative overflow-hidden">
+        {/* Custom shape divider top */}
+        <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-10">
+            <svg className="relative block w-full h-[40px] text-white" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M1200 0L0 0 0 40 1200 0z" fill="currentColor"></path>
+            </svg>
+        </div>
 
-      {/* Partner Section */}
-      <section id="partner" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="order-2 lg:order-1"
-          >
-            <div className="grid grid-cols-2 gap-4 lg:gap-6 relative">
-              {/* Decorative background blob */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-tr from-primary/10 via-orange-500/5 to-purple-500/10 rounded-full blur-3xl -z-10"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/40 via-transparent to-transparent"></div>
 
-              {/* Column 1 */}
-              <div className="space-y-4 lg:space-y-6">
-                <div className="bg-orange-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-orange-100 flex flex-col justify-center items-center text-center shadow-xl shadow-orange-500/5 hover:-translate-y-2 transition-all duration-300">
-                  <span className="text-4xl lg:text-5xl font-black text-orange-600 mb-2 drop-shadow-sm">200+</span>
-                  <span className="text-slate-700 font-bold text-sm lg:text-base">Đối tác tin cậy</span>
-                </div>
-                <div className="bg-emerald-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-emerald-100 flex flex-col justify-center items-center text-center shadow-xl shadow-emerald-500/5 hover:-translate-y-2 transition-all duration-300">
-                  <span className="text-4xl lg:text-5xl font-black text-emerald-600 mb-2 drop-shadow-sm">15+</span>
-                  <span className="text-slate-700 font-bold text-sm lg:text-base">Tỉnh/Thành phố</span>
-                </div>
-              </div>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 relative z-10 pt-10">
+          <div className="grid lg:grid-cols-12 gap-16 items-center">
+            
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn} className="lg:col-span-5">
+              <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tighter">Cam kết <br/> của PetEye</h2>
+              <div className="w-20 h-2 bg-blue-500 mb-8 rounded-full"></div>
+              <p className="text-3xl text-blue-400 font-bold mb-6">Minh bạch trong mọi quyết định</p>
+              <p className="text-xl text-slate-400 font-medium leading-relaxed italic border-l-4 border-slate-700 pl-6">
+                "Chúng tôi tin rằng sự an tâm bắt đầu từ việc nhìn thấy và hiểu rõ nơi bạn gửi gắm thú cưng."
+              </p>
+            </motion.div>
 
-              {/* Column 2 (Staggered) */}
-              <div className="space-y-4 lg:space-y-6 mt-8 lg:mt-12">
-                <div className="bg-blue-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-blue-100 flex flex-col justify-center items-center text-center shadow-xl shadow-blue-500/5 hover:-translate-y-2 transition-all duration-300">
-                  <span className="text-4xl lg:text-5xl font-black text-blue-600 mb-2 drop-shadow-sm">50k+</span>
-                  <span className="text-slate-700 font-bold text-sm lg:text-base">Khách hàng</span>
-                </div>
-                <div className="bg-purple-50/80 backdrop-blur-sm rounded-[32px] p-6 lg:p-8 border border-purple-100 flex flex-col justify-center items-center text-center shadow-xl shadow-purple-500/5 hover:-translate-y-2 transition-all duration-300">
-                  <span className="text-4xl lg:text-5xl font-black text-purple-600 mb-2 drop-shadow-sm">98%</span>
-                  <span className="text-slate-700 font-bold text-sm lg:text-base">Đánh giá tốt</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="lg:col-span-7 grid sm:grid-cols-2 gap-6">
+              {[
+                "Hiển thị thông tin đối tác rõ ràng",
+                "Khuyến khích đánh giá thực tế",
+                "Hỗ trợ giải quyết khiếu nại công bằng",
+                "Liên tục nâng cao tiêu chuẩn đối tác"
+              ].map((item, i) => (
+                <motion.div key={i} variants={fadeIn} className={`bg-slate-800/50 backdrop-blur-md border border-slate-700 p-8 rounded-3xl hover:bg-slate-800 transition-colors ${i % 2 !== 0 ? 'sm:translate-y-12' : ''}`}>
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-6">
+                    <Check size={28} strokeWidth={3} />
+                  </div>
+                  <h4 className="text-xl font-bold text-white">{item}</h4>
+                </motion.div>
+              ))}
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="order-1 lg:order-2 space-y-6"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 font-semibold text-sm">
-              <Handshake size={16} /> Dành cho Doanh nghiệp
-            </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
-              Trở thành <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">đối tác chiến lược</span>
-            </h2>
-            <p className="text-slate-600 leading-relaxed text-lg pb-4">
-              Bạn là chủ phòng khám thú y, spa hay dịch vụ lưu trú? Tham gia mạng lưới PetEye để tiếp cận hàng ngàn khách hàng tiềm năng, tối ưu quy trình quản lý và nâng tầm thương hiệu.
-            </p>
-            <Link to="/shop/register" className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3.5 rounded-full font-semibold hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/30">
-              Đăng ký đối tác ngay
-            </Link>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* News Section */}
-      <section id="news" className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 mb-32 scroll-mt-32">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeIn}
-          className="relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-10 md:p-16 lg:p-20 border border-blue-100 overflow-hidden shadow-xl"
-        >
-          {/* Decorative shapes */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
+      {/* 5. Partner CTA - Floating Staggered Box */}
+      <section className="py-32 bg-slate-50 relative">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
+          <div className="relative bg-white rounded-[3rem] p-12 md:p-20 shadow-2xl shadow-blue-900/5 overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-orange-100 rounded-full blur-[80px]"></div>
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-100 rounded-full blur-[80px]"></div>
 
-          <div className="relative z-10 text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-semibold text-sm mb-6">
-              <Newspaper size={16} /> Tin tức & Cộng đồng
-            </div>
+            <div className="grid lg:grid-cols-2 gap-16 relative z-10 items-center">
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-bold rounded-full text-sm mb-8 uppercase tracking-wider">
+                  <Handshake size={16} /> Dành cho Doanh nghiệp
+                </div>
+                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 mb-8 leading-tight tracking-tighter">
+                  Trở thành đối tác chiến lược cùng <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">PetEye</span>
+                </h2>
+                <p className="text-xl text-slate-600 leading-relaxed font-medium mb-10">
+                  Bạn là chủ phòng khám thú y, spa hay dịch vụ lưu trú? Tham gia mạng lưới PetEye để tiếp cận hàng ngàn khách hàng tiềm năng, tối ưu quy trình quản lý và nâng tầm thương hiệu.
+                </p>
+                <Link to="/shop/register" className="inline-flex items-center gap-3 bg-slate-900 text-white px-10 py-5 rounded-full text-lg font-bold hover:bg-blue-600 transition-colors shadow-xl hover:-translate-y-1">
+                  Đăng ký đối tác ngay
+                  <ArrowRight size={20} />
+                </Link>
+              </motion.div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 tracking-tight">
-              Cập nhật <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500">tin tức mới nhất</span>
-            </h2>
-
-            <p className="text-slate-600 text-lg md:text-xl mb-10 leading-relaxed font-medium">
-              Khám phá những kiến thức chăm sóc thú cưng bổ ích và các sự kiện hấp dẫn từ hệ sinh thái PetEye.
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a href="https://web.facebook.com/profile.php?id=61590306674838" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/30 flex items-center justify-center gap-2">
-                Tham gia Facebook
-              </a>
-              <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full bg-white text-slate-800 border border-slate-200 font-bold hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2">
-                Theo dõi TikTok
-              </a>
+              <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid grid-cols-2 gap-6">
+                <motion.div variants={fadeIn} className="bg-white p-8 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 text-center">
+                  <div className="text-5xl font-black text-slate-900 mb-2">200+</div>
+                  <div className="text-slate-500 font-bold">Đối tác</div>
+                </motion.div>
+                <motion.div variants={fadeIn} className="bg-white p-8 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 text-center translate-y-8">
+                  <div className="text-5xl font-black text-blue-600 mb-2">15+</div>
+                  <div className="text-slate-500 font-bold">Thành phố</div>
+                </motion.div>
+                <motion.div variants={fadeIn} className="bg-white p-8 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 text-center">
+                  <div className="text-5xl font-black text-orange-600 mb-2">50k+</div>
+                  <div className="text-slate-500 font-bold">Khách hàng</div>
+                </motion.div>
+                <motion.div variants={fadeIn} className="bg-white p-8 rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 text-center translate-y-8">
+                  <div className="text-5xl font-black text-emerald-600 mb-2">98%</div>
+                  <div className="text-slate-500 font-bold">Đánh giá tốt</div>
+                </motion.div>
+              </motion.div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
     </div>

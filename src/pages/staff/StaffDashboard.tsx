@@ -1769,7 +1769,7 @@ export default function StaffDashboard() {
                                                 {selectedTask.paymentMethod === 'PAYOS' ? (
                                                     <p className="font-bold text-emerald-400">Đã thanh toán đủ 100%</p>
                                                 ) : selectedTask.paymentMethod === 'CASH_DEPOSIT' ? (
-                                                    <p className="font-bold text-amber-500">Đã cọc 10% (Cần thu 90%)</p>
+                                                    <p className="font-bold text-amber-500">Đã đặt cọc (Cần thu phần còn lại)</p>
                                                 ) : (
                                                     <p className="font-bold text-slate-400">Chưa xác định</p>
                                                 )}

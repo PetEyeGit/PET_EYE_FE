@@ -968,7 +968,7 @@ export default function BookingHistory() {
                                 {selectedBooking.paymentMethod === 'CASH_DEPOSIT' ? (
                                     <div className="rounded-[2rem] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-5 text-sm text-orange-700 dark:text-orange-400">
                                         <p className="font-bold">Lưu ý về đơn đặt cọc:</p>
-                                        <p className="mt-2 leading-6">Đây là đơn chỉ đặt cọc (10%). Theo chính sách, bạn sẽ không được hoàn lại phí cọc khi tự hủy lịch. Đơn sẽ được chuyển sang trạng thái ĐÃ HỦY ngay lập tức.</p>
+                                        <p className="mt-2 leading-6">Đây là đơn thanh toán một phần (đặt cọc). Theo chính sách, bạn sẽ không được hoàn lại phí cọc khi tự hủy lịch. Đơn sẽ được chuyển sang trạng thái ĐÃ HỦY ngay lập tức.</p>
                                     </div>
                                 ) : (
                                     <>
@@ -1164,14 +1164,14 @@ export default function BookingHistory() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/10"
                         >
-                            <div className="bg-amber-400 p-8 text-slate-900 relative">
+                            <div className="bg-yellow-500 p-8 text-white relative">
                                 <Sparkles className="absolute top-4 right-4 text-white/40" size={60} />
                                 <h2 className="text-2xl font-black tracking-tight">Đánh giá trải nghiệm</h2>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">Cảm ơn bạn đã tin tưởng hệ thống</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mt-1">Cảm ơn bạn đã tin tưởng hệ thống</p>
                             </div>
                             <div className="p-8 space-y-8">
                                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl">
-                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-amber-500 shadow-sm">
+                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-yellow-600 shadow-sm">
                                         <Sparkles size={24} />
                                     </div>
                                     <div>
@@ -1185,11 +1185,11 @@ export default function BookingHistory() {
                                     <div className="flex justify-center gap-3">
                                         {[1, 2, 3, 4, 5].map(star => (
                                             <button key={star} onClick={() => setRating(star)} className="transition-transform active:scale-90">
-                                                <Star size={40} className={`${star <= rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 dark:text-slate-700'} transition-all`} />
+                                                <Star size={40} className={`${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 dark:text-slate-700'} transition-all`} />
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-center text-xs font-black text-amber-500 uppercase tracking-widest">
+                                    <p className="text-center text-xs font-black text-yellow-600 uppercase tracking-widest">
                                         {['Rất tệ', 'Tạm được', 'Bình thường', 'Rất tốt', 'Tuyệt vời'][rating - 1]}
                                     </p>
                                 </div>
@@ -1199,7 +1199,7 @@ export default function BookingHistory() {
                                     <textarea
                                         value={comment} onChange={e => setComment(e.target.value)}
                                         placeholder="Bạn cảm thấy thế nào về bác sĩ và cơ sở vật chất?"
-                                        className="w-full h-32 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-3xl focus:ring-4 focus:ring-amber-400/20 outline-none font-bold text-sm text-slate-700 dark:text-white transition-all resize-none"
+                                        className="w-full h-32 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-3xl focus:ring-4 focus:ring-yellow-500/20 outline-none font-bold text-sm text-slate-700 dark:text-white transition-all resize-none"
                                     />
                                 </div>
 
@@ -1207,7 +1207,7 @@ export default function BookingHistory() {
                                     <button onClick={() => setShowReviewModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest">Hủy bỏ</button>
                                     <button
                                         onClick={handleSubmitReview} disabled={submitting}
-                                        className="flex-[2] py-4 bg-amber-400 text-slate-900 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-amber-400/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
+                                        className="flex-[2] py-4 bg-yellow-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-yellow-500/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
                                     >
                                         {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Gửi đánh giá ngay'}
                                     </button>

@@ -297,7 +297,7 @@ export default function ShopWallet() {
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng thu nhập</span>
             </div>
             <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(wallet.totalEarned)}</p>
-            <p className="text-xs text-slate-400 mt-1">Sau phí 10% platform</p>
+            <p className="text-xs text-slate-400 mt-1">Sau khi trừ phí nền tảng</p>
           </div>
 
           {/* Total withdrawn */}
@@ -318,7 +318,7 @@ export default function ShopWallet() {
       <div className={`flex items-center gap-3 p-4 rounded-2xl border mb-4 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-blue-50 border-blue-100'}`}>
         <Info className={`w-5 h-5 shrink-0 ${isDark ? 'text-indigo-400' : 'text-blue-500'}`} />
         <p className={`text-sm ${isDark ? 'text-indigo-200' : 'text-blue-700'}`}>
-          <span className="font-bold">Chính sách phí:</span> Peteye thu <span className="font-black">10%</span> phí nền tảng trên mỗi đơn hoàn thành. Phần còn lại <span className="font-black">90%</span> được ghi nhận vào ví của bạn.
+          <span className="font-bold">Chính sách phí:</span> Peteye thu phí nền tảng trên mỗi đơn hoàn thành tùy thuộc vào loại dịch vụ (Spa, Lưu trú, Khám bệnh...). Phần doanh thu hiển thị trong ví là số tiền thực tế bạn nhận được sau khi đã trừ phí.
         </p>
       </div>
 

@@ -478,8 +478,8 @@ export default function HomePage() {
                                             <div className="absolute top-6 left-6">
                                                 <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg border border-white/20 ${service.category?.toUpperCase() === 'CLINIC' ? 'bg-blue-500/80 text-white' :
                                                     service.category?.toUpperCase() === 'SPA' ? 'bg-pink-500/80 text-white' :
-                                                    service.category?.toUpperCase() === 'GROOMING' ? 'bg-purple-500/80 text-white' :
-                                                        'bg-orange-500/80 text-white'
+                                                        service.category?.toUpperCase() === 'GROOMING' ? 'bg-purple-500/80 text-white' :
+                                                            'bg-orange-500/80 text-white'
                                                     }`}>
                                                     {service.category}
                                                 </span>
@@ -595,51 +595,6 @@ export default function HomePage() {
                         )}
                 </div>
             </motion.section>
-
-
-            {/* Promotional Banners */}
-            <section className="py-12 px-6 md:px-12 lg:px-20">
-                <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        whileHover={{ y: -5 }}
-                        viewport={{ once: true }}
-                        className="bg-gradient-to-r from-blue-600 to-primary rounded-[32px] p-10 relative overflow-hidden flex items-center shadow-2xl shadow-blue-500/20 group cursor-pointer"
-                    >
-                        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-[url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay group-hover:scale-110 transition-transform duration-1000"></div>
-                        <div className="relative z-10 max-w-[65%] space-y-4">
-                            <span className="bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest inline-block">Ưu đãi độc quyền</span>
-                            <h3 className="text-3xl font-black text-white mb-2 leading-tight">Giảm 20% Khám tổng quát</h3>
-                            <p className="text-white/80 text-sm font-medium">Bảo vệ sức khỏe bé cưng với chi phí tiết kiệm nhất.</p>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/search'); }} className="mt-4 bg-white text-primary px-8 py-3 rounded-full font-black text-sm shadow-xl hover:shadow-white/20 transition-all active:scale-95">
-                                Đặt lịch ngay
-                            </button>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        whileHover={{ y: -5 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 }}
-                        className="bg-gradient-to-r from-rose-500 to-pink-500 rounded-[32px] p-10 relative overflow-hidden flex items-center shadow-2xl shadow-pink-500/20 group cursor-pointer"
-                    >
-                        <div className="absolute -right-10 -bottom-10 text-white/10 group-hover:rotate-12 group-hover:scale-110 transition-all duration-1000">
-                            <span className="material-symbols-outlined text-[200px]">videocam</span>
-                        </div>
-                        <div className="relative z-10 max-w-[70%] space-y-4">
-                            <span className="bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[11px] font-black uppercase tracking-widest inline-block">Tính năng mới</span>
-                            <h3 className="text-3xl font-black text-white mb-2 leading-tight">Live Camera 24/7</h3>
-                            <p className="text-white/80 text-sm font-medium">Xua tan nỗi lo mỗi khi xa bé cưng. Theo dõi mọi khoảnh khắc thời gian thực.</p>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/camera'); }} className="mt-4 bg-white text-pink-600 px-8 py-3 rounded-full font-black text-sm shadow-xl hover:shadow-white/20 transition-all active:scale-95">
-                                Trải nghiệm ngay
-                            </button>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
 
             {/* Recent Bookings Section - Full Width */}
             <motion.section

@@ -96,6 +96,27 @@ export default function ShopAddBookingModal({
     ? `${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}:00`
     : null;
 
+  // Fetch global availability for pets when date/time is selected
+  const { data: busyPetsFromApi = {} } = useQuery({
+    queryKey: ['busyPetsGlobal', appointmentDatetimeForQuery, primaryServiceDuration, pets.map(p => p.id).join(',')],
+    queryFn: async () => {
+      if (!appointmentDatetimeForQuery) return {};
+      const results: Record<number, boolean> = {};
+      await Promise.all(
+        pets.map(async (pet) => {
+          try {
+            const isAvailable = await bookingService.checkPetAvailability(pet.id, appointmentDatetimeForQuery, primaryServiceDuration);
+            results[pet.id] = !isAvailable; // busy if NOT available
+          } catch (e) {
+            results[pet.id] = false;
+          }
+        })
+      );
+      return results;
+    },
+    enabled: isOpen && !!appointmentDatetimeForQuery && pets.length > 0,
+  });
+
   useEffect(() => {
     if (!appointmentDatetimeForQuery || !shopId) {
       setStaffWithAvailability([]);
@@ -161,14 +182,45 @@ export default function ShopAddBookingModal({
     }
   });
 
+  const isPetBusyAtSelectedTime = (petId: number) => {
+    const isBusyLocally = shopBookings.some((b: any) => {
+      if (b.petId !== petId) return false;
+      if (!['WAITING_SHOP_APPROVAL', 'CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT'].includes(b.status)) return false;
+
+      if (isHotelSelected) {
+        if (!b.checkIn && !b.checkOut) return false;
+        const bIn = new Date(b.checkIn || b.appointmentDatetime).getTime();
+        const bOut = new Date(b.checkOut || b.appointmentDatetime).getTime();
+        const sIn = checkInDate.getTime();
+        const sOut = checkOutDate.getTime();
+        return sIn < bOut && sOut > bIn;
+      } 
+      
+      const bDate = new Date(b.appointmentDatetime || b.checkIn);
+      if (!isSameDay(bDate, selectedDate)) return false;
+      
+      if (selectedTime && b.appointmentDatetime) {
+        const bMinutes = bDate.getHours() * 60 + bDate.getMinutes();
+        const [sH, sM] = selectedTime.split(':').map(Number);
+        const sMinutes = sH * 60 + sM;
+        return Math.abs(bMinutes - sMinutes) < 60;
+      }
+      
+      return false;
+    });
+
+    if (isBusyLocally) return true;
+    if (busyPetsFromApi[petId]) return true;
+
+    return false;
+  };
+
   const handleSubmit = () => {
     if (!selectedPetId) return toast.error('Vui lòng chọn thú cưng');
     
-    const isSelectedPetBusy = shopBookings.some((b: any) => 
-      b.petId === selectedPetId && 
-      ['WAITING_SHOP_APPROVAL', 'CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT'].includes(b.status)
-    );
-    if (isSelectedPetBusy) return toast.error('Thú cưng được chọn đang có dịch vụ chưa hoàn thành!');
+    if (isPetBusyAtSelectedTime(selectedPetId)) {
+      return toast.error('Thú cưng đang có lịch bận trong khoảng thời gian này!');
+    }
 
     if (selectedServices.length === 0) return toast.error('Vui lòng chọn dịch vụ');
     if (hasNormalServices && !selectedTime) return toast.error('Vui lòng chọn giờ hẹn cho dịch vụ thường');
@@ -266,10 +318,7 @@ export default function ShopAddBookingModal({
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {pets.map((pet) => {
-                    const isBusy = shopBookings.some((b: any) => 
-                      b.petId === pet.id && 
-                      ['WAITING_SHOP_APPROVAL', 'CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT'].includes(b.status)
-                    );
+                    const isBusy = isPetBusyAtSelectedTime(pet.id);
                     
                     return (
                     <button

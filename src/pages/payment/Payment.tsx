@@ -326,10 +326,10 @@ export default function Payment() {
                 <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
                   <span className="material-symbols-outlined text-amber-500 mt-0.5">info</span>
                   <div>
-                    <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">Thanh toán tại quầy — Cần đặt cọc 10%</p>
+                    <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">Thanh toán tại quầy — Đặt cọc giữ lịch</p>
                     <p className="text-amber-700 dark:text-amber-300 text-xs mt-1 leading-relaxed">
-                      Bạn cần thanh toán <strong>{depositAmount.toLocaleString('vi-VN')}đ</strong> tiền cọc (10%) qua PayOS ngay bây giờ để giữ lịch.
-                      Phần còn lại <strong>{(totalPrice - depositAmount).toLocaleString('vi-VN')}đ</strong> sẽ thanh toán trực tiếp tại cơ sở vào ngày hẹn.
+                      Bạn cần thanh toán tiền cọc (tương đương phí nền tảng) qua PayOS ngay bây giờ để giữ lịch.
+                      Phần còn lại sẽ được thanh toán trực tiếp tại cơ sở vào ngày hẹn.
                     </p>
                   </div>
                 </div>
@@ -389,13 +389,9 @@ export default function Payment() {
 
               {payMethod === 'cash' && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 space-y-1.5 text-xs border border-amber-200 dark:border-amber-800">
-                  <div className="flex justify-between text-amber-700 dark:text-amber-300">
-                    <span>Tiền cọc ngay (10% qua PayOS)</span>
-                    <span className="font-bold">{formatVND(depositAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                    <span>Còn lại (tiền mặt tại quầy)</span>
-                    <span className="font-semibold">{formatVND(totalPrice - depositAmount)}</span>
+                  <div className="flex justify-between text-amber-700 dark:text-amber-300 pb-2">
+                    <span>Tiền cọc thanh toán qua PayOS</span>
+                    <span className="font-bold">Theo biểu phí</span>
                   </div>
                 </div>
               )}
@@ -433,7 +429,7 @@ export default function Payment() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined">qr_code_2</span>
-                    Đặt cọc {formatVND(depositAmount)} qua PayOS
+                    Đặt cọc qua PayOS để giữ lịch
                   </>
                 )}
               </button>

@@ -95,7 +95,7 @@ export default function PaymentFailure() {
                     ))}
                     <div className="border-t border-dashed border-slate-200 dark:border-slate-700 mt-2 pt-3 flex justify-between items-center">
                       <span className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                        {bookingInfo.isDeposit ? 'Tổng cọc (10%)' : 'Tổng tiền'}
+                        {bookingInfo.isDeposit ? 'Tổng tiền cọc' : 'Tổng tiền'}
                       </span>
                       <span className="text-lg font-black text-rose-600 dark:text-rose-400">
                         {bookingInfo.totalPrice?.toLocaleString('vi-VN')}đ

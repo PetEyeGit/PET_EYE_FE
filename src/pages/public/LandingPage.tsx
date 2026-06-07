@@ -927,8 +927,8 @@ export default function Home() {
       </section>
 
       {/* ─── FAQ Section ───────────────────────────────────────────────── */}
-      <section className="py-12 md:py-16 xl:py-24 px-6 bg-slate-50 dark:bg-slate-950">
-        <div className="max-w-3xl mx-auto">
+      <section className="pt-12 md:pt-16 xl:pt-24 pb-32 md:pb-48 px-6 bg-slate-50 dark:bg-slate-950 relative">
+        <div className="max-w-3xl mx-auto relative z-10">
           <div className="text-center mb-8 xl:mb-16">
             <h2 className="text-3xl xl:text-4xl font-black text-slate-900 dark:text-white mb-4"><span className="text-gradient">Câu hỏi thường gặp</span></h2>
             <p className="text-slate-500">Mọi thắc mắc của bạn đều được giải đáp.</p>
@@ -936,9 +936,10 @@ export default function Home() {
           <div className="space-y-4">
             {[
               { q: "Đặt lịch trên PetEye có mất phí không?", a: "Hoàn toàn miễn phí. Bạn chỉ thanh toán đúng số tiền dịch vụ cho cơ sở thú y mà không phải chịu thêm bất kỳ khoản phí nền tảng nào." },
-              { q: "Tính năng Live Camera hoạt động thế nào?", a: "Khi bạn gửi thú cưng tại các cơ sở có hỗ trợ Live Camera, bạn sẽ được cung cấp một mã truy cập tạm thời để xem trực tiếp bé yêu qua ứng dụng/web 24/7." },
-              { q: "Các cơ sở thú y trên nền tảng có uy tín không?", a: "100% cơ sở trên PetEye đều phải qua khâu kiểm duyệt giấy phép kinh doanh, chứng chỉ hành nghề của bác sĩ trước khi được xuất hiện trên hệ thống." },
-              { q: "Tôi có thể hủy lịch đã đặt không?", a: "Có thể. Bạn được phép hủy lịch miễn phí trước thời gian hẹn 2 tiếng. Các chính sách hoàn tiền (nếu thanh toán trước) sẽ được áp dụng tự động." }
+              { q: "Làm sao để biết cơ sở trên PetEye đáng tin cậy?", a: "Các đối tác tham gia PetEye đều trải qua quy trình xác thực thông tin trước khi được hiển thị trên nền tảng. Người dùng có thể tham khảo hồ sơ cơ sở, hình ảnh thực tế, đánh giá từ khách hàng trước đó và các thông tin liên quan để đưa ra quyết định phù hợp. Ngoài ra, một số cơ sở còn cung cấp tính năng theo dõi camera trực tuyến giúp tăng tính minh bạch trong quá trình chăm sóc thú cưng." },
+              { q: "Nếu thú cưng gặp sự cố trong thời gian sử dụng dịch vụ thì sao?", a: "PetEye không trực tiếp cung cấp dịch vụ chăm sóc thú cưng mà đóng vai trò là nền tảng kết nối. Trong trường hợp phát sinh sự cố, PetEye sẽ hỗ trợ tiếp nhận thông tin, phối hợp với đối tác liên quan và xem xét các bằng chứng như hình ảnh, video hoặc dữ liệu camera (nếu có) để hỗ trợ giải quyết khiếu nại một cách minh bạch và công bằng." },
+              { q: "Tôi có thể hủy hoặc thay đổi lịch hẹn sau khi đặt không?", a: "Có. Bạn có thể hủy hoặc thay đổi lịch hẹn thông qua tài khoản PetEye trước thời gian sử dụng dịch vụ. Chính sách hoàn tiền và hủy lịch có thể khác nhau tùy theo từng cơ sở. Thông tin chi tiết sẽ được hiển thị trước khi bạn xác nhận đặt lịch để đảm bảo minh bạch ngay từ đầu." },
+              { q: "Tôi có thể xem thú cưng của mình khi đang gửi lưu trú không?", a: "Có. Đối với các cơ sở tham gia chương trình Camera Monitoring của PetEye, chủ nuôi có thể truy cập camera trực tuyến trong thời gian thú cưng đang sử dụng dịch vụ. Quyền truy cập chỉ được cấp cho khách hàng có đơn đặt lịch hợp lệ nhằm đảm bảo tính riêng tư và an toàn thông tin." }
             ].map((faq, i) => (
               <div key={i} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                 <button 
@@ -960,6 +961,43 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── News & Community CTA ─────────────────────────────────────────── */}
+      <section className="px-6 -mt-24 md:-mt-32 relative z-10 pb-16 md:pb-24">
+        <div className="max-w-5xl mx-auto relative">
+          {/* Decorative Glowing Backdrop */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-blue-400/20 dark:bg-indigo-500/10 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-gradient-to-b from-indigo-50/50 to-blue-100/50 dark:from-slate-900 dark:to-indigo-950/30 rounded-[3rem] p-10 md:p-16 text-center border border-white dark:border-slate-800 shadow-2xl shadow-indigo-500/5 relative overflow-hidden"
+          >
+            <div className="inline-flex items-center gap-2 bg-slate-200/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+              <span className="material-symbols-outlined text-sm">article</span>
+              Tin tức & Cộng đồng
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
+              Cập nhật tin tức <span className="text-blue-600 dark:text-blue-400">mới nhất</span>
+            </h2>
+            
+            <p className="text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto mb-10 leading-relaxed text-sm md:text-base">
+              Khám phá những kiến thức chăm sóc thú cưng bổ ích và các sự kiện hấp dẫn từ hệ sinh thái PetEye.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button onClick={() => window.open('https://web.facebook.com/profile.php?id=61590306674838', '_blank')} className="w-full sm:w-auto bg-[#0B132B] hover:bg-[#15234b] text-white px-8 py-3.5 rounded-full font-black text-sm shadow-xl shadow-slate-900/10 hover:-translate-y-0.5 transition-all active:scale-95">
+                Tham gia Facebook
+              </button>
+              <button onClick={() => window.open('https://tiktok.com', '_blank')} className="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700 px-8 py-3.5 rounded-full font-black text-sm shadow-lg shadow-slate-200/50 dark:shadow-none hover:-translate-y-0.5 transition-all active:scale-95">
+                Theo dõi TikTok
+              </button>
+            </div>
+          </motion.div>
         </div>
       </section>
 
