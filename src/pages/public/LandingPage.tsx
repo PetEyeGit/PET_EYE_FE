@@ -191,7 +191,8 @@ export default function Home() {
                       <option value="Tất cả">Tất cả dịch vụ</option>
                       <option value="CLINIC">Khám thú y (Clinic)</option>
                       <option value="SPA">Spa & Grooming</option>
-                      <option value="BOARDING">Lưu trú (Hotel)</option>
+                      <option value="HOTEL">Lưu trú (Hotel)</option>
+                      <option value="MIXED">Dịch vụ tổng hợp</option>
                     </select>
                   </div>
                   <div className="md:col-span-3">
@@ -726,7 +727,7 @@ export default function Home() {
                 <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1] mb-2">
                   Phản hồi từ <br />
                   người dùng <br />
-                  <span className="text-primary text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black dark: text-white">PetEye</span>
+                  <span className="text-primary text-5xl md:text-6xl xl:text-7xl mt-2 inline-block font-black text-blue-950 dark:text-white">PetEye</span>
                 </h2>
                 <p className="text-slate-600 dark:text-slate-400 text-lg md:text-xl font-medium mt-6 leading-relaxed max-w-sm">
                   Kết nối yêu thương, chăm sóc tận tâm. Khám phá lý do hàng ngàn khách hàng luôn tin tưởng và lựa chọn PetEye.

@@ -657,8 +657,8 @@ export default function BookingHistory() {
 
     const sorted = useMemo(() => {
         return [...bookings].sort((a, b) => {
-            const dateA = new Date(a.appointmentDatetime).getTime();
-            const dateB = new Date(b.appointmentDatetime).getTime();
+            const dateA = new Date(a.createdAt || a.appointmentDatetime).getTime();
+            const dateB = new Date(b.createdAt || b.appointmentDatetime).getTime();
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
         });
     }, [bookings, sortOrder]);

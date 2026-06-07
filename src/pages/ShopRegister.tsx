@@ -28,11 +28,10 @@ export default function ShopRegister() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const shopTypes = [
-    'Phòng khám thú y',
-    'Spa & Grooming',
-    'Khách sạn thú cưng',
-    'Cửa hàng thú cưng',
-    'Dịch vụ tổng hợp'
+    { value: 'CLINIC', label: 'Phòng khám thú y' },
+    { value: 'SPA', label: 'Spa & Grooming' },
+    { value: 'HOTEL', label: 'Khách sạn thú cưng' },
+    { value: 'MIXED', label: 'Dịch vụ tổng hợp' }
   ];
 
   const cities = [
@@ -71,24 +70,44 @@ export default function ShopRegister() {
    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (step === 1) {
+      const phoneRegex = /^(84|0[3|5|7|8|9])+([0-9]{8})$/;
+      if (!phoneRegex.test(formData.phone)) {
+        setError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng số VN (VD: 0912345678).');
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.');
+        return;
+      }
+    }
+
+    if (step === 2) {
+      if (formData.description.length < 10) {
+        setError('Mô tả cửa hàng phải có ít nhất 10 ký tự.');
+        return;
+      }
+    }
+
+    if (step === 3) {
+      if (formData.password.length < 8) {
+        setError('Mật khẩu quá ngắn. Vui lòng nhập tối thiểu 8 ký tự.');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Mật khẩu không khớp!');
+        return;
+      }
+      if (!formData.agreed) {
+        setError('Vui lòng đồng ý với điều khoản dịch vụ.');
+        return;
+      }
+    }
+
     if (step < 3) {
+      setError('');
       setStep(step + 1);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu không khớp!');
-      return;
-    }
-
-    if (!formData.agreed) {
-      setError('Vui lòng đồng ý với điều khoản dịch vụ');
-      return;
-    }
-
-    if (formData.description.length < 10) {
-      setError('Mô tả cửa hàng phải có ít nhất 10 ký tự');
-      setStep(2);
       return;
     }
 
@@ -223,7 +242,7 @@ export default function ShopRegister() {
                 >
                   <option value="">Chọn loại hình</option>
                   {shopTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>
               </div>

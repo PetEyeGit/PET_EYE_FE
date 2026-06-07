@@ -449,6 +449,8 @@ export default function ShopProfile() {
                   type="text"
                   value={shopInfo.name}
                   onChange={(e) => setShopInfo({ ...shopInfo, name: e.target.value })}
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền tên cửa hàng.')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />
@@ -463,11 +465,10 @@ export default function ShopProfile() {
                   onChange={(e) => setShopInfo({ ...shopInfo, type: e.target.value })}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                 >
-                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Phòng khám thú y</option>
-                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Spa & Grooming</option>
-                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Khách sạn thú cưng</option>
-                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Cửa hàng thú cưng</option>
-                  <option className={isDark ? 'bg-slate-800 text-white' : ''}>Dịch vụ tổng hợp</option>
+                  <option value="CLINIC" className={isDark ? 'bg-slate-800 text-white' : ''}>Phòng khám thú y</option>
+                  <option value="SPA" className={isDark ? 'bg-slate-800 text-white' : ''}>Spa & Grooming</option>
+                  <option value="HOTEL" className={isDark ? 'bg-slate-800 text-white' : ''}>Khách sạn thú cưng</option>
+                  <option value="MIXED" className={isDark ? 'bg-slate-800 text-white' : ''}>Dịch vụ tổng hợp</option>
                 </select>
               </div>
 
@@ -479,6 +480,8 @@ export default function ShopProfile() {
                   type="email"
                   value={shopInfo.email}
                   onChange={(e) => setShopInfo({ ...shopInfo, email: e.target.value })}
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền địa chỉ email.')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />
@@ -492,6 +495,8 @@ export default function ShopProfile() {
                   type="tel"
                   value={shopInfo.phone}
                   onChange={(e) => setShopInfo({ ...shopInfo, phone: e.target.value })}
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền số điện thoại.')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                   placeholder="Ví dụ: 0912345678"
                   required
@@ -505,6 +510,8 @@ export default function ShopProfile() {
                 <select
                   value={shopInfo.city}
                   onChange={(e) => setShopInfo({ ...shopInfo, city: e.target.value })}
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn thành phố.')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 >
@@ -523,6 +530,8 @@ export default function ShopProfile() {
                   type="text"
                   value={shopInfo.address}
                   onChange={(e) => setShopInfo({ ...shopInfo, address: e.target.value })}
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền địa chỉ.')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 />

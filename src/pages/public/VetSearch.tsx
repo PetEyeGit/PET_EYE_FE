@@ -5,7 +5,7 @@ import { ShopPublicResponse } from '../../services/shop.service';
 import {
   Search, MapPin, Star, Filter, ArrowRight, Grid, List as ListIcon,
   Map as MapIcon, ChevronRight, SlidersHorizontal, CheckCircle2,
-  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home
+  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home, Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { NearbyShopResponse } from '../../services/clinic.service';
@@ -27,7 +27,8 @@ const SHOP_TYPE_TABS = [
   { value: 'Tất cả', label: 'Tất cả', icon: <Grid size={16} /> },
   { value: 'CLINIC', label: 'Khám thú y', icon: <Stethoscope size={16} /> },
   { value: 'SPA', label: 'Spa & Grooming', icon: <Scissors size={16} /> },
-  { value: 'BOARDING', label: 'Lưu trú', icon: <Home size={16} /> },
+  { value: 'HOTEL', label: 'Lưu trú', icon: <Home size={16} /> },
+  { value: 'MIXED', label: 'Tổng hợp', icon: <Store size={16} /> },
 ];
 
 const SORT_OPTIONS = ['Đánh giá cao nhất', 'Gần nhất', 'Mới nhất'];

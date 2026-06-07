@@ -675,6 +675,8 @@ export default function ShopServices() {
                   type="text"
                   value={form.serviceName}
                   onChange={(e) => setForm((prev) => ({ ...prev, serviceName: e.target.value }))}
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền tên dịch vụ.')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   placeholder="Ví dụ: Tắm & sấy lông"
                   required
@@ -687,6 +689,8 @@ export default function ShopServices() {
                 <select
                   value={form.category}
                   onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn danh mục.')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                   required
                 >
@@ -708,6 +712,8 @@ export default function ShopServices() {
                     step={1000}
                     value={form.price === 0 ? '' : form.price}
                     onChange={(e) => setForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                    onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền giá dịch vụ.')}
+                    onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                     placeholder="150000"
                     required
@@ -726,6 +732,8 @@ export default function ShopServices() {
                         step={1}
                         value={form.durationDays === 0 ? '' : form.durationDays}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationDays: Number(e.target.value) }))}
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền số ngày tối thiểu.')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                         placeholder="1"
                         required
@@ -740,6 +748,8 @@ export default function ShopServices() {
                         step={5}
                         value={form.durationMinutes === 0 ? '' : form.durationMinutes}
                         onChange={(e) => setForm((prev) => ({ ...prev, durationMinutes: Number(e.target.value) }))}
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền thời gian thực hiện.')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${isDark ? 'bg-[#0b1121] border-white/10 text-white focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20 focus:border-indigo-500 placeholder-slate-400'}`}
                         placeholder="60"
                         required

@@ -287,14 +287,23 @@ export default function ClinicDetail() {
     const closeMin = parseTime(closeStr);
     const STEP = 60; // bước cố định 60 phút
     const slots: string[] = [];
+
+    const now = new Date();
+    // Assuming selectedDate is "YYYY-MM-DD"
+    // Use local timezone for "today" to match selectedDate
+    const todayStr = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const isToday = selectedDate === todayStr;
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+
     // Sinh đến khi slot + totalDuration vẫn còn trong giờ đóng cửa
     for (let m = openMin; m + totalServiceDuration <= closeMin; m += STEP) {
+      if (isToday && m <= currentMin) continue; // Filter out past times for today
       const hh = String(Math.floor(m / 60)).padStart(2, '0');
       const mm = String(m % 60).padStart(2, '0');
       slots.push(`${hh}:${mm}`);
     }
     return slots;
-  }, [shop?.openTime, shop?.closeTime, totalServiceDuration, hasNormalServices]);
+  }, [shop?.openTime, shop?.closeTime, totalServiceDuration, hasNormalServices, selectedDate]);
 
   // Fetch available slots mỗi khi date hoặc services thay đổi
   useEffect(() => {
@@ -445,9 +454,28 @@ export default function ClinicDetail() {
     : [];
   const canBook = (isHotelSelected || hasNormalServices) && boardingReady && normalReady;
 
-  // ── Open pet modal ──────────────────────────────────────────────────────────
   function handleBookClick() {
     if (!canBook) return;
+
+    const now = new Date();
+    if (hasNormalServices && selectedDate && selectedTime) {
+      const selectedDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+      if (selectedDateTime <= now) {
+        import('react-hot-toast').then(({ toast }) => {
+          toast.error('Thời gian này đã qua. Vui lòng chọn một khung giờ khác trong tương lai.');
+        });
+        return;
+      }
+    } else if (isHotelSelected && checkInDate) {
+      const checkInDateTime = new Date(`${checkInDate}T12:00:00`);
+      if (checkInDateTime <= now) {
+        import('react-hot-toast').then(({ toast }) => {
+          toast.error('Ngày lưu trú đã qua. Vui lòng chọn lại ngày nhận phòng.');
+        });
+        return;
+      }
+    }
+
     if (!user) {
       setShowLoginPrompt(true);
       return;

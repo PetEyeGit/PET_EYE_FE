@@ -33,7 +33,29 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) { setError('Mật khẩu nhập lại không khớp'); return; }
+    
+    const phoneRegex = /^(84|0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(phone)) {
+      setError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng số VN (VD: 0912345678).');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Mật khẩu quá ngắn. Vui lòng nhập tối thiểu 8 ký tự.');
+      return;
+    }
+
+    if (password !== confirmPassword) { 
+      setError('Mật khẩu nhập lại không khớp'); 
+      return; 
+    }
+    
     setLoading(true);
     setError('');
     try {
