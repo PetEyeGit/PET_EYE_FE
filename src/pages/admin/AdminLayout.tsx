@@ -87,11 +87,12 @@ function AdminLayoutInner() {
   const pendingRequest = pendingRefunds.length > 0 ? pendingRefunds[0] : null;
 
   useEffect(() => {
-    if (!loadingPendingRefunds && pendingRefunds.length > 0) {
-      setShowPendingRefundModal(true);
-    } else if (!loadingRefundNotifications && refundNotifications.length > 0) {
-      setShowPendingRefundModal(true);
-    }
+    // Disabled auto-popup as requested by user
+    // if (!loadingPendingRefunds && pendingRefunds.length > 0) {
+    //   setShowPendingRefundModal(true);
+    // } else if (!loadingRefundNotifications && refundNotifications.length > 0) {
+    //   setShowPendingRefundModal(true);
+    // }
   }, [loadingPendingRefunds, pendingRefunds, loadingRefundNotifications, refundNotifications.length]);
 
   function buildQRPattern(seed: number) {

@@ -265,7 +265,7 @@ export default function ConversationThread({
                                             ? 'bg-primary text-white rounded-2xl rounded-br-none shadow-primary/10'
                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white rounded-2xl rounded-bl-none border border-slate-100 dark:border-slate-700'
                                         }`}>
-                                        {msg.content && <span>{msg.content}</span>}
+                                        {msg.content && <span className="whitespace-pre-wrap block">{msg.content}</span>}
                                         {renderAttachment(msg, isMe)}
                                     </div>
                                     <span className="text-[9px] font-bold text-slate-400 px-2 uppercase tracking-tight">

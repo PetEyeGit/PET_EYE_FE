@@ -247,6 +247,11 @@ export const adminService = {
     return res.data.result ?? [];
   },
 
+  sendChatMessage: async (data: { shopId: number; channelType: string; recipientEmail: string; content: string }): Promise<ChatMessage> => {
+    const res = await apiClient.post<ApiResponse<ChatMessage>>('/chat/send', data);
+    return res.data.result!;
+  },
+
   markChatRead: async (shopId: number, channelType: string = 'ADMIN_SUPPORT', recipientEmail?: string): Promise<void> => {
     await apiClient.patch(`/chat/${shopId}/read`, null, {
       params: { channelType, recipientEmail }

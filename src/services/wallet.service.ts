@@ -29,6 +29,8 @@ export interface WithdrawalRequestResponse {
   createdAt: string;
   processedAt?: string;
   type?: 'WITHDRAWAL' | 'REFUND';
+  userId?: number;
+  userEmail?: string;
 }
 
 export interface WithdrawalRequestCreate {

@@ -268,11 +268,13 @@ export default function ShopBookings() {
     });
 
     const selectedBookingId = selectedBooking?.bookingId || selectedBooking?.id;
-    const { data: careLogs = [], isLoading: loadingLogs } = useQuery({
+    const { data: rawCareLogs = [], isLoading: loadingLogs } = useQuery({
         queryKey: ['shopBookingCareLogs', selectedBookingId],
         queryFn: () => careLogService.getLogs(selectedBookingId),
         enabled: !!selectedBookingId && (selectedBooking.status === 'IN_PROGRESS' || selectedBooking.status === 'COMPLETED'),
     });
+
+    const careLogs = rawCareLogs.filter((log: any) => !log.note?.startsWith('[Kết thúc sớm]') && !log.note?.startsWith('[Kết thúc trễ]'));
 
     useEffect(() => {
         staffService.getMyShopStaff().then(data => setStaffList(data.filter(s => s.isActive)));
