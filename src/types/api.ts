@@ -4,6 +4,15 @@ export interface ApiResponse<T> {
   result?: T;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 export interface AuthenticationResponse {
   authenticated: boolean;
   token: string;

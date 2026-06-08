@@ -13,21 +13,18 @@ export default function TransactionHistory() {
   const itemsPerPage = 10;
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['my-transactions'],
-    queryFn: transactionService.getMyTransactions,
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: ['my-transactions', currentPage],
+    queryFn: () => transactionService.getCustomerTransactions(currentPage, itemsPerPage),
   });
+
+  const transactions = pageData?.content || [];
+  const totalPages = pageData?.totalPages || 1;
 
   const filteredTx = transactions.filter(tx => {
     if (filter === 'ALL') return true;
     return tx.status === filter;
   });
-
-  const totalPages = Math.ceil(filteredTx.length / itemsPerPage);
-  const paginatedTx = filteredTx.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handleDownloadPdf = async () => {
     // Sử dụng trình duyệt native để in ra PDF (hỗ trợ oklch, font đẹp, sắc nét 100%)
@@ -90,7 +87,7 @@ export default function TransactionHistory() {
         </div>
       ) : (
         <div className="space-y-4">
-          {paginatedTx.map(tx => (
+          {filteredTx.map(tx => (
             <div
               key={tx.id}
               onClick={() => setSelectedTx(tx)}
