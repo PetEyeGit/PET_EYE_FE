@@ -8,6 +8,7 @@ import { careLogService } from '../../services/care-log.service';
 import toast from 'react-hot-toast';
 import StaffAssignmentSelect from '../../components/StaffAssignmentSelect';
 import ShopAddBookingModal from '../../components/shop/ShopAddBookingModal';
+import ShopCancelBookingModal from '../../components/shop/ShopCancelBookingModal';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import {
@@ -44,6 +45,7 @@ interface BookingListItemProps {
     setViewInvoiceBooking: (booking: any) => void;
     setSelectedBooking: (booking: any) => void;
     onAddBooking: (data: any) => void;
+    onShopCancel: (booking: any) => void;
 }
 
 const CARE_LOG_TYPES = [
@@ -52,7 +54,11 @@ const CARE_LOG_TYPES = [
     { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
-function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setViewInvoiceBooking, setSelectedBooking, onAddBooking }: BookingListItemProps) {
+function BookingListItem({
+    booking, staffList, updatingId, sendingInvoiceId,
+    onAssign, handleUpdateStatus, handleSendInvoice,
+    setViewInvoiceBooking, setSelectedBooking, onAddBooking, onShopCancel
+}: BookingListItemProps) {
     const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
@@ -146,7 +152,7 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                                     {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
-                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
+                            <button disabled={updatingId === booking.bookingId} onClick={() => onShopCancel(booking)} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
                                 <XCircle size={12} /> Từ chối
                             </button>
                         </div>
@@ -162,6 +168,12 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                                 {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt hủy lịch
                             </button>
                         </div>
+                    )}
+
+                    {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS' || booking.status === 'PENDING_PAYMENT') && (
+                        <button disabled={updatingId === booking.bookingId} onClick={() => onShopCancel(booking)} className={`w-full mt-2 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
+                            <XCircle size={12} /> Hủy lịch
+                        </button>
                     )}
 
                     {booking.status === 'COMPLETED' && (
@@ -196,6 +208,8 @@ export default function ShopBookings() {
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
     const [sendingInvoiceId, setSendingInvoiceId] = useState<number | null>(null);
     const [viewInvoiceBooking, setViewInvoiceBooking] = useState<any | null>(null);
+    const [cancelModalData, setCancelModalData] = useState<any | null>(null);
+    const [isCanceling, setIsCanceling] = useState(false);
 
     const handleDownloadPDF = async () => {
         const element = document.getElementById('invoice-receipt-content');
@@ -390,6 +404,25 @@ export default function ShopBookings() {
         return calendarBookings.filter(b => isSameDay(parseISO(b.appointmentDatetime), day));
     };
 
+    const handleShopCancelBooking = async (reason: string) => {
+        if (!cancelModalData) return;
+        setIsCanceling(true);
+        toast.loading('Đang hủy đơn...', { id: 'cancel-toast' });
+        try {
+            await bookingService.shopCancel(cancelModalData.bookingId, reason);
+            toast.success('Đã hủy lịch thành công!', { id: 'cancel-toast' });
+            setCancelModalData(null);
+            refetchList();
+            refetchCalendar();
+        } catch (error: any) {
+            console.error('Error canceling booking:', error);
+            const msg = error.response?.data?.message || error.message || 'Lỗi khi hủy đơn';
+            toast.error(msg, { id: 'cancel-toast' });
+        } finally {
+            setIsCanceling(false);
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col overflow-hidden animate-in fade-in duration-500">
             <div className="flex-1 flex flex-col max-w-[1600px] mx-auto w-full px-4 md:px-8 py-6 overflow-hidden">
@@ -480,6 +513,7 @@ export default function ShopBookings() {
                                         setViewInvoiceBooking={setViewInvoiceBooking}
                                         setSelectedBooking={setSelectedBooking}
                                         onAddBooking={(data) => setAddBookingData({ ...data, isOpen: true })}
+                                        onShopCancel={(b) => setCancelModalData(b)}
                                     />
                                 ))}
                             </div>
@@ -635,7 +669,7 @@ export default function ShopBookings() {
                                                 {b.status === 'CONFIRMED' && (
                                                     <button
                                                         disabled={updatingId === b.id}
-                                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(b.id, 'CANCELLED'); }}
+                                                        onClick={(e) => { e.stopPropagation(); setCancelModalData(b); }}
                                                         className="w-full py-2 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-1.5 border border-red-50/50"
                                                     >
                                                         {updatingId === b.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
@@ -1016,6 +1050,14 @@ export default function ShopBookings() {
                     refetchList();
                     refetchCalendar();
                 }}
+            />
+
+            <ShopCancelBookingModal
+                isOpen={cancelModalData !== null}
+                onClose={() => setCancelModalData(null)}
+                booking={cancelModalData}
+                onConfirm={handleShopCancelBooking}
+                isSubmitting={isCanceling}
             />
         </div>
     );

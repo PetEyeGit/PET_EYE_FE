@@ -111,6 +111,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
 
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
     const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED' || booking.status === 'WAITING_REFUND';
     const [isExpanded, setIsExpanded] = useState(false);
     const [savingAlbumId, setSavingAlbumId] = useState<number | null>(null);
@@ -129,11 +130,13 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
     };
 
 
-    const { data: careLogs = [] } = useQuery({
+    const { data: rawCareLogs = [] } = useQuery({
         queryKey: ['bookingCareLogs', booking.id],
         queryFn: () => careLogService.getLogs(booking.id),
         enabled: !!booking.id && (booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED'),
     });
+    
+    const careLogs = rawCareLogs.filter((log: any) => !log.note?.startsWith('[Kết thúc sớm]') && !log.note?.startsWith('[Kết thúc trễ]'));
 
     if (!isExpanded) {
         return (
@@ -157,7 +160,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                             <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-xs">{booking.shopName}</h4>
                             <span className="text-[10px] text-slate-400 font-bold">• Bé: {booking.petName}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => `${s.serviceName}${s.durationMinutes ? ` (${s.durationMinutes}p)` : ''}`).join(', ') : booking.serviceName}</p>
                     </div>
                 </div>
 
@@ -243,7 +246,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => `${s.serviceName}${s.durationMinutes ? ` (${s.durationMinutes}p)` : ''}`).join(', ') : booking.serviceName}</p>
                         </div>
                     </div>
                     {booking.status === 'CANCEL_REQUESTED' && booking.cancellationReason && (
@@ -280,6 +283,90 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                     </div>
                 </div>
 
+
+                {/* Details Section */}
+                <AnimatePresence>
+                    {showDetails && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden pt-2 pb-4 border-t border-slate-100 dark:border-slate-800/80"
+                        >
+                            <div className="flex items-center gap-2 mb-4 mt-2">
+                                <Info className="text-emerald-500" size={14} />
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Chi tiết dịch vụ & Thanh toán</h4>
+                            </div>
+
+                            <div className="bg-slate-50 dark:bg-slate-800/30 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                                <div className="space-y-3">
+                                    <h5 className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Danh sách dịch vụ</h5>
+                                    {booking.services && booking.services.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {booking.services.map((svc: any) => (
+                                                <div key={svc.serviceId} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{svc.serviceName}</p>
+                                                        {svc.durationMinutes > 0 && <p className="text-[10px] font-bold text-slate-400 mt-0.5">⏱ Thời gian làm: {svc.durationMinutes} phút</p>}
+                                                    </div>
+                                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{formatVND(svc.servicePrice)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{booking.serviceName}</p>
+                                            <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{formatVND(booking.servicePrice)}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Thời gian cần tới</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {category === 'boarding' && booking.checkIn
+                                                ? format(parseISO(booking.checkIn), 'HH:mm • dd/MM/yyyy')
+                                                : format(parseISO(booking.appointmentDatetime), 'HH:mm • dd/MM/yyyy')}
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                                            {booking.status === 'COMPLETED' ? 'Thời gian hoàn thành' : 'Dự kiến hoàn thành'}
+                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {booking.status === 'COMPLETED' && booking.updatedAt
+                                                ? format(parseISO(booking.updatedAt), 'HH:mm • dd/MM/yyyy')
+                                                : booking.serviceEndDatetime
+                                                    ? format(parseISO(booking.serviceEndDatetime), 'HH:mm • dd/MM/yyyy')
+                                                    : '—'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4">
+                                    <div className="flex justify-between">
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Phương thức thanh toán</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {booking.paymentMethod === 'PAYOS' ? '100% qua PayOS' : booking.paymentMethod === 'CASH_DEPOSIT' ? 'Đặt cọc (Tiền mặt tại quầy)' : booking.paymentMethod === 'MOCK' ? 'MOCK Payment' : 'Tiền mặt'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 flex justify-between items-center">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Đã thanh toán</p>
+                                    <span className="text-lg font-black text-emerald-600">{formatVND(booking.paidAmount || 0)}</span>
+                                </div>
+                                {(booking.servicePrice - (booking.paidAmount || 0)) > 0 && booking.status !== 'CANCELLED' && booking.status !== 'WAITING_REFUND' && (
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Cần thanh toán thêm tại quầy</p>
+                                    <span className="text-lg font-black text-rose-500">{formatVND(booking.servicePrice - (booking.paidAmount || 0))}</span>
+                                </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Care Logs Timeline Section */}
                 <AnimatePresence>
@@ -372,6 +459,15 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                                 <BookOpen size={14} /> Nhật ký chăm sóc ({careLogs.length})
                             </button>
                         )}
+                        <button
+                            onClick={() => { setShowDetails(!showDetails); setShowLogs(false); }}
+                            className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${showDetails
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
+                                }`}
+                        >
+                            <Info size={14} /> Chi tiết
+                        </button>
                         <Link to="/messages" className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
                             <MessageCircle size={14} /> Nhắn tin
                         </Link>

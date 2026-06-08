@@ -158,6 +158,7 @@ export interface BookingResponse {
       serviceName: string;
       servicePrice: number;
       category?: string;
+      durationMinutes?: number;
   }[];
   petId: number;
   petName: string;
@@ -181,6 +182,7 @@ export interface BookingResponse {
   checkoutUrl?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  paidAmount?: number;
   cameraRtspUrl?: string;
   cameraStreamUrl?: string;
   cameraEnabled?: boolean;

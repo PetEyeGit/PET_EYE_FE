@@ -12,6 +12,9 @@ interface BookingService {
   id: number;
   name: string;
   price: number;
+  durationMinutes?: number;
+  category?: string;
+  cameraEnabled?: boolean;
 }
 
 export default function Payment() {
@@ -45,6 +48,7 @@ export default function Payment() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [bookingNote, setBookingNote] = useState('');
   
   const [myVouchers, setMyVouchers] = useState<any[]>([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState<number | null>(null);
@@ -78,7 +82,36 @@ export default function Payment() {
     : [{ id: booking.serviceId, name: booking.serviceName, price: booking.servicePrice }];
 
   const rawTotalPrice = serviceList.reduce((sum, s) => sum + s.price, 0);
-  const depositAmount = Math.ceil(rawTotalPrice * 0.1 / 1000) * 1000; // 10% làm tròn lên 1000đ
+
+  const getCommissionRateForService = (svc: BookingService) => {
+    if (!svc.category) return 0.10;
+    const cat = svc.category.toUpperCase();
+    if (cat.includes('GROOMING') || cat.includes('SPA')) return 0.18;
+    if ((cat.includes('BOARDING') || cat.includes('HOTEL')) && svc.cameraEnabled) return 0.25;
+    if (cat.includes('CLINIC')) return 0.10;
+    return 0.10;
+  };
+
+  const rawDepositAmount = serviceList.reduce((sum, s) => sum + (s.price * getCommissionRateForService(s)), 0);
+
+  let depositAmount = Math.ceil(rawDepositAmount);
+  depositAmount = Math.max(depositAmount, 2000);
+  if (depositAmount % 1000 !== 0) {
+    depositAmount = Math.floor(depositAmount / 1000 + 1) * 1000;
+  }
+
+  // Tính thời gian dự kiến hoàn thành
+  const totalDurationMinutes = serviceList.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+  let estimatedEndTime = '';
+  if (booking.time && totalDurationMinutes > 0 && !booking.time.includes('ngày')) {
+    const [hours, minutes] = booking.time.split(':').map(Number);
+    if (!isNaN(hours) && !isNaN(minutes)) {
+      const start = new Date();
+      start.setHours(hours, minutes, 0, 0);
+      const end = new Date(start.getTime() + totalDurationMinutes * 60000);
+      estimatedEndTime = end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    }
+  }
 
   // Voucher logic
   let discountAmount = 0;
@@ -99,6 +132,10 @@ export default function Payment() {
     if (!agreed || loading) return;
     setLoading(true);
     setError('');
+
+    const combinedNote = bookingNote.trim()
+      ? (booking.petNote ? `${booking.petNote}\n—\nGhi chú thêm: ${bookingNote.trim()}` : bookingNote.trim())
+      : (booking.petNote || '');
 
     const serviceIds = serviceList.map(s => s.id);
     
@@ -125,7 +162,7 @@ export default function Payment() {
           appointmentDatetime: booking.appointmentDatetime,
           checkIn: booking.checkIn,
           checkOut: booking.checkOut,
-          note: booking.petNote || '',
+          note: combinedNote,
           paymentMethod: payMethod === 'cash' ? "CASH" : "PAYOS",
           cageSize: booking.cageSize || '',
           roomType: booking.roomType,
@@ -156,7 +193,7 @@ export default function Payment() {
         appointmentDatetime: booking.appointmentDatetime,
         checkIn: booking.checkIn,
         checkOut: booking.checkOut,
-        note: booking.petNote,
+        note: combinedNote,
         cageSize: booking.cageSize,
         roomType: booking.roomType,
         userVoucherId: payMethod === 'payos' && selectedVoucherId ? selectedVoucherId : undefined,
@@ -233,12 +270,15 @@ export default function Payment() {
                   {/* Danh sách dịch vụ đã chọn */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {serviceList.map((svc) => (
-                      <span key={svc.id} className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-semibold rounded-lg">
+                      <span key={svc.id} className="px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-semibold rounded-lg flex items-center gap-1">
                         {svc.name}
+                        {svc.durationMinutes ? ` (${svc.durationMinutes} phút)` : ''}
                       </span>
                     ))}
-                    <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-lg">
-                      {booking.date} • {booking.time}
+                    <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-lg flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">schedule</span>
+                      Bắt đầu: {booking.date} • {booking.time}
+                      {estimatedEndTime ? ` - Dự kiến xong: ${estimatedEndTime}` : ''}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">🐾 {booking.petName}</p>
@@ -252,6 +292,20 @@ export default function Payment() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Note for Shop */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <h2 className="font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#1a2b4c] dark:text-teal-400">edit_note</span>
+                Ghi chú cho cơ sở
+              </h2>
+              <textarea
+                value={bookingNote}
+                onChange={(e) => setBookingNote(e.target.value)}
+                placeholder="Nhập ghi chú của bạn (VD: thú cưng hơi nhát người, cần chuẩn bị lồng rộng...)"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a2b4c] text-slate-700 dark:text-slate-200 min-h-[100px] resize-y"
+              />
             </div>
 
             {/* Payment Method */}
@@ -367,12 +421,24 @@ export default function Payment() {
 
               {/* Từng dịch vụ */}
               <div className="space-y-2 text-sm">
-                {serviceList.map((svc) => (
-                  <div key={svc.id} className="flex justify-between text-slate-600 dark:text-slate-400">
-                    <span className="flex-1 pr-2 leading-snug">{svc.name}</span>
-                    <span className="shrink-0 font-semibold">{formatVND(svc.price)}</span>
+                {serviceList.map((svc) => {
+                  const rate = getCommissionRateForService(svc);
+                  return (
+                  <div key={svc.id} className="flex flex-col text-slate-600 dark:text-slate-400">
+                    <div className="flex justify-between">
+                      <span className="flex-1 pr-2 leading-snug">{svc.name}</span>
+                      <span className="shrink-0 font-semibold">{formatVND(svc.price)}</span>
+                    </div>
+                    {svc.durationMinutes ? (
+                      <span className="text-xs text-slate-400 mt-0.5">⏱ Thời gian: {svc.durationMinutes} phút</span>
+                    ) : null}
+                    {payMethod === 'cash' && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
+                        • Cọc trước {rate * 100}%
+                      </span>
+                    )}
                   </div>
-                ))}
+                )})}
               </div>
 
               {discountAmount > 0 && payMethod === 'payos' && (
@@ -389,9 +455,13 @@ export default function Payment() {
 
               {payMethod === 'cash' && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 space-y-1.5 text-xs border border-amber-200 dark:border-amber-800">
-                  <div className="flex justify-between text-amber-700 dark:text-amber-300 pb-2">
-                    <span>Tiền cọc thanh toán qua PayOS</span>
-                    <span className="font-bold">Theo biểu phí</span>
+                  <div className="flex justify-between text-amber-700 dark:text-amber-300 pb-1">
+                    <span>Tổng tiền cọc thanh toán qua PayOS</span>
+                    <span className="font-bold text-sm">{formatVND(depositAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-600 dark:text-amber-400 border-t border-amber-200/50 dark:border-amber-800/50 pt-1.5">
+                    <span>Thanh toán tại quầy</span>
+                    <span className="font-semibold">{formatVND(rawTotalPrice - depositAmount)}</span>
                   </div>
                 </div>
               )}
@@ -459,7 +529,9 @@ export default function Payment() {
                       appointmentDatetime: booking.appointmentDatetime,
                       checkIn: booking.checkIn,
                       checkOut: booking.checkOut,
-                      note: booking.petNote,
+                      note: bookingNote.trim()
+                        ? (booking.petNote ? `${booking.petNote}\n—\nGhi chú thêm: ${bookingNote.trim()}` : bookingNote.trim())
+                        : (booking.petNote || ''),
                       paymentMethod: payMethod === 'cash' ? 'CASH' : 'PAYOS',
                       cageSize: booking.cageSize,
                       roomType: booking.roomType,

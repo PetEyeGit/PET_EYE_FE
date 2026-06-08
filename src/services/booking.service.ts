@@ -72,6 +72,12 @@ export const bookingService = {
     return response.data.result!;
   },
 
+  /** Shop proactively cancels a booking */
+  shopCancel: async (id: number, reason: string): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(`/bookings/${id}/shop-cancel`, { reason });
+    return response.data.result!;
+  },
+
 
 
   mockConfirmPayment: async (orderCode: number): Promise<any> => {

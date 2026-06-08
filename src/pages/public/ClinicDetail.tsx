@@ -524,7 +524,7 @@ export default function ClinicDetail() {
     // Tập hợp tất cả services đã chọn (thường + boarding)
     const selectedServices = selectedServiceIds.map((id) => {
       const svc = apiServices.find((s: ServiceResponse) => s.id === id)!;
-      return { id: svc.id, name: svc.serviceName, price: svc.price };
+      return { id: svc.id, name: svc.serviceName, price: svc.price, durationMinutes: svc.durationMinutes, category: svc.category, cameraEnabled: svc.cameraEnabled };
     });
 
     if (isHotelSelected && boardingService) {
@@ -533,6 +533,9 @@ export default function ClinicDetail() {
         id: boardingService.id,
         name: `${boardingService.serviceName} · Camera ${tierLabel(selectedCameraTier, boardingService.cameraTierLabels)} · ${boardingDays} ngày`,
         price: boardingPrice,
+        durationMinutes: undefined,
+        category: boardingService.category,
+        cameraEnabled: boardingService.cameraEnabled,
       });
     }
 

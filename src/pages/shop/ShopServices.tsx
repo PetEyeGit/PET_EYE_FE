@@ -761,7 +761,7 @@ export default function ShopServices() {
 
               {/* Description */}
               <div>
-                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Mô tả</label>
+                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Mô tả ( Tối thiểu 30 từ )</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}

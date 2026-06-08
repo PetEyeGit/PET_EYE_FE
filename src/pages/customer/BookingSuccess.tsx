@@ -5,6 +5,7 @@ interface BookingServiceItem {
   id: number;
   name: string;
   price: number;
+  durationMinutes?: number;
 }
 
 export default function BookingSuccess() {
@@ -34,7 +35,7 @@ export default function BookingSuccess() {
       container.appendChild(dot);
     }
     const style = document.createElement('style');
-    style.textContent = `@keyframes fall{to{top:110%;opacity:0;transform:rotate(${Math.random()*720}deg) translateX(${(Math.random()-0.5)*80}px);}}`;
+    style.textContent = `@keyframes fall{to{top:110%;opacity:0;transform:rotate(${Math.random() * 720}deg) translateX(${(Math.random() - 0.5) * 80}px);}}`;
     document.head.appendChild(style);
     return () => { document.head.removeChild(style); };
   }, []);
@@ -215,7 +216,7 @@ export default function BookingSuccess() {
               </div>
 
               {bookingInfo.staffId && (
-               <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg px-2.5 py-1.5 border border-blue-100/50 dark:border-blue-800/30">
+                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg px-2.5 py-1.5 border border-blue-100/50 dark:border-blue-800/30">
                   <span className="material-symbols-outlined text-base text-blue-600 dark:text-blue-400">support_agent</span>
                   <div className="min-w-0">
                     <p className="text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-0.5">Nhân viên</p>
@@ -233,14 +234,17 @@ export default function BookingSuccess() {
                 {serviceList.map((svc: BookingServiceItem, i: number) => (
                   <div key={svc.id || i} className="flex items-center justify-between px-3 py-1.5 gap-2 bg-white dark:bg-slate-800">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="material-symbols-outlined text-[13px] text-indigo-600 dark:text-indigo-400">
+                      <span className="material-symbols-outlined text-[13px] text-indigo-600 dark:text-indigo-400 mt-0.5 self-start">
                         {svc.name.toLowerCase().includes('lưu trú') || svc.name.toLowerCase().includes('boarding')
                           ? 'hotel'
                           : svc.name.toLowerCase().includes('camera')
                             ? 'videocam'
                             : 'content_cut'}
                       </span>
-                      <span className="text-[11px] text-slate-700 dark:text-slate-200 leading-tight truncate">{svc.name}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[11px] text-slate-700 dark:text-slate-200 leading-tight truncate">{svc.name}</span>
+                        {svc.durationMinutes ? <span className="text-[9px] text-slate-400 mt-0.5">⏱ {svc.durationMinutes} phút</span> : null}
+                      </div>
                     </div>
                     <span className="text-[11px] font-bold text-slate-900 dark:text-white shrink-0">
                       {svc.price.toLocaleString('vi-VN')}đ
@@ -288,7 +292,7 @@ export default function BookingSuccess() {
         {/* ── Actions ── */}
         <div className="grid grid-cols-2 gap-2.5">
           <Link
-            to="/profile/bookings/my"
+            to="/profile/bookings"
             className="flex items-center justify-center gap-1.5 py-2.5 bg-[#1a2b4c] text-white font-bold rounded-xl hover:bg-[#243d6b] transition-all shadow-md shadow-[#1a2b4c]/20 text-xs"
           >
             <span className="material-symbols-outlined text-sm">event_note</span>
@@ -304,7 +308,7 @@ export default function BookingSuccess() {
         </div>
 
         {/* Share / Add to calendar row */}
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
             <span className="material-symbols-outlined text-[13px]">ios_share</span>
             Chia sẻ
@@ -317,7 +321,7 @@ export default function BookingSuccess() {
             <span className="material-symbols-outlined text-[13px]">chat</span>
             Nhắn tin
           </button>
-        </div>
+        </div> */}
 
       </div>
     </div>

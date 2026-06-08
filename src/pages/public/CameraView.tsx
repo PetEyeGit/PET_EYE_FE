@@ -559,39 +559,42 @@ export default function CameraView() {
 
                         {/* Tab content */}
                         <div className="flex-1 overflow-y-auto scrollbar-hide bg-white">
-                            {tab === 'logs' && (
-                                <div className="p-5 space-y-0">
-                                    {realLogs.length === 0 ? (
-                                        <p className="text-sm text-center text-slate-400 py-10">Chưa có nhật ký chăm sóc nào.</p>
-                                    ) : (
-                                        realLogs.map((log, i) => {
-                                            const config = getLogIconConfig(log.type);
-                                            return (
-                                                <div key={i} className="flex gap-4 py-3 relative group">
-                                                    <div className="flex flex-col items-center gap-1 pt-1">
-                                                        <div className={`w-8 h-8 rounded-full ${config.bg} ${config.border} border flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform shadow-sm`} style={{ color: config.color }}>
-                                                            {config.icon}
+                            {tab === 'logs' && (() => {
+                                const displayLogs = realLogs.filter(log => !log.note?.startsWith('[Kết thúc sớm]') && !log.note?.startsWith('[Kết thúc trễ]'));
+                                return (
+                                    <div className="p-5 space-y-0">
+                                        {displayLogs.length === 0 ? (
+                                            <p className="text-sm text-center text-slate-400 py-10">Chưa có nhật ký chăm sóc nào.</p>
+                                        ) : (
+                                            displayLogs.map((log, i) => {
+                                                const config = getLogIconConfig(log.type);
+                                                return (
+                                                    <div key={i} className="flex gap-4 py-3 relative group">
+                                                        <div className="flex flex-col items-center gap-1 pt-1">
+                                                            <div className={`w-8 h-8 rounded-full ${config.bg} ${config.border} border flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform shadow-sm`} style={{ color: config.color }}>
+                                                                {config.icon}
+                                                            </div>
+                                                            {i < displayLogs.length - 1 && <div className="w-px flex-1 bg-slate-100 absolute top-9 bottom-[-10px] left-[15px]" />}
                                                         </div>
-                                                        {i < realLogs.length - 1 && <div className="w-px flex-1 bg-slate-100 absolute top-9 bottom-[-10px] left-[15px]" />}
+                                                        <div className="flex-1 min-w-0 pb-1">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="text-sm font-bold text-primary">{config.label}</span>
+                                                                <span className="text-[10px] font-semibold text-slate-400 shrink-0 bg-slate-50 px-2 py-0.5 rounded-full">
+                                                                    {new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-600 mt-1 leading-relaxed">{log.note}</p>
+                                                            {log.imageUrl && (
+                                                                <img src={log.imageUrl} alt="Care log" className="mt-2 rounded-lg w-full object-cover max-h-32 border border-slate-200" />
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0 pb-1">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="text-sm font-bold text-primary">{config.label}</span>
-                                                        <span className="text-[10px] font-semibold text-slate-400 shrink-0 bg-slate-50 px-2 py-0.5 rounded-full">
-                                                            {new Date(log.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">{log.note}</p>
-                                                    {log.imageUrl && (
-                                                        <img src={log.imageUrl} alt="Care log" className="mt-2 rounded-lg w-full object-cover max-h-32 border border-slate-200" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                    )}
-                                </div>
-                            )}
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {tab === 'chat' && (
                                 <div className="flex flex-col h-full bg-slate-50/50">
