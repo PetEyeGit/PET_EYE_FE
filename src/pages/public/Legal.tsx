@@ -57,30 +57,24 @@ export default function Legal() {
         </ul>
 
         <h4 className="text-lg font-bold text-slate-800 mt-6 mb-3">3.3. Chính sách hủy lịch và đi trễ</h4>
-        <p className="mb-3">Mỗi đối tác có thể áp dụng chính sách hủy lịch riêng và sẽ được hiển thị công khai trên nền tảng trước khi người dùng xác nhận đặt lịch.</p>
-        <p className="mb-3 font-semibold text-slate-800">Trường hợp khách hàng đến trễ quá 15 phút so với thời gian đã đặt:</p>
+        <p className="mb-3">Để đảm bảo quyền lợi cho cả khách hàng và các đối tác cơ sở chăm sóc, PetEye áp dụng chính sách hủy lịch như sau:</p>
         <div className="pl-5 border-l-2 border-slate-200 space-y-5">
           <div>
-            <p className="font-semibold text-slate-800 mb-2">Đối với đơn hàng thanh toán trước</p>
+            <p className="font-semibold text-slate-800 mb-2">Trường hợp Khách hàng chủ động hủy lịch hẹn</p>
             <ul className="list-disc pl-6 space-y-1.5">
-              <li>Lịch hẹn có thể bị hủy bởi đối tác.</li>
-              <li>Khách hàng sẽ được hoàn tiền sau khi trừ:
-                <ul className="list-[circle] pl-6 mt-1.5 space-y-1.5 text-sm text-slate-500">
-                  <li>Phí dịch vụ của nền tảng (nếu có).</li>
-                  <li>Khoản bồi hoàn cho đối tác tối đa 50% giá trị đơn hàng theo chính sách của đối tác.</li>
-                </ul>
-              </li>
-              <li className="text-sm italic text-slate-500">Mức khấu trừ cụ thể sẽ được hiển thị trước khi khách hàng xác nhận đặt lịch.</li>
+              <li>Hủy <strong>trước 5 tiếng</strong> so với giờ hẹn: Khách hàng được hoàn lại tiền dịch vụ, sau khi trừ đi tiền cọc (tương đương mức phí dịch vụ của nền tảng).</li>
+              <li>Hủy <strong>trong vòng 5 tiếng</strong> (sát giờ hẹn): Khách hàng không được hoàn cọc, và mất thêm <strong>50% giá trị dịch vụ</strong> như một khoản bồi thường thiệt hại cho đối tác. Số tiền còn lại sẽ được hoàn trả.</li>
             </ul>
           </div>
           <div>
-            <p className="font-semibold text-slate-800 mb-2">Đối với đơn hàng thanh toán tại cơ sở</p>
+            <p className="font-semibold text-slate-800 mb-2">Trường hợp Khách hàng đi trễ hoặc không đến (No-show)</p>
             <ul className="list-disc pl-6 space-y-1.5">
-              <li>Lịch hẹn có thể bị hủy bởi đối tác. Mọi khoản bồi hoàn phát sinh (nếu có) sẽ được thực hiện trực tiếp giữa khách hàng và đối tác theo chính sách của đối tác.</li>
+              <li>Khách hàng có trách nhiệm đến đúng giờ hẹn. Nếu đi trễ quá thời gian chờ cho phép của đối tác (thường là 15 phút), đơn hàng có thể bị đối tác hủy.</li>
+              <li>Đối với đơn hàng thanh toán trực tuyến: Khách hàng không được hoàn cọc, và mất thêm <strong>30% giá trị dịch vụ</strong> như khoản bồi thường cho đối tác. Số tiền còn lại sẽ được hoàn trả.</li>
+              <li>Đối với đơn hàng đặt cọc: Khách hàng sẽ bị mất hoàn toàn khoản tiền đã đặt cọc nếu vi phạm chính sách đi trễ.</li>
             </ul>
           </div>
         </div>
-        <p className="mt-5 italic bg-slate-50 p-4 rounded-xl text-sm border border-slate-100">PetEye có quyền hỗ trợ làm trung gian trao đổi nhưng không phải là bên chịu trách nhiệm thanh toán hoặc bồi thường.</p>
 
         <h4 className="text-lg font-bold text-slate-800 mt-6 mb-3">3.4. Đánh giá và phản hồi</h4>
         <p>Người dùng được quyền đánh giá dịch vụ sau khi hoàn thành giao dịch. Các nội dung đánh giá phải trung thực, khách quan và không chứa: thông tin sai sự thật, nội dung xúc phạm, vu khống, nội dung vi phạm pháp luật hoặc thuần phong mỹ tục. PetEye có quyền ẩn hoặc xóa các nội dung vi phạm mà không cần thông báo trước.</p>

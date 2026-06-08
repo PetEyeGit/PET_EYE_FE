@@ -1229,17 +1229,6 @@ export default function ClinicDetail() {
                             </p>
                           </div>
                         )}
-
-                        <div className="flex items-center gap-4 mt-1">
-                          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
-                            <span className="material-symbols-outlined text-sm">thumb_up</span>
-                            Hữu ích
-                          </button>
-                          <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-[#1a2b4c] transition-colors">
-                            <span className="material-symbols-outlined text-sm">chat_bubble</span>
-                            Phản hồi
-                          </button>
-                        </div>
                       </div>
                     </div>
                   ))

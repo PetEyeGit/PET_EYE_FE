@@ -11,6 +11,16 @@ interface Props {
 
 const WS_URL = 'http://localhost:8080/api/ws';
 
+/** Keys cần được reload khi có sự kiện cập nhật đơn hàng.
+ *  Dùng prefix-match của React Query — chỉ cần khai báo phần đầu của key.
+ */
+const BOOKING_QUERY_KEYS = [
+  ['allShopTasks'],        // ShopBookings - danh sách đơn theo list view
+  ['shopBookingsRange'],   // ShopBookings - calendar view (key: ['shopBookingsRange', 'yyyy-MM'])
+  ['shopDashboard'],       // ShopDashboard (key: ['shopDashboard', startDate, endDate])
+  ['my-notifications'],    // Bell notification badge
+];
+
 export default function ShopRealtimeNotification({ shopId }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -20,9 +30,7 @@ export default function ShopRealtimeNotification({ shopId }: Props) {
 
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL),
-      debug: (str) => {
-        // console.log('STOMP Notif:', str);
-      },
+      debug: () => {},
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
@@ -32,17 +40,23 @@ export default function ShopRealtimeNotification({ shopId }: Props) {
       client.subscribe(`/topic/shop/${shopId}/notifications`, (message) => {
         try {
           const data = JSON.parse(message.body);
+
           if (data.message === 'Có đơn hàng mới!') {
-            // Phát âm thanh
+            // Đơn mới: phát âm thanh + toast + reload
             const audio = new Audio('/assets/sounds/notification.wav');
-            audio.play().catch(e => console.warn('Không thể phát âm thanh tự động (Auto-play policy):', e));
-            
-            // Hiển thị toast nhắc nhở
+            audio.play().catch(() => {});
             toast.success('🔔 Shop vừa có đơn hàng mới!');
-            
-            // Invalidate query để cập nhật số lượng thông báo / danh sách đơn hàng
-            queryClient.invalidateQueries({ queryKey: ['my-notifications'] });
-            queryClient.invalidateQueries({ queryKey: ['allShopTasks'] });
+            BOOKING_QUERY_KEYS.forEach(key =>
+              queryClient.invalidateQueries({ queryKey: key })
+            );
+            return;
+          }
+
+          if (data.message === 'BOOKING_UPDATED') {
+            // Cập nhật trạng thái đơn: reload ngầm, không làm phiền
+            BOOKING_QUERY_KEYS.forEach(key =>
+              queryClient.invalidateQueries({ queryKey: key })
+            );
           }
         } catch (e) {
           console.error('Error parsing notification', e);
@@ -57,11 +71,9 @@ export default function ShopRealtimeNotification({ shopId }: Props) {
     client.activate();
 
     return () => {
-      if (client.active) {
-        client.deactivate();
-      }
+      if (client.active) client.deactivate();
     };
   }, [shopId, user, queryClient]);
 
-  return null; // Component này chỉ chạy ngầm
+  return null; // Component chạy ngầm
 }
