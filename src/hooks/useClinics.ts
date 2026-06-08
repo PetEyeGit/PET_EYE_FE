@@ -24,6 +24,7 @@ export function useClinics() {
   // activeService stores the BE shopType value ('Tất cả' | 'CLINIC' | 'SPA' | ...)
   const [activeService, setActiveService] = useState(initialType);
   const [minRating, setMinRating] = useState(0);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   // Debounce text inputs so API is only called after user stops typing
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -41,11 +42,30 @@ export function useClinics() {
     staleTime: 30_000,
   });
 
-  // Client-side rating filter (BE already filters by shopType/keyword/city)
+  // Client-side rating and service filters
   const filteredShops = useMemo(() => {
-    if (minRating === 0) return shops;
-    return shops.filter((s: ShopPublicResponse) => s.ratingAvg >= minRating);
-  }, [shops, minRating]);
+    let result = shops;
+    if (minRating > 0) {
+      result = result.filter((s: ShopPublicResponse) => s.ratingAvg >= minRating);
+    }
+    if (selectedServices.length > 0) {
+      result = result.filter((s: ShopPublicResponse) => {
+        if (!s.serviceNames || s.serviceNames.length === 0) return false;
+        return selectedServices.some(svc => s.serviceNames?.includes(svc));
+      });
+    }
+    return result;
+  }, [shops, minRating, selectedServices]);
+
+  const availableServices = useMemo(() => {
+    const services = new Set<string>();
+    shops.forEach((s: ShopPublicResponse) => {
+      if (s.serviceNames) {
+        s.serviceNames.forEach(svc => services.add(svc));
+      }
+    });
+    return Array.from(services).sort();
+  }, [shops]);
 
   return {
     clinics: filteredShops,
@@ -59,5 +79,8 @@ export function useClinics() {
     setActiveService,
     minRating,
     setMinRating,
+    selectedServices,
+    setSelectedServices,
+    availableServices,
   };
 }

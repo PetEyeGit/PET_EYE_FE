@@ -277,4 +277,14 @@ export const adminService = {
   deleteVoucher: async (id: number): Promise<void> => {
     await apiClient.delete(`/admin/vouchers/${id}`);
   },
+
+  // Config
+  getVoucherServiceConfig: async (): Promise<boolean> => {
+    const res = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/public/config/voucher-service');
+    return res.data.result?.enabled ?? true;
+  },
+
+  setVoucherServiceConfig: async (enabled: boolean): Promise<void> => {
+    await apiClient.put(`/admin/config/voucher-service?enabled=${enabled}`);
+  },
 };

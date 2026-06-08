@@ -45,6 +45,19 @@ export const userService = {
     return response.data.result || [];
   },
 
+  checkVoucherStatus: async (voucherCode: string, totalAmount: number, shopId: number): Promise<any> => {
+    const res = await apiClient.post<ApiResponse<any>>('/user/vouchers/check', null, {
+      params: { voucherCode, totalAmount, shopId }
+    });
+    return res.data;
+  },
+
+  // Config
+  getVoucherServiceConfig: async (): Promise<boolean> => {
+    const res = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/public/config/voucher-service');
+    return res.data.result?.enabled ?? true;
+  },
+
   getMyVouchers: async (): Promise<any[]> => {
     const response = await apiClient.get<ApiResponse<any[]>>('/users/me/vouchers');
     return response.data.result || [];

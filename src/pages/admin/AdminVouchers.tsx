@@ -10,6 +10,29 @@ export default function AdminVouchers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState<any>(null);
+  
+  // Feature toggle state
+  const [isVoucherServiceEnabled, setIsVoucherServiceEnabled] = useState(true);
+
+  const loadConfig = async () => {
+    try {
+      const enabled = await adminService.getVoucherServiceConfig();
+      setIsVoucherServiceEnabled(enabled);
+    } catch (error) {
+      console.error('Failed to load voucher config', error);
+    }
+  };
+
+  const toggleVoucherService = async () => {
+    const newState = !isVoucherServiceEnabled;
+    try {
+      await adminService.setVoucherServiceConfig(newState);
+      setIsVoucherServiceEnabled(newState);
+      toast.success(newState ? 'Đã bật dịch vụ Voucher' : 'Đã tắt dịch vụ Voucher');
+    } catch (error) {
+      toast.error('Lỗi khi cập nhật trạng thái dịch vụ');
+    }
+  };
 
   const [formData, setFormData] = useState({
     code: '',
@@ -31,7 +54,10 @@ export default function AdminVouchers() {
     }
   };
 
-  useEffect(() => { loadVouchers(); }, []);
+  useEffect(() => { 
+    loadVouchers(); 
+    loadConfig();
+  }, []);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Bạn có chắc muốn xóa cấu hình này?')) {
@@ -107,13 +133,42 @@ export default function AdminVouchers() {
             Quản lý mức chi tiêu cần đạt để lên hạng và phần thưởng voucher tương ứng.
           </p>
         </div>
-        <button onClick={() => openEditModal()}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center gap-2 transition glow-blue">
-          <Plus className="w-5 h-5" /> Tạo Cấu Hình Mới
-        </button>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+            <span className={`text-sm font-bold ${isVoucherServiceEnabled ? 'text-green-600' : 'text-slate-400'}`}>
+              Dịch vụ Voucher
+            </span>
+            <button
+              onClick={toggleVoucherService}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                isVoucherServiceEnabled ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isVoucherServiceEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          <button onClick={() => openEditModal()}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-2xl font-semibold flex items-center gap-2 transition glow-blue">
+            <Plus className="w-5 h-5" /> Tạo Cấu Hình Mới
+          </button>
+        </div>
       </div>
 
+      {/* Voucher Service Status Banner */}
+      {!isVoucherServiceEnabled && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-2xl flex items-center gap-3">
+          <span className="material-symbols-outlined">warning</span>
+          <p className="text-sm font-semibold">Dịch vụ Voucher đang TẮT. Người dùng sẽ không thấy Hạng và Voucher.</p>
+        </div>
+      )}
+
       {/* Filter Bar */}
+
       <div className={`flex flex-col sm:flex-row gap-4 p-4 rounded-2xl ${isDark ? 'admin-glass-card' : 'bg-white border border-slate-200/60 shadow-sm'}`}>
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />

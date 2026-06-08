@@ -720,12 +720,12 @@ export default function Home() {
               className="mt-12 lg:mt-16 flex justify-center"
             >
               <button 
-                onClick={() => navigate('/login')}
+                onClick={() => navigate(user ? '/search' : '/login')}
                 className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 lg:px-10 lg:py-5 font-black text-white bg-primary rounded-full overflow-hidden shadow-2xl shadow-primary/30 hover:scale-105 transition-all duration-300"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-primary to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <span className="relative z-10 flex items-center gap-2 text-sm lg:text-base">
-                  ĐĂNG NHẬP & TRẢI NGHIỆM NGAY <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  {user ? 'ĐẶT LỊCH NGAY' : 'ĐĂNG NHẬP & TRẢI NGHIỆM NGAY'} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 </span>
               </button>
             </motion.div>

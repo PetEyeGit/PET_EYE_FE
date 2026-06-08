@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2, ShieldCheck, Image as ImageIcon } from 'lucide-react';
+import { Store, MapPin, Phone, Mail, Clock, Camera, Save, Loader2, ShieldCheck, Image as ImageIcon, CalendarX, Plus, X, Calendar } from 'lucide-react';
 import { shopService } from '../../services/shop.service';
 import { fileService } from '../../services/file.service';
 import toast from 'react-hot-toast';
@@ -682,61 +682,95 @@ export default function ShopProfile() {
               </div>
 
               {/* Shop Off Days */}
-              <div className={`mt-6 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-                <label className={`block text-sm font-bold mb-2 flex items-center gap-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  <span className="material-symbols-outlined text-[18px]">event_busy</span>
-                  Cấu hình ngày nghỉ (Shop Off)
-                </label>
-                <p className={`text-xs mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Khách hàng sẽ không thể đặt lịch vào các ngày này. Chọn 1 ngày hoặc chọn từ ngày - đến ngày.
-                </p>
-                <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-4">
-                  <div>
-                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Từ ngày</label>
-                    <input
-                      type="date"
-                      value={newOffStartDate}
-                      onChange={(e) => setNewOffStartDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]} 
-                      className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 transition-all w-full sm:w-auto ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20'}`}
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-xs font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đến ngày (không bắt buộc)</label>
-                    <input
-                      type="date"
-                      value={newOffEndDate}
-                      onChange={(e) => setNewOffEndDate(e.target.value)}
-                      min={newOffStartDate || new Date().toISOString().split('T')[0]}
-                      className={`px-4 py-2 border rounded-lg outline-none focus:ring-2 transition-all w-full sm:w-auto ${isDark ? 'bg-slate-800/50 border-slate-700 text-white focus:ring-indigo-500/50' : 'bg-white border-slate-200 text-slate-900 focus:ring-indigo-500/20'}`}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addOffDateRange}
-                    disabled={!newOffStartDate}
-                    className={`px-6 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 mt-2 sm:mt-0 ${isDark ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-primary hover:bg-blue-700 text-white'}`}
-                  >
-                    Thêm
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {shopInfo.offDays.length === 0 ? (
-                    <span className={`text-sm italic ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Chưa có ngày nghỉ nào được thiết lập.</span>
-                  ) : (
-                    shopInfo.offDays.map((date) => (
-                      <div key={date} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
-                        {date.split('-').reverse().join('/')}
-                        <button
-                          type="button"
-                          onClick={() => removeOffDate(date)}
-                          className="hover:text-red-500 transition-colors flex items-center justify-center"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">close</span>
-                        </button>
+              <div className={`mt-8 pt-8 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                <div className="flex flex-col md:flex-row gap-8">
+                  {/* Left config side */}
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <h4 className={`font-black text-lg flex items-center gap-2 mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isDark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}>
+                          <CalendarX size={16} />
+                        </div>
+                        Cấu hình ngày nghỉ
+                      </h4>
+                      <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Khách hàng sẽ không thể đặt lịch vào các ngày này. Chọn 1 ngày hoặc chọn khoảng thời gian.
+                      </p>
+                    </div>
+
+                    <div className={`p-5 rounded-2xl border ${isDark ? 'bg-slate-800/30 border-slate-700/50' : 'bg-slate-50 border-slate-200/60'}`}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Từ ngày</label>
+                          <div className="relative">
+                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="date"
+                              value={newOffStartDate}
+                              onChange={(e) => setNewOffStartDate(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]} 
+                              className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm font-bold outline-none transition-all ${isDark ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-indigo-500/30' : 'bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/10'}`}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className={`block text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đến ngày (Tùy chọn)</label>
+                          <div className="relative">
+                            <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="date"
+                              value={newOffEndDate}
+                              onChange={(e) => setNewOffEndDate(e.target.value)}
+                              min={newOffStartDate || new Date().toISOString().split('T')[0]}
+                              className={`w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm font-bold outline-none transition-all ${isDark ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-indigo-500/30' : 'bg-white border-slate-200 text-slate-900 focus:ring-2 focus:ring-[#1a2b4c]/10'}`}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    ))
-                  )}
+                      <button
+                        type="button"
+                        onClick={addOffDateRange}
+                        disabled={!newOffStartDate}
+                        className={`w-full py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}`}
+                      >
+                        <Plus size={14} /> Thêm ngày nghỉ
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right display side */}
+                  <div className="flex-1">
+                    <div className={`h-full rounded-2xl border p-5 flex flex-col ${isDark ? 'bg-slate-800/30 border-slate-700/50' : 'bg-slate-50 border-slate-200/60'}`}>
+                      <h5 className={`text-sm font-black mb-4 flex items-center justify-between ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        Danh sách ngày nghỉ
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'}`}>{shopInfo.offDays.length} ngày</span>
+                      </h5>
+                      <div className="flex-1 overflow-y-auto max-h-[220px] custom-scrollbar pr-2">
+                        {shopInfo.offDays.length === 0 ? (
+                          <div className="h-full flex flex-col items-center justify-center text-center opacity-50 py-8">
+                            <CalendarX size={32} className="mb-2" />
+                            <p className="text-xs font-bold">Chưa có ngày nghỉ nào được thiết lập.</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {shopInfo.offDays.map((date) => (
+                              <div key={date} className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${isDark ? 'bg-slate-800 border-slate-700 text-slate-300 hover:border-rose-500/50' : 'bg-white border-slate-200 text-slate-700 hover:border-rose-300'}`}>
+                                <Calendar size={12} className="opacity-50" />
+                                {date.split('-').reverse().join('/')}
+                                <button
+                                  type="button"
+                                  onClick={() => removeOffDate(date)}
+                                  className={`p-0.5 rounded-md transition-colors ${isDark ? 'text-slate-500 hover:bg-rose-500/20 hover:text-rose-400' : 'text-slate-400 hover:bg-rose-100 hover:text-rose-600'}`}
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

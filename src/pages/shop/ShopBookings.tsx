@@ -136,7 +136,13 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                     {booking.status === 'WAITING_SHOP_APPROVAL' && (
                         <div className="flex flex-col gap-2">
                             {!isPending && (
-                                <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')} className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                                <button disabled={updatingId === booking.bookingId} onClick={() => {
+                                    if (!booking.staffId) {
+                                        toast.error('Vui lòng chọn nhân viên phụ trách trước khi duyệt đơn!');
+                                        return;
+                                    }
+                                    handleUpdateStatus(booking.bookingId, 'CONFIRMED');
+                                }} className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                                     {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
