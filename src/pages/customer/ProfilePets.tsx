@@ -13,6 +13,8 @@ export default function ProfilePets() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 4;
   
   // Form state
   const [formData, setFormData] = useState({
@@ -169,6 +171,9 @@ export default function ProfilePets() {
     }
   };
 
+  const totalPages = Math.ceil(pets.length / pageSize);
+  const paginatedPets = pets.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <main className="flex-1 flex flex-col gap-8 p-4 md:p-0">
       {/* Header Section */}
@@ -216,7 +221,7 @@ export default function ProfilePets() {
             </button>
           </div>
         ) : (
-          pets.map((pet, idx) => (
+          paginatedPets.map((pet, idx) => (
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -296,7 +301,7 @@ export default function ProfilePets() {
               
               <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-4 border-t border-slate-100/50 dark:border-slate-800/50">
                 <Link
-                  to={`/clinic/1`}
+                  to={`/search`}
                   className="flex-1 py-3.5 text-center bg-[#1a2b4c] hover:bg-[#2d4a82] text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Calendar size={14} />
@@ -321,6 +326,43 @@ export default function ProfilePets() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="size-10 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight className="rotate-180" size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-sm">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`size-8 rounded-lg text-sm font-bold transition-all ${
+                  currentPage === i + 1
+                    ? 'bg-[#1a2b4c] text-white shadow-md'
+                    : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="size-10 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
 
       {/* Add Pet Modal */}
       <AnimatePresence>

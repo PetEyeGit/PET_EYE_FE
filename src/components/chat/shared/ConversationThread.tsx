@@ -24,6 +24,8 @@ export interface ConversationThreadProps {
     containerClassName?: string;
     loading?: boolean;
     isDark?: boolean;
+    isTyping?: { typing: boolean, senderEmail?: string };
+    onTyping?: (typing: boolean) => void;
 }
 
 export default function ConversationThread({
@@ -40,7 +42,9 @@ export default function ConversationThread({
     hideHeader = false,
     containerClassName = "",
     loading = false,
-    isDark = false
+    isDark = false,
+    isTyping,
+    onTyping
 }: ConversationThreadProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,7 +68,19 @@ export default function ConversationThread({
                 });
             }
         }
-    }, [messages]);
+    }, [messages, isTyping?.typing]);
+
+    // Handle typing debounce
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleInputChange = (val: string) => {
+        setInput(val);
+        if (onTyping) {
+            onTyping(true);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => onTyping(false), 2000);
+        }
+    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -249,7 +265,7 @@ export default function ConversationThread({
                                             ? 'bg-primary text-white rounded-2xl rounded-br-none shadow-primary/10'
                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white rounded-2xl rounded-bl-none border border-slate-100 dark:border-slate-700'
                                         }`}>
-                                        {msg.content && <span>{msg.content}</span>}
+                                        {msg.content && <span className="whitespace-pre-wrap block">{msg.content}</span>}
                                         {renderAttachment(msg, isMe)}
                                     </div>
                                     <span className="text-[9px] font-bold text-slate-400 px-2 uppercase tracking-tight">
@@ -259,6 +275,22 @@ export default function ConversationThread({
                             </div>
                         );
                     })
+                )}
+
+                {/* Typing Indicator */}
+                {isTyping?.typing && (
+                    <div className="flex justify-start">
+                        <div className="flex flex-col gap-1.5 max-w-[85%] sm:max-w-[70%] items-start">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">
+                                Đối phương đang soạn tin nhắn
+                            </span>
+                            <div className="px-5 py-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-bl-none border border-slate-100 dark:border-slate-700 flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
 
@@ -334,7 +366,7 @@ export default function ConversationThread({
                     <input
                         type="text"
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => handleInputChange(e.target.value)}
                         placeholder={pendingFile ? "Thêm ghi chú (tuỳ chọn)..." : placeholder}
                         disabled={disableInput}
                         className={`flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-400 py-2 sm:py-3 outline-none min-w-0 text-slate-900 dark:text-white`}

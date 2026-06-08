@@ -5,7 +5,7 @@ import { ShopPublicResponse } from '../../services/shop.service';
 import {
   Search, MapPin, Star, Filter, ArrowRight, Grid, List as ListIcon,
   Map as MapIcon, ChevronRight, SlidersHorizontal, CheckCircle2,
-  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home
+  X, Phone, Navigation, Info, Sparkles, Stethoscope, Scissors, Home, Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { NearbyShopResponse } from '../../services/clinic.service';
@@ -27,7 +27,8 @@ const SHOP_TYPE_TABS = [
   { value: 'Tất cả', label: 'Tất cả', icon: <Grid size={16} /> },
   { value: 'CLINIC', label: 'Khám thú y', icon: <Stethoscope size={16} /> },
   { value: 'SPA', label: 'Spa & Grooming', icon: <Scissors size={16} /> },
-  { value: 'BOARDING', label: 'Lưu trú', icon: <Home size={16} /> },
+  { value: 'HOTEL', label: 'Lưu trú', icon: <Home size={16} /> },
+  { value: 'MIXED', label: 'Tổng hợp', icon: <Store size={16} /> },
 ];
 
 const SORT_OPTIONS = ['Đánh giá cao nhất', 'Gần nhất', 'Mới nhất'];
@@ -72,10 +73,16 @@ export default function VetSearch() {
     setActiveService,
     minRating,
     setMinRating,
+<<<<<<< HEAD
     page,
     setPage,
     totalPages,
     totalElements,
+=======
+    selectedServices,
+    setSelectedServices,
+    availableServices,
+>>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
   } = useClinics();
 
   const [sortBy, setSortBy] = useState(latParam ? 'Gần nhất' : 'Đánh giá cao nhất');
@@ -282,9 +289,9 @@ export default function VetSearch() {
                   <SlidersHorizontal size={18} className="text-primary dark:text-white" />
                   Bộ lọc
                 </h3>
-                {(minRating > 0 || distanceKm !== 10) && (
+                {(minRating > 0 || distanceKm !== 30 || selectedServices.length > 0) && (
                   <button
-                    onClick={() => { setMinRating(0); setDistanceKm(10); }}
+                    onClick={() => { setMinRating(0); setDistanceKm(30); setSelectedServices([]); }}
                     className="text-[10px] font-black text-primary dark:text-white uppercase tracking-wider hover:underline"
                   >
                     Đặt lại
@@ -312,6 +319,37 @@ export default function VetSearch() {
                   ))}
                 </div>
               </div>
+
+              {/* Services filter */}
+              {availableServices.length > 0 && (
+                <div className="space-y-4">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                    {availableServices.map((svc) => (
+                      <label key={svc} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors group">
+                        <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedServices.includes(svc)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedServices([...selectedServices, svc]);
+                              } else {
+                                setSelectedServices(selectedServices.filter(s => s !== svc));
+                              }
+                            }}
+                            className="w-5 h-5 rounded-md border-2 border-slate-200 dark:border-slate-700 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent transition-all checked:bg-primary checked:border-primary cursor-pointer appearance-none"
+                          />
+                          <CheckCircle2 size={12} className={`absolute text-white pointer-events-none transition-transform duration-200 ${selectedServices.includes(svc) ? 'scale-100' : 'scale-0'}`} />
+                        </div>
+                        <span className={`text-sm font-bold transition-colors ${selectedServices.includes(svc) ? 'text-primary' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
+                          {svc}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Distance slider */}
               <div className="space-y-6">

@@ -24,14 +24,16 @@ import { useShopChat } from '../../hooks/useShopChat';
 import ConversationThread from '../../components/chat/shared/ConversationThread';
 
 // Constants
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+    WAITING_SHOP_APPROVAL: { label: 'Chờ duyệt', color: 'text-indigo-600 bg-indigo-50 border-indigo-100', icon: Clock },
     CONFIRMED: { label: 'Chờ xử lý', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: Clock },
     IN_PROGRESS: { label: 'Đang làm', color: 'text-blue-600 bg-blue-50 border-blue-100', icon: Zap },
     COMPLETED: { label: 'Hoàn thành', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', icon: CheckCircle2 },
     CANCELLED: { label: 'Đã hủy', color: 'text-rose-600 bg-rose-50 border-rose-100', icon: X },
+    CANCEL_REQUESTED: { label: 'Yêu cầu hủy', color: 'text-orange-600 bg-orange-50 border-orange-100', icon: AlertCircle },
     PENDING_PAYMENT: { label: 'Chờ thanh toán', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
     WAITING_REFUND: { label: 'Chờ hoàn tiền', color: 'text-slate-600 bg-slate-50 border-slate-100', icon: Clock },
-} as const;
+};
 
 const CARE_LOG_TYPES = [
     { id: 'FEEDING', label: 'Cho ăn', icon: Utensils, color: 'text-orange-500 bg-orange-50' },
@@ -87,7 +89,7 @@ const StaffChatTab = ({ bookingDetails, user, selectedTask }: { bookingDetails: 
     const { messages, connected, sendMessage } = useShopChat(
         shopId,
         user?.token,
-        'CUSTOMER_CHAT',
+        'CAMERA_CHAT',
         customerEmail
     );
 
@@ -129,7 +131,7 @@ export default function StaffDashboard() {
     const [myTasks, setMyTasks] = useState<TaskResponse[]>([]);
     const [poolTasks, setPoolTasks] = useState<TaskResponse[]>([]);
     const [activeTab, setActiveTab] = useState<'mine' | 'pool'>('mine');
-    const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'>('ACTIVE');
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'>('ACTIVE');
 
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -637,7 +639,9 @@ export default function StaffDashboard() {
         } catch (e) { }
     }
 
-    if (statusFilter === 'ACTIVE') {
+    if (statusFilter === 'WAITING') {
+        displayTasks = displayTasks.filter(t => ['WAITING_SHOP_APPROVAL'].includes(getEffectiveStatus(t)));
+    } else if (statusFilter === 'ACTIVE') {
         displayTasks = displayTasks.filter(t => ['CONFIRMED', 'IN_PROGRESS', 'PENDING_PAYMENT', 'WAITING_REFUND'].includes(getEffectiveStatus(t)));
     } else if (statusFilter === 'COMPLETED') {
         displayTasks = displayTasks.filter(t => getEffectiveStatus(t) === 'COMPLETED');
@@ -646,7 +650,7 @@ export default function StaffDashboard() {
     }
 
     displayTasks = [...displayTasks].sort((a, b) => {
-        const order: Record<string, number> = { 'IN_PROGRESS': 1, 'CONFIRMED': 2, 'PENDING_PAYMENT': 3, 'WAITING_REFUND': 4, 'COMPLETED': 5, 'CANCELLED': 6, 'CANCEL_REQUESTED': 6 };
+        const order: Record<string, number> = { 'WAITING_SHOP_APPROVAL': 1, 'IN_PROGRESS': 2, 'CONFIRMED': 3, 'PENDING_PAYMENT': 4, 'WAITING_REFUND': 5, 'COMPLETED': 6, 'CANCELLED': 7, 'CANCEL_REQUESTED': 7 };
         const statusA = getEffectiveStatus(a) || a.status;
         const statusB = getEffectiveStatus(b) || b.status;
         const orderA = order[statusA] || 99;
@@ -721,15 +725,14 @@ export default function StaffDashboard() {
                         </button>
                     </div>
 
-                    {/* Filters */}
                     <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                        {['ALL', 'ACTIVE', 'COMPLETED', 'CANCELLED'].map(filter => (
+                        {['ALL', 'WAITING', 'ACTIVE', 'COMPLETED', 'CANCELLED'].map(filter => (
                             <button
                                 key={filter}
                                 onClick={() => setStatusFilter(filter as any)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${statusFilter === filter ? 'bg-slate-800 text-white border-slate-800 dark:bg-primary dark:border-primary shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
                             >
-                                {filter === 'ALL' ? 'Tất cả' : filter === 'ACTIVE' ? 'Đang thực hiện' : filter === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã hủy'}
+                                {filter === 'ALL' ? 'Tất cả' : filter === 'WAITING' ? 'Chờ duyệt' : filter === 'ACTIVE' ? 'Đang thực hiện' : filter === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã hủy'}
                             </button>
                         ))}
                     </div>
@@ -1769,7 +1772,7 @@ export default function StaffDashboard() {
                                                 {selectedTask.paymentMethod === 'PAYOS' ? (
                                                     <p className="font-bold text-emerald-400">Đã thanh toán đủ 100%</p>
                                                 ) : selectedTask.paymentMethod === 'CASH_DEPOSIT' ? (
-                                                    <p className="font-bold text-amber-500">Đã cọc 10% (Cần thu 90%)</p>
+                                                    <p className="font-bold text-amber-500">Đã đặt cọc (Cần thu phần còn lại)</p>
                                                 ) : (
                                                     <p className="font-bold text-slate-400">Chưa xác định</p>
                                                 )}

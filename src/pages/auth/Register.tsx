@@ -33,7 +33,29 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) { setError('Mật khẩu nhập lại không khớp'); return; }
+    
+    const phoneRegex = /^(84|0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(phone)) {
+      setError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng số VN (VD: 0912345678).');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('Mật khẩu quá ngắn. Vui lòng nhập tối thiểu 8 ký tự.');
+      return;
+    }
+
+    if (password !== confirmPassword) { 
+      setError('Mật khẩu nhập lại không khớp'); 
+      return; 
+    }
+    
     setLoading(true);
     setError('');
     try {
@@ -175,7 +197,9 @@ export default function Register() {
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                       <input
                         className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                        placeholder="Nguyễn Văn A" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required />
+                        placeholder="Nguyễn Văn A" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền họ và tên')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -184,7 +208,9 @@ export default function Register() {
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                       <input
                         className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                        placeholder="0901234567" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required />
+                        placeholder="0901234567" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền số điện thoại')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                     </div>
                   </div>
                 </div>
@@ -196,7 +222,14 @@ export default function Register() {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                     <input
                       className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                      placeholder="customer@example.com" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                      placeholder="customer@example.com" type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                      onInvalid={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        if (target.validity.valueMissing) target.setCustomValidity('Vui lòng điền email');
+                        else if (target.validity.typeMismatch) target.setCustomValidity('Vui lòng nhập email hợp lệ');
+                        else target.setCustomValidity('');
+                      }}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   </div>
                 </div>
 
@@ -207,7 +240,9 @@ export default function Register() {
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                     <input
                       className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                      placeholder="Số 1 Võ Văn Ngân, Thủ Đức" type="text" value={address} onChange={e => setAddress(e.target.value)} required />
+                      placeholder="Số 1 Võ Văn Ngân, Thủ Đức" type="text" value={address} onChange={e => setAddress(e.target.value)} required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền địa chỉ')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   </div>
                 </div>
 
@@ -219,7 +254,14 @@ export default function Register() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                       <input
                         className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                        placeholder="••••••••" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} />
+                        placeholder="••••••••" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
+                        onInvalid={(e) => {
+                          const target = e.target as HTMLInputElement;
+                          if (target.validity.valueMissing) target.setCustomValidity('Vui lòng điền mật khẩu');
+                          else if (target.validity.tooShort) target.setCustomValidity('Mật khẩu phải có ít nhất 8 ký tự');
+                          else target.setCustomValidity('');
+                        }}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -228,14 +270,18 @@ export default function Register() {
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
                       <input
                         className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-sm font-medium"
-                        placeholder="••••••••" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                        placeholder="••••••••" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required
+                        onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng nhập lại mật khẩu')}
+                        onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                     </div>
                   </div>
                 </div>
 
                 {/* Terms */}
                 <div className="flex items-start gap-3 py-2">
-                  <input type="checkbox" className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20 transition-colors" id="terms" required />
+                  <input type="checkbox" className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20 transition-colors" id="terms" required
+                    onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Bạn phải đồng ý với điều khoản dịch vụ')}
+                    onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')} />
                   <label htmlFor="terms" className="text-[11px] font-bold text-slate-500 leading-relaxed">
                     Tôi đồng ý với các{' '}
                     <a href="#" className="text-primary hover:text-primary-dark transition-colors">Điều khoản dịch vụ</a>{' '}

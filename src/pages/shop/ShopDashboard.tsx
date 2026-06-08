@@ -216,18 +216,6 @@ export default function ShopDashboard() {
                     </div>
                 )}
             </div>
-
-            <Link 
-                to="/shop/camera" 
-                className={`px-6 py-2.5 text-white rounded-2xl font-bold flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 transition-all text-sm group/btn relative overflow-hidden ${isDark ? 'bg-indigo-600 shadow-indigo-500/30 glow-indigo' : 'bg-[#1a2b4c] shadow-indigo-900/20 shadow-lg'}`}
-            >
-                <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <Video size={18} className="group-hover/btn:rotate-12 transition-transform" />
-                <span>Live Camera</span>
-            </Link>
         </div>
       </header>
 

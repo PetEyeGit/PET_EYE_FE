@@ -88,24 +88,30 @@ function GuestNavbar() {
           <Logo />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1">
-          <Link to="/search"
-            className="h-10 px-5 rounded-xl flex items-center text-[14px] font-bold text-slate-600 dark:text-slate-400 hover:text-secondary dark:hover:text-secondary hover:bg-secondary/5 transition-all">
-            Tìm cơ sở
-          </Link>
-
-        </nav>
+        {/* <nav className="hidden lg:flex items-center gap-1">
+        </nav> */}
 
         <div className="flex-1" />
 
-        <div className="hidden sm:flex items-center gap-4">
+        <div className="hidden sm:flex items-center gap-3">
+          <Link to="/search"
+            className={`flex items-center gap-2 h-10 px-5 rounded-2xl text-[13px] font-black transition-all ${
+              window.location.pathname === '/search'
+                ? 'text-primary bg-primary/10 dark:text-blue-400 dark:bg-blue-900/30'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+            }`}>
+            Cơ sở gần tôi
+          </Link>
+
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
+
           <ThemeToggle />
           <Link to="/login"
-            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold bg-primary-light text-primary hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-all hover:-translate-y-1 active:scale-95">
+            className="h-10 px-6 rounded-2xl flex items-center justify-center text-[13px] font-bold bg-primary-light text-primary hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-900/30 transition-all hover:-translate-y-1 active:scale-95">
             Đăng nhập
           </Link>
           <Link to="/register"
-            className="h-11 px-6 rounded-2xl flex items-center justify-center text-[14px] font-bold bg-primary text-white hover:bg-primary-dark dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:shadow-xl hover:shadow-primary/20 dark:hover:shadow-blue-600/20 hover:-translate-y-1 active:scale-95">
+            className="h-10 px-6 rounded-2xl flex items-center justify-center text-[13px] font-bold bg-primary text-white hover:bg-primary-dark dark:bg-blue-600 dark:hover:bg-blue-700 transition-all hover:shadow-xl hover:shadow-primary/20 dark:hover:shadow-blue-600/20 hover:-translate-y-1 active:scale-95">
             Đăng ký
           </Link>
         </div>
@@ -196,12 +202,7 @@ function AuthNavbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const NAV = [
-    { to: '/search', label: 'Tìm cơ sở' },
-  ];
-
   const QUICK = [
-    { to: '/camera', icon: <Video className="w-4.5 h-4.5" />, label: 'Camera', pulse: true },
     { to: '/messages', icon: <MessageCircle className="w-4.5 h-4.5" />, label: 'Tin nhắn' },
   ];
 
@@ -228,27 +229,8 @@ function AuthNavbar() {
           <Logo className="group-hover:scale-105 transition-transform duration-300" />
         </Link>
 
-        {/* ── Primary nav ───────────────────────── */}
+        {/* ── Primary nav (Trống vì đã chuyển sang phải) ───────────────────────── */}
         <nav className="hidden md:flex items-center gap-1 ml-4">
-          {NAV.map(item => (
-            <Link key={item.to} to={item.to}
-              className="relative h-10 px-5 rounded-xl font-black text-[13.5px] transition-all flex items-center group">
-              <span className={`relative z-10 ${
-                active(item.to)
-                  ? 'bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent dark:from-white dark:to-secondary'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-              }`}>
-                {item.label}
-              </span>
-              {active(item.to) && (
-                <motion.div
-                  layoutId="nav-pill"
-                  className="absolute inset-0 bg-primary/[0.03] dark:bg-white/[0.03] rounded-xl animate-fade-in"
-                />
-              )}
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0" />
-            </Link>
-          ))}
         </nav>
 
         <div className="flex-1" />
@@ -256,24 +238,29 @@ function AuthNavbar() {
         {/* ── Right cluster ─────────────────────── */}
         <div className="flex items-center gap-2">
 
-          {/* Quick icon links */}
-          <div className="hidden sm:flex items-center gap-1 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl">
-            {QUICK.map(q => (
-              <Link key={q.to} to={q.to}
-                className={`relative flex items-center gap-2 h-9 px-4 rounded-xl text-[13px] font-black transition-all
-                  ${active(q.to)
-                    ? 'text-white bg-primary shadow-lg shadow-primary/25'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700'}`}>
-                {q.icon}
-                <span className="hidden lg:inline">{q.label}</span>
-                {q.pulse && !active(q.to) && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
-                )}
-              </Link>
-            ))}
-          </div>
+          {/* Nút Tìm cơ sở */}
+          <Link to="/search"
+            className={`hidden sm:flex items-center gap-2 h-10 px-5 rounded-2xl text-[13px] font-black transition-all ${
+              active('/search')
+                ? 'text-primary bg-primary/10 dark:text-blue-400 dark:bg-blue-900/30'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+            }`}>
+            Cơ sở gần tôi
+          </Link>
 
           <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block" />
+
+          {/* Icon Tin nhắn */}
+          {user && (
+            <Link to="/messages"
+              className={`relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all ${
+                active('/messages')
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-slate-100/50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-300 hover:text-primary dark:hover:text-blue-400 hover:bg-primary/5 dark:hover:bg-slate-700'
+              }`}>
+              <MessageCircle size={19} />
+            </Link>
+          )}
 
           <ThemeToggle />
 

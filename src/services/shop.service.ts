@@ -20,6 +20,7 @@ export interface ShopPublicResponse {
   openTime?: string;
   closeTime?: string;
   workingDays?: string;
+  offDays?: string;
   assignmentMode?: 'MANUAL' | 'OPEN_POOL' | 'AUTO';
   staffs?: any[];
   serviceNames?: string[];
@@ -66,6 +67,7 @@ export interface ShopUpdateRequest {
   openTime?: string;
   closeTime?: string;
   workingDays?: string;
+  offDays?: string;
   logoUrl?: string;
   bannerUrl?: string;
   galleryUrls?: string;

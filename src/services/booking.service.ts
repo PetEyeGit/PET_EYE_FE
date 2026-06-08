@@ -55,9 +55,11 @@ export const bookingService = {
   },
 
   /** Get all bookings of the current user */
-  getMyBookings: async (): Promise<BookingResponse[]> => {
-    const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/bookings/my');
-    return response.data.result ?? [];
+  getMyBookings: async (page: number = 1, size: number = 10, status?: string): Promise<any> => {
+    const params: any = { page, size };
+    if (status && status !== 'all') params.status = status;
+    const response = await apiClient.get<ApiResponse<any>>('/bookings/my', { params });
+    return response.data.result;
   },
 
   /** Get paginated bookings of the current user (10 per page) */
@@ -75,6 +77,12 @@ export const bookingService = {
   /** Cancel a booking */
   cancel: async (id: number): Promise<BookingResponse> => {
     const response = await apiClient.post<ApiResponse<BookingResponse>>(`/bookings/${id}/cancel`);
+    return response.data.result!;
+  },
+
+  /** Shop proactively cancels a booking */
+  shopCancel: async (id: number, reason: string): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(`/bookings/${id}/shop-cancel`, { reason });
     return response.data.result!;
   },
 
@@ -208,5 +216,26 @@ export const bookingService = {
    */
   sendInvoice: async (bookingId: number): Promise<void> => {
     await apiClient.post(`/bookings/${bookingId}/send-invoice`);
+  },
+
+  /** 
+   * Shop creates booking directly for a customer.
+   * Assumes backend endpoint /bookings/shop-create exists.
+   */
+  createBookingByShop: async (data: {
+    customerId: number;
+    shopId: number;
+    serviceIds: number[];
+    petId: number;
+    appointmentDatetime: string;
+    checkIn?: string;
+    checkOut?: string;
+    staffId?: number;
+    note?: string;
+  }): Promise<BookingResponse> => {
+    const response = await apiClient.post<ApiResponse<BookingResponse>>(
+      '/bookings/shop-create', data
+    );
+    return response.data.result!;
   },
 };

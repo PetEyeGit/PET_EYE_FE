@@ -7,6 +7,7 @@ import {
   BadgeCheck, X, Info
 } from 'lucide-react';
 import { walletService, type WithdrawalRequestCreate } from '../../services/wallet.service';
+import { transactionService } from '../../services/transaction.service';
 import toast from 'react-hot-toast';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -69,7 +70,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
   });
 
   const handleSubmit = () => {
-    if (!form.amount || form.amount < 10000) { toast.error('Số tiền tối thiểu 10,000đ'); return; }
+    if (!form.amount || form.amount < 200000) { toast.error('Số tiền tối thiểu 200,000đ'); return; }
     if (form.amount > available) { toast.error('Số tiền vượt quá số dư khả dụng'); return; }
     if (!form.bankName) { toast.error('Vui lòng chọn ngân hàng'); return; }
     if (!form.bankAccount.trim()) { toast.error('Vui lòng nhập số tài khoản'); return; }
@@ -98,7 +99,7 @@ function WithdrawModal({ available, onClose, onSuccess }: {
             <div className="relative">
               <input
                 type="number"
-                min={10000}
+                min={200000}
                 max={available}
                 value={form.amount || ''}
                 onChange={e => setForm(f => ({ ...f, amount: Number(e.target.value) }))}
@@ -201,6 +202,7 @@ export default function ShopWallet() {
   const { isDark } = useTheme();
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
 
   const { data: wallet, isLoading: walletLoading, refetch: refetchWallet } = useQuery({
     queryKey: ['shop-wallet'],
@@ -214,6 +216,15 @@ export default function ShopWallet() {
     staleTime: 30_000,
   });
 
+  const { data: pageData, isLoading: tLoading, refetch: refetchT } = useQuery({
+    queryKey: ['my-transactions', page],
+    queryFn: () => transactionService.getShopTransactions(page, 10),
+    staleTime: 30_000,
+  });
+
+  const transactions = pageData?.content || [];
+  const totalPages = pageData?.totalPages || 1;
+
   const filteredW = filterStatus === 'ALL'
     ? withdrawals
     : withdrawals.filter(w => w.status === filterStatus);
@@ -221,6 +232,7 @@ export default function ShopWallet() {
   const handleSuccess = () => {
     qc.invalidateQueries({ queryKey: ['shop-wallet'] });
     qc.invalidateQueries({ queryKey: ['my-withdrawals'] });
+    qc.invalidateQueries({ queryKey: ['my-transactions'] });
   };
 
   return (
@@ -236,7 +248,7 @@ export default function ShopWallet() {
         </div>
         <div className="flex items-center gap-2">
           <button
-             onClick={() => { refetchWallet(); refetchW(); }}
+             onClick={() => { refetchWallet(); refetchW(); refetchT(); }}
              className={`p-2.5 rounded-xl border transition-all ${isDark ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-100'}`}
            >
              <RefreshCw className="w-4 h-4" />
@@ -297,7 +309,7 @@ export default function ShopWallet() {
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng thu nhập</span>
             </div>
             <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatVND(wallet.totalEarned)}</p>
-            <p className="text-xs text-slate-400 mt-1">Sau phí 10% platform</p>
+            <p className="text-xs text-slate-400 mt-1">Sau khi trừ phí nền tảng</p>
           </div>
 
           {/* Total withdrawn */}
@@ -318,7 +330,7 @@ export default function ShopWallet() {
       <div className={`flex items-center gap-3 p-4 rounded-2xl border mb-4 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-blue-50 border-blue-100'}`}>
         <Info className={`w-5 h-5 shrink-0 ${isDark ? 'text-indigo-400' : 'text-blue-500'}`} />
         <p className={`text-sm ${isDark ? 'text-indigo-200' : 'text-blue-700'}`}>
-          <span className="font-bold">Chính sách phí:</span> Peteye thu <span className="font-black">10%</span> phí nền tảng trên mỗi đơn hoàn thành. Phần còn lại <span className="font-black">90%</span> được ghi nhận vào ví của bạn.
+          <span className="font-bold">Chính sách phí:</span> Peteye thu phí nền tảng trên mỗi đơn hoàn thành tùy thuộc vào loại dịch vụ (Spa, Lưu trú, Khám bệnh...). Phần doanh thu hiển thị trong ví là số tiền thực tế bạn nhận được sau khi đã trừ phí.
         </p>
       </div>
 
@@ -462,6 +474,149 @@ export default function ShopWallet() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Transaction history */}
+      <div className={`rounded-3xl border shadow-sm overflow-hidden mt-8 ${isDark ? 'admin-glass-card bg-slate-900/40 border-white/10' : 'bg-white border-slate-100'}`}>
+        <div className={`flex items-center justify-between px-6 py-5 border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+          <div>
+            <h3 className={`font-black flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <RefreshCw className={`w-5 h-5 ${isDark ? 'text-indigo-400' : 'text-blue-500'}`} />
+              Biến động số dư
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 font-medium">Lịch sử doanh thu, bồi thường và các khoản trừ</p>
+          </div>
+        </div>
+
+        {tLoading ? (
+          <div className="flex items-center justify-center py-16 gap-3 text-slate-400">
+            <Loader2 className={`w-6 h-6 animate-spin ${isDark ? 'text-indigo-400' : ''}`} />
+            <span className="text-sm font-medium">Đang tải...</span>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+            <RefreshCw className="w-10 h-10 opacity-30 mb-3" />
+            <p className="font-bold">Chưa có giao dịch nào</p>
+          </div>
+        ) : (
+          <div className={`divide-y ${isDark ? 'divide-slate-800' : 'divide-slate-50'}`}>
+            {transactions.map(t => {
+              const isPlus = t.type === 'WALLET_CREDIT' || t.type === 'PAYMENT';
+              const isMinus = t.type === 'WALLET_DEDUCT' || t.type === 'WITHDRAWAL';
+              
+              return (
+                <div key={t.id} className={`flex items-start gap-4 px-6 py-5 transition-colors ${isDark ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}`}>
+                  {/* Icon */}
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
+                    isPlus ? (isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600')
+                    : isMinus ? (isDark ? 'bg-red-500/10 text-red-400' : 'bg-red-100 text-red-500')
+                    : (isDark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-blue-100 text-blue-600')
+                  }`}>
+                    {isPlus ? <Plus className="w-5 h-5" /> : <ArrowDownToLine className="w-4 h-4" />}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                        isPlus ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                        : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                      }`}>
+                        {(() => {
+                          switch (t.type) {
+                            case 'WALLET_CREDIT': return 'Cộng tiền ví';
+                            case 'WALLET_DEDUCT': return 'Trừ tiền ví';
+                            case 'PAYMENT': return 'Thanh toán';
+                            case 'WITHDRAWAL': return 'Rút tiền';
+                            case 'REFUND': return 'Hoàn tiền';
+                            case 'CASH_DEPOSIT': return 'Tiền mặt';
+                            case 'MOCK': return 'MOCK';
+                            default: return t.type;
+                          }
+                        })()}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400 font-mono">#{t.id}</span>
+                      {t.bookingId && (
+                        <span className="text-xs font-bold text-indigo-500 font-mono bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md">
+                          Đơn #{t.bookingId}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-base font-black ${isPlus ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {isPlus ? '+' : '-'}{formatVND(t.amount)}
+                    </p>
+                    <p className={`text-sm mt-1.5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {(t.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                      }
+                    </p>
+                    {t.serviceName && (
+                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                        <BadgeCheck className="w-3 h-3 text-indigo-400" /> Dịch vụ: {t.serviceName}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Date & Status */}
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-slate-400">{formatDate(t.createdAt)}</p>
+                    <span className={`inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                      t.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                    }`}>
+                      {(() => {
+                        switch (t.status) {
+                          case 'SUCCESS': return 'Thành công';
+                          case 'FAILED': return 'Thất bại';
+                          case 'CANCELLED': return 'Đã hủy';
+                          case 'PENDING': return 'Đang xử lý';
+                          case 'NO_SHOW_PENALTY': return 'Phạt vắng mặt';
+                          default: return t.status;
+                        }
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className={`px-6 py-4 border-t flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+            <span className="text-sm text-slate-500">Trang {page} / {totalPages}</span>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Trước
+              </button>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Sau
+              </button>
+            </div>
           </div>
         )}
       </div>

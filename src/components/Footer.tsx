@@ -10,9 +10,9 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     {/* Cột 1: Brand & Socials */}
                     <div className="space-y-6">
-                        <Link to="/"><Logo lightText /></Link>
+                        <Link to="/" className="inline-block mb-3"><Logo lightText /></Link>
                         <p className="text-sm text-slate-300 leading-relaxed pr-4">
-                            Nền tảng kết nối chủ nuôi với cơ sở thú y và pet shop uy tín hàng đầu.
+                            Nền tảng kết nối chủ nuôi với các dịch vụ chăm sóc thú cưng đáng tin cậy
                         </p>
                         <div className="flex items-center gap-3">
                             <a href="https://web.facebook.com/profile.php?id=61590306674838" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-slate-300 hover:text-white">
@@ -31,9 +31,9 @@ export default function Footer() {
                     <div className="lg:pl-8">
                         <h5 className="font-bold mb-6 text-base tracking-wide">Dịch vụ</h5>
                         <ul className="space-y-3.5 text-sm text-slate-300">
-                            <li><a className="hover:text-white transition-colors" href="#">Khám chữa bệnh</a></li>
-                            <li><a className="hover:text-white transition-colors" href="#">Dịch vụ lưu trú</a></li>
-                            <li><a className="hover:text-white transition-colors" href="#">Spa &amp; Grooming</a></li>
+                            <li><Link className="hover:text-white transition-colors" to="/search?type=CLINIC">Khám chữa bệnh</Link></li>
+                            <li><Link className="hover:text-white transition-colors" to="/search?type=HOTEL">Dịch vụ lưu trú</Link></li>
+                            <li><Link className="hover:text-white transition-colors" to="/search?type=SPA">Spa &amp; Grooming</Link></li>
                         </ul>
                     </div>
 
@@ -42,7 +42,6 @@ export default function Footer() {
                         <h5 className="font-bold mb-6 text-base tracking-wide">Về PetEye</h5>
                         <ul className="space-y-3.5 text-sm text-slate-300">
                             <li><Link className="hover:text-white transition-colors" to="/about#story">Câu chuyện thương hiệu</Link></li>
-                            <li><Link className="hover:text-white transition-colors" to="/about#careers">Tuyển dụng</Link></li>
                             <li><Link className="hover:text-white transition-colors" to="/about#partner">Trở thành đối tác</Link></li>
                             <li><Link className="hover:text-white transition-colors" to="/about#news">Tin tức &amp; Sự kiện</Link></li>
                         </ul>
@@ -62,7 +61,7 @@ export default function Footer() {
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-[20px] shrink-0">mail</span>
-                                <span>hotro@peteye.vn</span>
+                                <span>peteye.contact26@gmail.com</span>
                             </li>
                         </ul>
                     </div>

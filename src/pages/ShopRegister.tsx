@@ -28,11 +28,10 @@ export default function ShopRegister() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const shopTypes = [
-    'Phòng khám thú y',
-    'Spa & Grooming',
-    'Khách sạn thú cưng',
-    'Cửa hàng thú cưng',
-    'Dịch vụ tổng hợp'
+    { value: 'CLINIC', label: 'Phòng khám thú y' },
+    { value: 'SPA', label: 'Spa & Grooming' },
+    { value: 'HOTEL', label: 'Khách sạn thú cưng' },
+    { value: 'MIXED', label: 'Dịch vụ tổng hợp' }
   ];
 
   const cities = [
@@ -71,24 +70,44 @@ export default function ShopRegister() {
    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (step === 1) {
+      const phoneRegex = /^(84|0[3|5|7|8|9])+([0-9]{8})$/;
+      if (!phoneRegex.test(formData.phone)) {
+        setError('Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng số VN (VD: 0912345678).');
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.');
+        return;
+      }
+    }
+
+    if (step === 2) {
+      if (formData.description.length < 10) {
+        setError('Mô tả cửa hàng phải có ít nhất 10 ký tự.');
+        return;
+      }
+    }
+
+    if (step === 3) {
+      if (formData.password.length < 8) {
+        setError('Mật khẩu quá ngắn. Vui lòng nhập tối thiểu 8 ký tự.');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Mật khẩu không khớp!');
+        return;
+      }
+      if (!formData.agreed) {
+        setError('Vui lòng đồng ý với điều khoản dịch vụ.');
+        return;
+      }
+    }
+
     if (step < 3) {
+      setError('');
       setStep(step + 1);
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu không khớp!');
-      return;
-    }
-
-    if (!formData.agreed) {
-      setError('Vui lòng đồng ý với điều khoản dịch vụ');
-      return;
-    }
-
-    if (formData.description.length < 10) {
-      setError('Mô tả cửa hàng phải có ít nhất 10 ký tự');
-      setStep(2);
       return;
     }
 
@@ -208,6 +227,8 @@ export default function ShopRegister() {
                   placeholder="Ví dụ: PetCare Sài Gòn"
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền tên cửa hàng')}
+                  onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                 />
               </div>
 
@@ -220,10 +241,12 @@ export default function ShopRegister() {
                   onChange={(e) => setFormData({ ...formData, shopType: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn loại hình kinh doanh')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                 >
                   <option value="">Chọn loại hình</option>
                   {shopTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>
               </div>
@@ -242,6 +265,13 @@ export default function ShopRegister() {
                       placeholder="shop@example.com"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        if (target.validity.valueMissing) target.setCustomValidity('Vui lòng điền email');
+                        else if (target.validity.typeMismatch) target.setCustomValidity('Vui lòng nhập email hợp lệ');
+                        else target.setCustomValidity('');
+                      }}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -259,6 +289,8 @@ export default function ShopRegister() {
                       placeholder="0901234567"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền số điện thoại')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -282,6 +314,8 @@ export default function ShopRegister() {
                     rows={3}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none resize-none"
                     required
+                    onInvalid={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('Vui lòng điền địa chỉ')}
+                    onInput={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('')}
                   />
                 </div>
               </div>
@@ -295,6 +329,8 @@ export default function ShopRegister() {
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLSelectElement).setCustomValidity('Vui lòng chọn thành phố')}
+                  onInput={(e) => (e.target as HTMLSelectElement).setCustomValidity('')}
                 >
                   <option value="">Chọn thành phố</option>
                   {cities.map((city) => (
@@ -314,6 +350,8 @@ export default function ShopRegister() {
                   rows={5}
                   className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none resize-none"
                   required
+                  onInvalid={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('Vui lòng điền mô tả cửa hàng')}
+                  onInput={(e) => (e.target as HTMLTextAreaElement).setCustomValidity('')}
                 />
                 <p className="text-xs text-slate-500 mt-2">Tối thiểu 10 ký tự ({formData.description.length}/10)</p>
               </div>
@@ -337,6 +375,8 @@ export default function ShopRegister() {
                       placeholder="••••••••"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền mật khẩu')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -354,6 +394,8 @@ export default function ShopRegister() {
                       placeholder="••••••••"
                       className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-slate-200 focus:border-[#1a2b4c] outline-none"
                       required
+                      onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền xác nhận mật khẩu')}
+                      onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                     />
                   </div>
                 </div>
@@ -383,6 +425,8 @@ export default function ShopRegister() {
                         : 'border-slate-200 focus:border-[#1a2b4c]'
                     }`}
                     required
+                    onInvalid={(e) => (e.target as HTMLInputElement).setCustomValidity('Vui lòng điền mã số doanh nghiệp/giấy phép kinh doanh')}
+                    onInput={(e) => (e.target as HTMLInputElement).setCustomValidity('')}
                   />
                   <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold ${
                     formData.licenseNumber.length === 10 || formData.licenseNumber.length === 13

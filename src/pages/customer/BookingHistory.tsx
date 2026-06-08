@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
     Calendar, Clock, Plus, Home, Stethoscope, Scissors,
     Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
@@ -111,6 +111,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
 
     const queryClient = useQueryClient();
     const [showLogs, setShowLogs] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
     const isOld = booking.status === 'COMPLETED' || booking.status === 'CANCELLED' || booking.status === 'WAITING_REFUND';
     const [isExpanded, setIsExpanded] = useState(false);
     const [savingAlbumId, setSavingAlbumId] = useState<number | null>(null);
@@ -128,29 +129,14 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
         }
     };
 
-    const { data: staffChangeRequest, refetch: refetchRequest } = useQuery({
-        queryKey: ['staffChangeRequest', booking.id],
-        queryFn: () => taskService.getPendingStaffChangeRequest(booking.id),
-        enabled: !!booking.id
-    });
 
-    const { data: careLogs = [] } = useQuery({
+    const { data: rawCareLogs = [] } = useQuery({
         queryKey: ['bookingCareLogs', booking.id],
         queryFn: () => careLogService.getLogs(booking.id),
         enabled: !!booking.id && (booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED'),
     });
-
-    const handleRespond = async (status: 'ACCEPTED' | 'REJECTED') => {
-        if (!staffChangeRequest) return;
-        try {
-            await taskService.respondToStaffChange(staffChangeRequest.id, status);
-            toast.success(status === 'ACCEPTED' ? 'Đã đồng ý đổi nhân viên' : 'Đã từ chối đổi nhân viên');
-            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-            refetchRequest();
-        } catch {
-            toast.error('Thao tác thất bại');
-        }
-    };
+    
+    const careLogs = rawCareLogs.filter((log: any) => !log.note?.startsWith('[Kết thúc sớm]') && !log.note?.startsWith('[Kết thúc trễ]'));
 
     if (!isExpanded) {
         return (
@@ -174,7 +160,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                             <h4 className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-xs">{booking.shopName}</h4>
                             <span className="text-[10px] text-slate-400 font-bold">• Bé: {booking.petName}</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => `${s.serviceName}${s.durationMinutes ? ` (${s.durationMinutes}p)` : ''}`).join(', ') : booking.serviceName}</p>
                     </div>
                 </div>
 
@@ -260,7 +246,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dịch vụ</p>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => s.serviceName).join(', ') : booking.serviceName}</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{booking.services && booking.services.length > 0 ? booking.services.map((s: any) => `${s.serviceName}${s.durationMinutes ? ` (${s.durationMinutes}p)` : ''}`).join(', ') : booking.serviceName}</p>
                         </div>
                     </div>
                     {booking.status === 'CANCEL_REQUESTED' && booking.cancellationReason && (
@@ -297,47 +283,90 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                     </div>
                 </div>
 
-                {/* Staff Change Request Alert */}
-                {staffChangeRequest && (
-                    <div className="mb-4 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/50 dark:border-amber-700/30 rounded-3xl flex flex-col gap-4 shadow-sm backdrop-blur-sm">
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
-                                <UserPlus size={20} />
+
+                {/* Details Section */}
+                <AnimatePresence>
+                    {showDetails && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden pt-2 pb-4 border-t border-slate-100 dark:border-slate-800/80"
+                        >
+                            <div className="flex items-center gap-2 mb-4 mt-2">
+                                <Info className="text-emerald-500" size={14} />
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Chi tiết dịch vụ & Thanh toán</h4>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                    <p className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Đổi nhân viên phục vụ</p>
-                                    <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-200/50 dark:border-amber-700/30">
-                                        Chờ duyệt
-                                    </span>
+
+                            <div className="bg-slate-50 dark:bg-slate-800/30 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 space-y-4">
+                                <div className="space-y-3">
+                                    <h5 className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Danh sách dịch vụ</h5>
+                                    {booking.services && booking.services.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {booking.services.map((svc: any) => (
+                                                <div key={svc.serviceId} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 hover:shadow-md transition-shadow">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{svc.serviceName}</p>
+                                                        {svc.durationMinutes > 0 && <p className="text-[10px] font-bold text-slate-400 mt-0.5">⏱ Thời gian làm: {svc.durationMinutes} phút</p>}
+                                                    </div>
+                                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{formatVND(svc.servicePrice)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{booking.serviceName}</p>
+                                            <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{formatVND(booking.servicePrice)}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                                    Shop đề xuất đổi nhân viên sang <span className="font-extrabold text-slate-900 dark:text-white underline decoration-amber-300 decoration-2 underline-offset-2">{staffChangeRequest.proposedStaff?.fullName}</span>.
-                                </p>
-                                {staffChangeRequest.reason && (
-                                    <div className="mt-2 p-2.5 bg-white/60 dark:bg-slate-800/60 rounded-xl border border-amber-100 dark:border-slate-700/50 text-[11px] text-slate-600 dark:text-slate-300 italic flex gap-1.5 items-start">
-                                        <span className="text-amber-500 font-bold not-italic">Lý do:</span>
-                                        <span>"{staffChangeRequest.reason}"</span>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Thời gian cần tới</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {category === 'boarding' && booking.checkIn
+                                                ? format(parseISO(booking.checkIn), 'HH:mm • dd/MM/yyyy')
+                                                : format(parseISO(booking.appointmentDatetime), 'HH:mm • dd/MM/yyyy')}
+                                        </p>
                                     </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                                            {booking.status === 'COMPLETED' ? 'Thời gian hoàn thành' : 'Dự kiến hoàn thành'}
+                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {booking.status === 'COMPLETED' && booking.updatedAt
+                                                ? format(parseISO(booking.updatedAt), 'HH:mm • dd/MM/yyyy')
+                                                : booking.serviceEndDatetime
+                                                    ? format(parseISO(booking.serviceEndDatetime), 'HH:mm • dd/MM/yyyy')
+                                                    : '—'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4">
+                                    <div className="flex justify-between">
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Phương thức thanh toán</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {booking.paymentMethod === 'PAYOS' ? '100% qua PayOS' : booking.paymentMethod === 'CASH_DEPOSIT' ? 'Đặt cọc (Tiền mặt tại quầy)' : booking.paymentMethod === 'MOCK' ? 'MOCK Payment' : 'Tiền mặt'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-dashed border-slate-200 dark:border-slate-700 pt-4 flex justify-between items-center">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Đã thanh toán</p>
+                                    <span className="text-lg font-black text-emerald-600">{formatVND(booking.paidAmount || 0)}</span>
+                                </div>
+                                {(booking.servicePrice - (booking.paidAmount || 0)) > 0 && booking.status !== 'CANCELLED' && booking.status !== 'WAITING_REFUND' && (
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Cần thanh toán thêm tại quầy</p>
+                                    <span className="text-lg font-black text-rose-500">{formatVND(booking.servicePrice - (booking.paidAmount || 0))}</span>
+                                </div>
                                 )}
                             </div>
-                        </div>
-                        <div className="flex gap-2 justify-end pt-1">
-                            <button
-                                onClick={() => handleRespond('REJECTED')}
-                                className="px-5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5"
-                            >
-                                <X size={12} /> Từ chối
-                            </button>
-                            <button
-                                onClick={() => handleRespond('ACCEPTED')}
-                                className="px-5 py-2 bg-primary text-white rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-primary/20 flex items-center gap-1.5"
-                            >
-                                <Check size={12} /> Đồng ý
-                            </button>
-                        </div>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Care Logs Timeline Section */}
                 <AnimatePresence>
@@ -430,6 +459,15 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                                 <BookOpen size={14} /> Nhật ký chăm sóc ({careLogs.length})
                             </button>
                         )}
+                        <button
+                            onClick={() => { setShowDetails(!showDetails); setShowLogs(false); }}
+                            className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${showDetails
+                                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/60'
+                                }`}
+                        >
+                            <Info size={14} /> Chi tiết
+                        </button>
                         <Link to="/messages" className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
                             <MessageCircle size={14} /> Nhắn tin
                         </Link>
@@ -481,11 +519,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
 export default function BookingHistory() {
     const qc = useQueryClient();
     const [activeTab, setActiveTab] = useState<TabKey>('all');
+    const [page, setPage] = useState(1);
+    const size = 10;
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPet, setSelectedPet] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-    const [visibleCount, setVisibleCount] = useState(5);
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [page, setPage] = useState(0);
 
@@ -505,15 +544,27 @@ export default function BookingHistory() {
 
     const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
 
+<<<<<<< HEAD
     const { data: pagedBookings, isLoading, isError, refetch } = useQuery({
         queryKey: ['my-bookings', page],
         queryFn: () => bookingService.getMyBookingsPaged(page),
+=======
+    const { data: pageData, isLoading, isFetching, isError, refetch } = useQuery({
+        queryKey: ['my-bookings', activeTab, page],
+        queryFn: () => bookingService.getMyBookings(page, size, activeTab),
+>>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
         staleTime: 30_000,
+        placeholderData: keepPreviousData,
     });
 
+<<<<<<< HEAD
     const bookings = pagedBookings?.content ?? [];
     const totalPages = pagedBookings?.totalPages ?? 1;
     const totalElements = pagedBookings?.totalElements ?? 0;
+=======
+    const bookings: BookingResponse[] = pageData?.content || [];
+    const totalPages: number = pageData?.totalPages || 1;
+>>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
 
     const petsList = useMemo(() => {
         const pets = bookings.map(b => b.petName).filter(Boolean);
@@ -660,21 +711,8 @@ export default function BookingHistory() {
         }
     };
 
-    const sorted = useMemo(() => {
-        return [...bookings].sort((a, b) => {
-            const dateA = new Date(a.appointmentDatetime).getTime();
-            const dateB = new Date(b.appointmentDatetime).getTime();
-            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-        });
-    }, [bookings, sortOrder]);
-
     const filtered = useMemo(() => {
-        let list = sorted;
-
-        // 1. Tab status filter
-        if (activeTab !== 'all') {
-            list = list.filter(b => getTabKey(b) === activeTab);
-        }
+        let list = bookings;
 
         // 2. Search query filter
         if (searchQuery.trim()) {
@@ -696,15 +734,19 @@ export default function BookingHistory() {
         if (selectedCategory !== 'all') {
             list = list.filter(b => getCategory(b) === selectedCategory);
         }
+        
+        if (sortOrder === 'asc') {
+            list.sort((a, b) => new Date(a.appointmentDatetime).getTime() - new Date(b.appointmentDatetime).getTime());
+        } else {
+            list.sort((a, b) => new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime());
+        }
 
         return list;
-    }, [sorted, activeTab, searchQuery, selectedPet, selectedCategory]);
+    }, [bookings, searchQuery, selectedPet, selectedCategory, sortOrder]);
 
     const groupedBookings = useMemo(() => {
-        const visibleList = filtered.slice(0, visibleCount);
-
         const groups: Record<string, BookingResponse[]> = {};
-        visibleList.forEach(b => {
+        filtered.forEach(b => {
             let monthStr = 'Thời gian khác';
             try {
                 const date = parseISO(b.appointmentDatetime);
@@ -718,20 +760,9 @@ export default function BookingHistory() {
             groups[monthStr].push(b);
         });
         return groups;
-    }, [filtered, visibleCount]);
+    }, [filtered]);
 
-    const counts: Record<TabKey, number> = {
-        all: sorted.length,
-        upcoming: sorted.filter(b => getTabKey(b) === 'upcoming').length,
-        active: sorted.filter(b => getTabKey(b) === 'active').length,
-        completed: sorted.filter(b => getTabKey(b) === 'completed').length,
-        cancelled: sorted.filter(b => getTabKey(b) === 'cancelled').length,
-    };
-
-    const totalSpent = bookings.filter(b => b.status === 'COMPLETED').reduce((s, b) => s + b.servicePrice, 0);
-    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED' && b.status !== 'WAITING_REFUND').map(b => b.petName).filter(Boolean))].length;
-
-    if (isLoading) return (
+    if (isLoading && !pageData) return (
         <div className="flex-1 flex flex-col items-center justify-center py-32 gap-6">
             <div className="relative">
                 <div className="w-16 h-16 border-4 border-primary/20 rounded-full animate-spin border-t-primary" />
@@ -764,14 +795,6 @@ export default function BookingHistory() {
                 </div>
             </div>
 
-            {/* Stats Dashboard */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard label="Tổng đơn hàng" value={counts.all} icon={Calendar} color="bg-indigo-500" delay={0.1} />
-                <StatCard label="Đang diễn ra" value={counts.active} icon={Wifi} color="bg-emerald-500" delay={0.2} />
-                <StatCard label="Thú cưng" value={activePets} icon={Heart} color="bg-rose-500" delay={0.3} />
-                <StatCard label="Tổng chi tiêu" value={formatVND(totalSpent)} icon={Wallet} color="bg-amber-500" delay={0.4} />
-            </div>
-
             {/* Filters & Search Control Panel */}
             <div className="flex flex-col gap-6 bg-slate-50/50 dark:bg-slate-900/30 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80">
                 {/* Tabs & Search */}
@@ -780,15 +803,10 @@ export default function BookingHistory() {
                     <div className="flex items-center gap-2 p-1 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 w-fit overflow-x-auto shrink-0 max-w-full">
                         {TABS.map(tab => (
                             <button
-                                key={tab.key} onClick={() => { setActiveTab(tab.key); setVisibleCount(5); }}
+                                key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); }}
                                 className={`px-5 py-2.5 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab.key ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 {tab.label}
-                                {counts[tab.key] > 0 && (
-                                    <span className={`px-1.5 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                                        {counts[tab.key]}
-                                    </span>
-                                )}
                             </button>
                         ))}
                     </div>
@@ -799,13 +817,13 @@ export default function BookingHistory() {
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(5); }}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                             placeholder="Tìm kiếm cửa hàng, dịch vụ..."
                             className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none font-bold text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:border-primary/50 transition-all shadow-sm"
                         />
                         {searchQuery && (
                             <button
-                                onClick={() => setSearchQuery('')}
+                                onClick={() => { setSearchQuery(''); setPage(1); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             >
                                 <X size={14} />
@@ -823,7 +841,7 @@ export default function BookingHistory() {
                             {petsList.map(petName => (
                                 <button
                                     key={petName}
-                                    onClick={() => { setSelectedPet(petName); setVisibleCount(5); }}
+                                    onClick={() => { setSelectedPet(petName); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedPet === petName
                                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-sm'
                                         : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-800 border-slate-100 dark:border-slate-800'
@@ -893,7 +911,7 @@ export default function BookingHistory() {
             </div>
 
             {/* List Section */}
-            <div className="space-y-10">
+            <div className={`space-y-10 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                 {filtered.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-slate-800 p-24 text-center">
                         <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
@@ -929,6 +947,7 @@ export default function BookingHistory() {
                     </div>
                 )}
 
+<<<<<<< HEAD
                 {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between pt-4">
@@ -964,13 +983,79 @@ export default function BookingHistory() {
                                 Sau →
                             </button>
                         </div>
+=======
+                {/* Pagination Controls */}
+                {!isLoading && totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 mt-8 pb-8">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+
+                        <div className="flex gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
+                            {Array.from({ length: totalPages }).map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setPage(idx + 1)}
+                                    className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${page === idx + 1
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }`}
+                                >
+                                    {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+>>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
                     </div>
                 )}
             </div>
 
             {/* Cancel Request Modal */}
             <AnimatePresence>
-                {showCancelModal && selectedBooking && (
+                {showCancelModal && selectedBooking && (() => {
+                    const paymentMethod = selectedBooking.paymentMethod || 'CASH';
+                    const isPayOS = paymentMethod === 'PAYOS';
+                    const isDepositOnly = !isPayOS;
+
+                    const depositAmount = selectedBooking.servicePrice * 0.1;
+                    const paidAmount = isPayOS ? selectedBooking.servicePrice : depositAmount;
+
+                    const appointmentTime = selectedBooking.appointmentDatetime ? parseISO(selectedBooking.appointmentDatetime) : new Date();
+                    const hoursToAppointment = (appointmentTime.getTime() - new Date().getTime()) / (1000 * 60 * 60);
+
+                    const isBefore5Hours = hoursToAppointment >= 5;
+
+                    let refundAmount = 0;
+                    let penaltyAmount = 0;
+                    let oweAmount = 0;
+
+                    if (isBefore5Hours) {
+                        if (isPayOS) {
+                            refundAmount = paidAmount - depositAmount;
+                        }
+                    } else {
+                        penaltyAmount = selectedBooking.servicePrice * 0.5;
+                        if (isPayOS) {
+                            refundAmount = paidAmount - depositAmount - penaltyAmount;
+                            if (refundAmount < 0) refundAmount = 0;
+                        } else {
+                            oweAmount = penaltyAmount;
+                        }
+                    }
+
+                    return (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -983,9 +1068,9 @@ export default function BookingHistory() {
                             exit={{ opacity: 0, scale: 0.94, y: 28 }}
                             className="relative w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-950 rounded-[2rem] shadow-[0_40px_120px_-30px_rgba(15,23,42,0.45)] overflow-hidden border border-slate-200/70 dark:border-slate-800"
                         >
-                            <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 p-8 text-white shrink-0">
+                            <div className="bg-gradient-to-r from-[#1a2b4c] to-blue-900 p-8 text-white shrink-0">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                                    <div className="w-14 h-14 rounded-3xl bg-white/15 flex items-center justify-center shadow-lg shadow-[#1a2b4c]/30">
                                         <XCircle size={32} className="text-white" />
                                     </div>
                                     <div className="space-y-2">
@@ -1012,6 +1097,74 @@ export default function BookingHistory() {
                                         <p className="mt-1 text-xl font-black text-slate-900 dark:text-white">{formatVND(selectedBooking.servicePrice)}</p>
                                     </div>
                                 </div>
+
+                                {/* Chi tiết tính toán hoàn tiền */}
+                                {true && (
+                                    <div className="rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-6 space-y-4">
+                                        <div className="flex items-center gap-2 mb-2 text-slate-800 dark:text-slate-200">
+                                            <Wallet size={18} />
+                                            <h4 className="font-black tracking-tight text-base">Thông tin thanh toán & hoàn tiền</h4>
+                                        </div>
+                                        
+                                        <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Tổng tiền dịch vụ:</span>
+                                                <span className="font-bold text-slate-800 dark:text-slate-200">{formatVND(selectedBooking.servicePrice)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Đã thanh toán:</span>
+                                                <span className="font-bold text-slate-900 dark:text-white flex items-center">
+                                                    {formatVND(paidAmount)}
+                                                    <span className="text-[9px] uppercase ml-2 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold tracking-widest">
+                                                        {isPayOS ? 'Toàn bộ' : 'Cọc 10%'}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium">Thời gian đến giờ hẹn:</span>
+                                                <span className={`font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-widest flex items-center gap-1 ${isBefore5Hours ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+                                                    <Clock size={12} />
+                                                    {hoursToAppointment > 0 ? `Còn ${Math.floor(hoursToAppointment)} giờ` : 'Đã quá giờ'}
+                                                </span>
+                                            </div>
+                                            
+                                            <div className="border-t border-slate-200 dark:border-slate-800 my-3 pt-3" />
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-medium text-slate-500">Phí giữ chỗ (Mất cọc):</span>
+                                                <span className="font-bold text-rose-500">-{formatVND(depositAmount)}</span>
+                                            </div>
+                                            {!isBefore5Hours && (
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <span className="font-medium flex items-center gap-1.5 text-slate-500"><AlertCircle size={14} className="text-rose-500" /> Phạt hủy muộn (50%):</span>
+                                                    <span className="font-bold text-rose-500">-{formatVND(penaltyAmount)}</span>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="border-t border-slate-200 dark:border-slate-800 my-3 pt-3" />
+                                            
+                                            <div className="flex flex-col gap-2 bg-white dark:bg-slate-950 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
+                                                <div className="flex justify-between items-center text-lg">
+                                                    <span className="font-black text-slate-900 dark:text-white text-base">Tổng tiền hoàn lại:</span>
+                                                    <span className="font-black text-emerald-500 text-xl">{formatVND(refundAmount)}</span>
+                                                </div>
+                                                {oweAmount > 0 && (
+                                                    <div className="flex justify-between items-center pt-3 mt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
+                                                        <span className="font-black text-rose-500 text-sm flex items-center gap-1.5"><AlertCircle size={14}/> Cần đền bù cho Shop:</span>
+                                                        <span className="font-black text-rose-500">{formatVND(oweAmount)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="mt-4 bg-slate-100/80 dark:bg-slate-800/50 rounded-xl p-3 flex gap-2.5 items-start">
+                                                <Info size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                                                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                                                    Hủy trước 5 giờ chỉ mất phí giữ chỗ (10%). Hủy sau 5 giờ mất phí giữ chỗ và 50% tiền dịch vụ bồi thường cho cửa hàng.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-4">
@@ -1056,7 +1209,7 @@ export default function BookingHistory() {
                                 {selectedBooking.paymentMethod === 'CASH_DEPOSIT' ? (
                                     <div className="rounded-[2rem] bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-5 text-sm text-orange-700 dark:text-orange-400">
                                         <p className="font-bold">Lưu ý về đơn đặt cọc:</p>
-                                        <p className="mt-2 leading-6">Đây là đơn chỉ đặt cọc (10%). Theo chính sách, bạn sẽ không được hoàn lại phí cọc khi tự hủy lịch. Đơn sẽ được chuyển sang trạng thái ĐÃ HỦY ngay lập tức.</p>
+                                        <p className="mt-2 leading-6">Đây là đơn thanh toán một phần (đặt cọc). Theo chính sách, bạn sẽ không được hoàn lại phí cọc khi tự hủy lịch. Đơn sẽ được chuyển sang trạng thái ĐÃ HỦY ngay lập tức.</p>
                                     </div>
                                 ) : (
                                     <>
@@ -1128,7 +1281,7 @@ export default function BookingHistory() {
                                     <button
                                         onClick={handleSubmitCancelRequest}
                                         disabled={cancelMutation.isPending}
-                                        className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
+                                        className="px-6 py-4 rounded-3xl bg-[#1a2b4c] text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-[#1a2b4c]/30 hover:bg-[#1a2b4c]/90 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
                                         {cancelMutation.isPending || directCancelMutation.isPending ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
                                     </button>
@@ -1136,7 +1289,7 @@ export default function BookingHistory() {
                             </div>
                         </motion.div>
                     </div>
-                )}
+                )})()}
             </AnimatePresence>
 
             {/* Update Bank Modal */}
@@ -1252,14 +1405,14 @@ export default function BookingHistory() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/10"
                         >
-                            <div className="bg-amber-400 p-8 text-slate-900 relative">
+                            <div className="bg-yellow-500 p-8 text-white relative">
                                 <Sparkles className="absolute top-4 right-4 text-white/40" size={60} />
                                 <h2 className="text-2xl font-black tracking-tight">Đánh giá trải nghiệm</h2>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mt-1">Cảm ơn bạn đã tin tưởng hệ thống</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mt-1">Cảm ơn bạn đã tin tưởng hệ thống</p>
                             </div>
                             <div className="p-8 space-y-8">
                                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-3xl">
-                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-amber-500 shadow-sm">
+                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-yellow-600 shadow-sm">
                                         <Sparkles size={24} />
                                     </div>
                                     <div>
@@ -1273,11 +1426,11 @@ export default function BookingHistory() {
                                     <div className="flex justify-center gap-3">
                                         {[1, 2, 3, 4, 5].map(star => (
                                             <button key={star} onClick={() => setRating(star)} className="transition-transform active:scale-90">
-                                                <Star size={40} className={`${star <= rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200 dark:text-slate-700'} transition-all`} />
+                                                <Star size={40} className={`${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 dark:text-slate-700'} transition-all`} />
                                             </button>
                                         ))}
                                     </div>
-                                    <p className="text-center text-xs font-black text-amber-500 uppercase tracking-widest">
+                                    <p className="text-center text-xs font-black text-yellow-600 uppercase tracking-widest">
                                         {['Rất tệ', 'Tạm được', 'Bình thường', 'Rất tốt', 'Tuyệt vời'][rating - 1]}
                                     </p>
                                 </div>
@@ -1287,7 +1440,7 @@ export default function BookingHistory() {
                                     <textarea
                                         value={comment} onChange={e => setComment(e.target.value)}
                                         placeholder="Bạn cảm thấy thế nào về bác sĩ và cơ sở vật chất?"
-                                        className="w-full h-32 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-3xl focus:ring-4 focus:ring-amber-400/20 outline-none font-bold text-sm text-slate-700 dark:text-white transition-all resize-none"
+                                        className="w-full h-32 px-5 py-4 bg-slate-50 dark:bg-slate-800 border-none rounded-3xl focus:ring-4 focus:ring-yellow-500/20 outline-none font-bold text-sm text-slate-700 dark:text-white transition-all resize-none"
                                     />
                                 </div>
 
@@ -1295,7 +1448,7 @@ export default function BookingHistory() {
                                     <button onClick={() => setShowReviewModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest">Hủy bỏ</button>
                                     <button
                                         onClick={handleSubmitReview} disabled={submitting}
-                                        className="flex-[2] py-4 bg-amber-400 text-slate-900 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-amber-400/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
+                                        className="flex-[2] py-4 bg-yellow-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-yellow-500/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
                                     >
                                         {submitting ? <Loader2 size={18} className="animate-spin" /> : 'Gửi đánh giá ngay'}
                                     </button>

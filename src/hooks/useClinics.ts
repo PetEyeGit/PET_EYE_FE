@@ -48,9 +48,28 @@ export function useClinics() {
 
   // Client-side rating filter
   const filteredShops = useMemo(() => {
-    if (minRating === 0) return shops;
-    return shops.filter((s: ShopPublicResponse) => s.ratingAvg >= minRating);
-  }, [shops, minRating]);
+    let result = shops;
+    if (minRating > 0) {
+      result = result.filter((s: ShopPublicResponse) => s.ratingAvg >= minRating);
+    }
+    if (selectedServices.length > 0) {
+      result = result.filter((s: ShopPublicResponse) => {
+        if (!s.serviceNames || s.serviceNames.length === 0) return false;
+        return selectedServices.some(svc => s.serviceNames?.includes(svc));
+      });
+    }
+    return result;
+  }, [shops, minRating, selectedServices]);
+
+  const availableServices = useMemo(() => {
+    const services = new Set<string>();
+    shops.forEach((s: ShopPublicResponse) => {
+      if (s.serviceNames) {
+        s.serviceNames.forEach(svc => services.add(svc));
+      }
+    });
+    return Array.from(services).sort();
+  }, [shops]);
 
   // Reset page khi filter thay đổi
   useEffect(() => { setPage(0); }, [debouncedSearch, debouncedCity, activeService]);

@@ -37,7 +37,7 @@ export default function ShopMessages() {
     enabled: !!myShop
   });
 
-  const { messages, connected, loading, sendMessage } = useShopChat(
+  const { messages, connected, loading, isTyping, sendMessage, sendTypingEvent } = useShopChat(
     myShop?.id ?? null,
     user?.token,
     activeChannel.type,
@@ -152,9 +152,16 @@ export default function ShopMessages() {
                 <MessageCircle size={20} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
               </div>
               <div className="flex-1 text-left min-w-0">
-                <p className={`font-bold text-sm leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{customer.fullName}</p>
-                <p className="text-[11px] text-slate-500 truncate mt-0.5">{customer.email}</p>
+                <p className={`font-bold text-sm leading-tight truncate ${activeChannel.id === customer.email ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-900')} ${(customer as any).unreadCount > 0 ? 'font-black' : ''}`}>{customer.fullName}</p>
+                <p className={`text-xs truncate mt-0.5 ${(customer as any).unreadCount > 0 ? 'font-bold text-slate-800 dark:text-white' : 'text-slate-500'}`}>
+                  {(customer as any).lastMessage || customer.email}
+                </p>
               </div>
+              {(customer as any).unreadCount > 0 && activeChannel.id !== customer.email && (
+                <div className="absolute right-4 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce shadow-md">
+                  {(customer as any).unreadCount}
+                </div>
+              )}
             </button>
           ))}
 
@@ -196,6 +203,8 @@ export default function ShopMessages() {
         input={input}
         setInput={setInput}
         onSendMessage={(msg, attachment) => sendMessage(msg, attachment)}
+        isTyping={isTyping}
+        onTyping={(typing) => sendTypingEvent(typing)}
         headerInfo={{
             title: activeChannel.title,
             icon: activeChannel.type === 'ADMIN_SUPPORT' ? <Shield size={24} className="text-blue-600" /> :

@@ -97,7 +97,7 @@ function AppLayout() {
       case 'SHOP_OWNER': return "/shop/dashboard";
       case 'STAFF': return "/staff/dashboard";
       case 'ADMIN': return "/admin/dashboard";
-      default: return "/user/dashboard";
+      default: return "/";
     }
   };
 
@@ -196,8 +196,8 @@ function AppLayout() {
       {/* Gift Box Celebration — hiển thị khi user thăng hạng */}
       {user && !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && <GiftBoxCelebration />}
 
-      {/* Chatbot — hiển thị cho tất cả customer pages (kể cả /home), trừ Camera và Messages */}
-      {!isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && !isMessagingPage && <Chatbot />}
+      {/* Chatbot – hiển thị cho tất cả customer pages (kể cả /home), trừ Camera và Messages. Ẩn nếu chưa đăng nhập */}
+      {user && !isShopRoute && !isStaffRoute && !isAdminRoute && !isNoNavbarRoute && !isCameraPage && !isMessagingPage && <Chatbot />}
     </div>
   );
 }

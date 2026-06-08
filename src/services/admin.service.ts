@@ -268,6 +268,11 @@ export const adminService = {
     return res.data.result ?? [];
   },
 
+  sendChatMessage: async (data: { shopId: number; channelType: string; recipientEmail: string; content: string }): Promise<ChatMessage> => {
+    const res = await apiClient.post<ApiResponse<ChatMessage>>('/chat/send', data);
+    return res.data.result!;
+  },
+
   markChatRead: async (shopId: number, channelType: string = 'ADMIN_SUPPORT', recipientEmail?: string): Promise<void> => {
     await apiClient.patch(`/chat/${shopId}/read`, null, {
       params: { channelType, recipientEmail }
@@ -297,5 +302,15 @@ export const adminService = {
 
   deleteVoucher: async (id: number): Promise<void> => {
     await apiClient.delete(`/admin/vouchers/${id}`);
+  },
+
+  // Config
+  getVoucherServiceConfig: async (): Promise<boolean> => {
+    const res = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/public/config/voucher-service');
+    return res.data.result?.enabled ?? true;
+  },
+
+  setVoucherServiceConfig: async (enabled: boolean): Promise<void> => {
+    await apiClient.put(`/admin/config/voucher-service?enabled=${enabled}`);
   },
 };

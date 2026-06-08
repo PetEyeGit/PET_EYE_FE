@@ -7,13 +7,17 @@ import { bookingService } from '../../services/booking.service';
 import { careLogService } from '../../services/care-log.service';
 import toast from 'react-hot-toast';
 import StaffAssignmentSelect from '../../components/StaffAssignmentSelect';
-import { 
-    Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle, 
+import ShopAddBookingModal from '../../components/shop/ShopAddBookingModal';
+import ShopCancelBookingModal from '../../components/shop/ShopCancelBookingModal';
+import { toPng } from 'html-to-image';
+import jsPDF from 'jspdf';
+import {
+    Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle,
     AlertCircle, Search, Filter, Loader2, ChevronDown, UserCheck,
     LayoutGrid, List as ListIcon, ChevronLeft, ChevronRight, Plus,
     Timer, MessageCircle, MoreVertical, CheckCircle2, Video,
     MapPin, Phone, Mail, Scissors, Info, X, Play,
-    Activity, Utensils, Syringe, Heart, Sparkles
+    Activity, Utensils, Syringe, Heart, Sparkles, FileText, Download, Send, PawPrint
 } from 'lucide-react';
 import { taskService, type TaskResponse } from '../../services/task.service';
 import { staffService, type StaffResponse } from '../../services/staff.service';
@@ -38,7 +42,10 @@ interface BookingListItemProps {
     onAssign: (bookingId: number, staffId: number | 'unassign') => void;
     handleUpdateStatus: (bookingId: number, status: string) => void;
     handleSendInvoice: (bookingId: number) => void;
+    setViewInvoiceBooking: (booking: any) => void;
     setSelectedBooking: (booking: any) => void;
+    onAddBooking: (data: any) => void;
+    onShopCancel: (booking: any) => void;
 }
 
 const CARE_LOG_TYPES = [
@@ -47,7 +54,11 @@ const CARE_LOG_TYPES = [
     { id: 'MEDICAL', label: 'Y tế', icon: Syringe, color: 'text-emerald-500 bg-emerald-50' },
     { id: 'EXERCISE', label: 'Vui chơi', icon: Heart, color: 'text-purple-500 bg-purple-50' },
 ];
-function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onAssign, handleUpdateStatus, handleSendInvoice, setSelectedBooking }: BookingListItemProps) {
+function BookingListItem({
+    booking, staffList, updatingId, sendingInvoiceId,
+    onAssign, handleUpdateStatus, handleSendInvoice,
+    setViewInvoiceBooking, setSelectedBooking, onAddBooking, onShopCancel
+}: BookingListItemProps) {
     const { isDark } = useTheme();
     const { data: pendingRequest } = useQuery({
         queryKey: ['pendingStaffChangeRequest', booking.bookingId],
@@ -121,14 +132,27 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                         <Info size={12} /> Xem chi tiết
                     </button>
 
+                    <button
+                        onClick={() => onAddBooking({ customerId: booking.customerId || booking.userId, customerName: booking.customerName || 'Khách hàng', shopId: booking.shopId, defaultPetId: booking.petId })}
+                        className={`w-full py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border ${isDark ? 'border-pink-500/30 text-pink-400 hover:bg-pink-500/10' : 'border-pink-200 text-pink-600 hover:bg-pink-50'}`}
+                    >
+                        <Plus size={12} /> Đặt lịch thêm
+                    </button>
+
                     {booking.status === 'WAITING_SHOP_APPROVAL' && (
                         <div className="flex flex-col gap-2">
                             {!isPending && (
-                                <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CONFIRMED')} className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
+                                <button disabled={updatingId === booking.bookingId} onClick={() => {
+                                    if (!booking.staffId) {
+                                        toast.error('Vui lòng chọn nhân viên phụ trách trước khi duyệt đơn!');
+                                        return;
+                                    }
+                                    handleUpdateStatus(booking.bookingId, 'CONFIRMED');
+                                }} className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                                     {updatingId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />} Duyệt đơn
                                 </button>
                             )}
-                            <button disabled={updatingId === booking.bookingId} onClick={() => handleUpdateStatus(booking.bookingId, 'CANCELLED')} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
+                            <button disabled={updatingId === booking.bookingId} onClick={() => onShopCancel(booking)} className={`w-full py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
                                 <XCircle size={12} /> Từ chối
                             </button>
                         </div>
@@ -146,19 +170,24 @@ function BookingListItem({ booking, staffList, updatingId, sendingInvoiceId, onA
                         </div>
                     )}
 
+                    {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS' || booking.status === 'PENDING_PAYMENT') && (
+                        <button disabled={updatingId === booking.bookingId} onClick={() => onShopCancel(booking)} className={`w-full mt-2 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isDark ? 'border-red-500/30 text-red-400 hover:bg-red-500/10' : 'border-red-100 text-red-500 hover:bg-red-50'}`}>
+                            <XCircle size={12} /> Hủy lịch
+                        </button>
+                    )}
+
                     {booking.status === 'COMPLETED' && (
                         <div className="flex flex-col gap-2">
                             <div className={`p-4 rounded-2xl border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
                                 <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">Hoàn thành</p>
                                 <p className="text-[10px] font-bold">Dịch vụ đã hoàn tất.</p>
                             </div>
-                            <button 
-                                onClick={() => handleSendInvoice(booking.bookingId)}
-                                disabled={sendingInvoiceId === booking.bookingId}
-                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                            <button
+                                onClick={() => setViewInvoiceBooking(booking)}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg"
                             >
-                                {sendingInvoiceId === booking.bookingId ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
-                                Xuất hóa đơn
+                                <FileText size={12} />
+                                Xem hóa đơn
                             </button>
                         </div>
                     )}
@@ -178,12 +207,44 @@ export default function ShopBookings() {
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
     const [sendingInvoiceId, setSendingInvoiceId] = useState<number | null>(null);
-    
-    // Staff Change Request States
-    const [showReasonModal, setShowReasonModal] = useState(false);
-    const [pendingStaffChange, setPendingStaffChange] = useState<{ bookingId: number, staffId: number } | null>(null);
-    const [changeReason, setChangeReason] = useState('');
-    
+    const [viewInvoiceBooking, setViewInvoiceBooking] = useState<any | null>(null);
+    const [cancelModalData, setCancelModalData] = useState<any | null>(null);
+    const [isCanceling, setIsCanceling] = useState(false);
+
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('invoice-receipt-content');
+        if (!element) return;
+
+        toast.loading('Đang tạo PDF...', { id: 'pdf-toast' });
+        try {
+            // Using html-to-image to handle modern CSS (like oklch) correctly
+            const imgData = await toPng(element, {
+                backgroundColor: isDark ? '#0f172a' : '#ffffff',
+                pixelRatio: 2
+            });
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // Calculate dimensions to fit A4 width
+            const canvasWidth = element.offsetWidth;
+            const canvasHeight = element.offsetHeight;
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`PetEye_HoaDon_${viewInvoiceBooking.bookingId || viewInvoiceBooking.id}.pdf`);
+
+            toast.success('Đã tải biên lai PDF thành công!', { id: 'pdf-toast' });
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Có lỗi xảy ra khi tải PDF', { id: 'pdf-toast' });
+        }
+    };
+
+    // Add Booking State
+    const [addBookingData, setAddBookingData] = useState<{ isOpen: boolean; customerId: number; customerName: string; shopId: number; defaultPetId: number } | null>(null);
+
+
     // Calendar States
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState<Date | null>(new Date());
@@ -207,11 +268,13 @@ export default function ShopBookings() {
     });
 
     const selectedBookingId = selectedBooking?.bookingId || selectedBooking?.id;
-    const { data: careLogs = [], isLoading: loadingLogs } = useQuery({
+    const { data: rawCareLogs = [], isLoading: loadingLogs } = useQuery({
         queryKey: ['shopBookingCareLogs', selectedBookingId],
         queryFn: () => careLogService.getLogs(selectedBookingId),
         enabled: !!selectedBookingId && (selectedBooking.status === 'IN_PROGRESS' || selectedBooking.status === 'COMPLETED'),
     });
+
+    const careLogs = rawCareLogs.filter((log: any) => !log.note?.startsWith('[Kết thúc sớm]') && !log.note?.startsWith('[Kết thúc trễ]'));
 
     useEffect(() => {
         staffService.getMyShopStaff().then(data => setStaffList(data.filter(s => s.isActive)));
@@ -243,77 +306,22 @@ export default function ShopBookings() {
     };
 
     const handleAssignStaff = async (bookingId: number, staffId: number | 'unassign') => {
-        const booking = listBookings.find((b: any) => (b.bookingId || b.id) === bookingId)
-                     || calendarBookings.find((b: any) => (b.bookingId || b.id) === bookingId);
-        const currentStaffId = booking ? (booking.staffId || ((booking as any).staff && (booking as any).staff.id)) : null;
-        // Only require staff change request flow if the booking status is WAITING_SHOP_APPROVAL, CONFIRMED or IN_PROGRESS
-        const isChange = booking && 
-            (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && 
-            currentStaffId && 
-            currentStaffId !== staffId;
-        
-        // Prevent direct unassignment if a staff is already assigned
-        if (booking && (booking.status === 'WAITING_SHOP_APPROVAL' || booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS')) {
-            if (staffId === 'unassign' && currentStaffId) {
-                toast.error('Không thể gỡ nhân viên khi đã có nhân viên phụ trách');
-                return;
-            }
-        }
-
-        if (isChange && staffId !== 'unassign') {
-            setPendingStaffChange({ bookingId, staffId });
-            setShowReasonModal(true);
-            return;
-        }
+        if (staffId === 'unassign') return; // Not allowed
 
         setUpdatingId(bookingId);
         try {
-            if (staffId === 'unassign') {
-                await taskService.unassignTask(bookingId);
-                toast.success('Đã gỡ nhân viên');
-            } else {
-                await taskService.assignTask(bookingId, staffId);
-                toast.success('Đã giao việc thành công');
-            }
+            await taskService.assignTask(bookingId, staffId as number);
+            toast.success('Đã giao việc thành công');
             refetchList();
             refetchCalendar();
-            await queryClient.invalidateQueries({
-                queryKey: ['pendingStaffChangeRequest', bookingId]
-            });
-        } catch {
-            toast.error('Giao việc thất bại');
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Giao việc thất bại');
         } finally {
             setUpdatingId(null);
         }
     };
 
-    const submitStaffChangeRequest = async () => {
-        if (!pendingStaffChange || !changeReason) {
-            toast.error('Vui lòng nhập lý do đổi nhân viên');
-            return;
-        }
-        setUpdatingId(pendingStaffChange.bookingId);
-        try {
-            await taskService.requestStaffChange(
-                pendingStaffChange.bookingId, 
-                pendingStaffChange.staffId, 
-                changeReason
-            );
-            toast.success('Đã gửi yêu cầu đổi nhân viên tới khách hàng');
-            setShowReasonModal(false);
-            setChangeReason('');
-            setPendingStaffChange(null);
-            refetchList();
-            refetchCalendar();
-            await queryClient.invalidateQueries({
-                queryKey: ['pendingStaffChangeRequest', pendingStaffChange.bookingId]
-            });
-        } catch (err: any) {
-            toast.error(err.response?.data?.message || 'Gửi yêu cầu thất bại');
-        } finally {
-            setUpdatingId(null);
-        }
-    };
+
 
     // Xuất hóa đơn thủ công — chỉ dành cho COMPLETED + CASH
     const handleSendInvoice = async (bookingId: number) => {
@@ -340,7 +348,7 @@ export default function ShopBookings() {
     // Group filteredList by bookingId to avoid duplicate booking cards when multiple service-items exist
     const groupedFilteredList = (() => {
         const map = new Map<number, any>();
-        const precedence = ['IN_PROGRESS','CONFIRMED','PENDING_PAYMENT','WAITING_REFUND','COMPLETED','CANCELLED','CANCEL_REQUESTED'];
+        const precedence = ['IN_PROGRESS', 'CONFIRMED', 'PENDING_PAYMENT', 'WAITING_REFUND', 'COMPLETED', 'CANCELLED', 'CANCEL_REQUESTED'];
 
         for (const item of filteredList) {
             const bid = item.bookingId || (item as any).id;
@@ -378,7 +386,7 @@ export default function ShopBookings() {
                     if (new Date(item.appointmentDatetime).getTime() > new Date(existing.appointmentDatetime).getTime()) {
                         existing.appointmentDatetime = item.appointmentDatetime;
                     }
-                } catch (e) {}
+                } catch (e) { }
 
                 // merge completedServiceIds
                 const existingCompleted = new Set<number>((existing.completedServiceIds) || []);
@@ -398,6 +406,25 @@ export default function ShopBookings() {
         return calendarBookings.filter(b => isSameDay(parseISO(b.appointmentDatetime), day));
     };
 
+    const handleShopCancelBooking = async (reason: string) => {
+        if (!cancelModalData) return;
+        setIsCanceling(true);
+        toast.loading('Đang hủy đơn...', { id: 'cancel-toast' });
+        try {
+            await bookingService.shopCancel(cancelModalData.bookingId, reason);
+            toast.success('Đã hủy lịch thành công!', { id: 'cancel-toast' });
+            setCancelModalData(null);
+            refetchList();
+            refetchCalendar();
+        } catch (error: any) {
+            console.error('Error canceling booking:', error);
+            const msg = error.response?.data?.message || error.message || 'Lỗi khi hủy đơn';
+            toast.error(msg, { id: 'cancel-toast' });
+        } finally {
+            setIsCanceling(false);
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col overflow-hidden animate-in fade-in duration-500">
             <div className="flex-1 flex flex-col max-w-[1600px] mx-auto w-full px-4 md:px-8 py-6 overflow-hidden">
@@ -413,14 +440,14 @@ export default function ShopBookings() {
 
                     <div className="flex items-center gap-3">
                         <div className={`flex items-center p-1 rounded-xl transition-all ${isDark ? 'admin-glass-card bg-slate-900/40' : 'bg-white shadow-sm border border-slate-100'}`}>
-                            <button 
+                            <button
                                 onClick={() => setViewMode('list')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewMode === 'list' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 <ListIcon size={14} />
                                 Danh sách
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setViewMode('calendar')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewMode === 'calendar' ? 'bg-[#1a2b4c] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
                             >
@@ -433,7 +460,7 @@ export default function ShopBookings() {
 
                 <AnimatePresence mode="wait">
                     {viewMode === 'list' ? (
-                        <motion.div 
+                        <motion.div
                             key="list"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -458,9 +485,8 @@ export default function ShopBookings() {
                                             <button
                                                 key={t.v}
                                                 onClick={() => setFilter(t.v)}
-                                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-                                                    filter === t.v ? (isDark ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg glow-indigo' : 'bg-[#1a2b4c] text-white border-[#1a2b4c]') : (isDark ? 'bg-slate-800/50 text-slate-400 border-white/10 hover:bg-slate-700/50' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50')
-                                                }`}
+                                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${filter === t.v ? (isDark ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg glow-indigo' : 'bg-[#1a2b4c] text-white border-[#1a2b4c]') : (isDark ? 'bg-slate-800/50 text-slate-400 border-white/10 hover:bg-slate-700/50' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50')
+                                                    }`}
                                             >
                                                 {t.l}
                                             </button>
@@ -477,7 +503,7 @@ export default function ShopBookings() {
                                         <p className="text-slate-400 font-bold">Đang đồng bộ dữ liệu...</p>
                                     </div>
                                 ) : groupedFilteredList.map((booking) => (
-                                    <BookingListItem 
+                                    <BookingListItem
                                         key={booking.bookingId}
                                         booking={booking}
                                         staffList={staffList}
@@ -486,13 +512,16 @@ export default function ShopBookings() {
                                         onAssign={handleAssignStaff}
                                         handleUpdateStatus={handleUpdateStatus}
                                         handleSendInvoice={handleSendInvoice}
+                                        setViewInvoiceBooking={setViewInvoiceBooking}
                                         setSelectedBooking={setSelectedBooking}
+                                        onAddBooking={(data) => setAddBookingData({ ...data, isOpen: true })}
+                                        onShopCancel={(b) => setCancelModalData(b)}
                                     />
                                 ))}
                             </div>
                         </motion.div>
                     ) : (
-                        <motion.div 
+                        <motion.div
                             key="calendar"
                             initial={{ opacity: 0, scale: 0.99 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -542,7 +571,7 @@ export default function ShopBookings() {
                                         const statusCfg = dayStatus ? STATUS_CONFIG[dayStatus] : null;
 
                                         return (
-                                            <div 
+                                            <div
                                                 key={idx}
                                                 onClick={() => setSelectedDay(day)}
                                                 className={`min-h-[85px] p-2.5 border-b border-r cursor-pointer transition-all relative ${isDark ? 'border-white/5' : 'border-slate-50'}
@@ -598,8 +627,8 @@ export default function ShopBookings() {
 
                                 <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-4">
                                     {selectedDay && getBookingsForDay(selectedDay).map((b, i) => (
-                                        <div 
-                                            key={i} 
+                                        <div
+                                            key={i}
                                             onClick={() => setSelectedBooking(b)}
                                             className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all group cursor-pointer"
                                         >
@@ -628,7 +657,7 @@ export default function ShopBookings() {
                                             <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 space-y-3">
                                                 <div>
                                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Khách: <span className="text-slate-700 dark:text-slate-300 ml-1">{b.customerName || 'Khách lẻ'}</span></p>
-                                                    <StaffAssignmentSelect 
+                                                    <StaffAssignmentSelect
                                                         bookingId={b.id}
                                                         status={b.status}
                                                         currentStaffId={b.staffId}
@@ -642,7 +671,7 @@ export default function ShopBookings() {
                                                 {b.status === 'CONFIRMED' && (
                                                     <button
                                                         disabled={updatingId === b.id}
-                                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(b.id, 'CANCELLED'); }}
+                                                        onClick={(e) => { e.stopPropagation(); setCancelModalData(b); }}
                                                         className="w-full py-2 bg-red-50 dark:bg-red-900/10 text-red-500 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-1.5 border border-red-50/50"
                                                     >
                                                         {updatingId === b.id ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
@@ -669,20 +698,20 @@ export default function ShopBookings() {
             <AnimatePresence>
                 {selectedBooking && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setSelectedBooking(null)}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-2xl bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh]"
                         >
-                            <button 
+                            <button
                                 onClick={() => setSelectedBooking(null)}
                                 className="absolute top-6 right-6 p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 hover:rotate-90 transition-all z-10"
                             >
@@ -729,7 +758,7 @@ export default function ShopBookings() {
                             {/* Right: Detailed Info */}
                             <div className="flex-1 p-8 overflow-y-auto">
                                 <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6">Thông tin chi tiết</h3>
-                                
+
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
@@ -864,28 +893,23 @@ export default function ShopBookings() {
                                     <div className="pt-6 flex flex-col gap-3">
                                         {/* Nút xuất hóa đơn — Cash COMPLETED hoặc bất kỳ COMPLETED */}
                                         {selectedBooking.status === 'COMPLETED' && (
-                                            <button 
-                                                onClick={() => handleSendInvoice(selectedBooking.bookingId || selectedBooking.id)}
-                                                disabled={sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id)}
-                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                            <button
+                                                onClick={() => setViewInvoiceBooking(selectedBooking)}
+                                                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                                             >
-                                                {sendingInvoiceId === (selectedBooking.bookingId || selectedBooking.id) ? (
-                                                    <Loader2 size={12} className="animate-spin" />
-                                                ) : (
-                                                    <Mail size={12} />
-                                                )}
-                                                Xuất hóa đơn qua Email
+                                                <FileText size={12} />
+                                                Xem hóa đơn
                                             </button>
                                         )}
                                         <div className="flex gap-3">
-                                            <button 
+                                            <button
                                                 onClick={() => setSelectedBooking(null)}
                                                 className="flex-1 py-3 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
                                             >
                                                 Đóng
                                             </button>
                                             {selectedBooking.status === 'CONFIRMED' && (
-                                                <button 
+                                                <button
                                                     onClick={() => handleUpdateStatus((selectedBooking.bookingId || selectedBooking.id), 'CANCELLED')}
                                                     className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
                                                 >
@@ -901,60 +925,142 @@ export default function ShopBookings() {
                 )}
             </AnimatePresence>
 
-            {/* Staff Change Reason Modal */}
+
+
+            {/* Modal Xem hóa đơn */}
             <AnimatePresence>
-                {showReasonModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => {
-                                setShowReasonModal(false);
-                                setPendingStaffChange(null);
-                                setChangeReason('');
-                            }}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-[2rem] shadow-2xl overflow-hidden p-6"
+                {viewInvoiceBooking && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className={`w-full max-w-[400px] rounded-[1.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
                         >
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Lý do đổi nhân viên</h3>
-                            <p className="text-xs text-slate-500 mb-4">Vui lòng nhập lý do đổi nhân viên để thông báo cho khách hàng.</p>
-                            
-                            <textarea
-                                value={changeReason}
-                                onChange={(e) => setChangeReason(e.target.value)}
-                                placeholder="Ví dụ: Nhân viên cũ bận việc đột xuất, Nhân viên này có chuyên môn tốt hơn..."
-                                className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[100px]"
-                            />
-                            
-                            <div className="mt-6 flex gap-3">
-                                <button 
-                                    onClick={() => {
-                                        setShowReasonModal(false);
-                                        setPendingStaffChange(null);
-                                        setChangeReason('');
-                                    }}
-                                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white rounded-xl font-bold text-[10px] hover:bg-slate-200 transition-all"
-                                >
-                                    Hủy
+                            {/* Header */}
+                            <div className="px-5 py-4 flex items-center justify-between shrink-0">
+                                <h3 className={`text-[15px] font-bold ${isDark ? 'text-white' : 'text-[#1a2b4c]'}`}>
+                                    Chi tiết giao dịch
+                                </h3>
+                                <button onClick={() => setViewInvoiceBooking(null)} className="p-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                                    <X size={16} />
                                 </button>
-                                <button 
-                                    onClick={submitStaffChangeRequest}
-                                    disabled={!changeReason.trim()}
-                                    className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            </div>
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                <div id="invoice-receipt-content" className={`px-6 pb-6 pt-2 ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                                    <div className="flex flex-col items-center mt-2 mb-6">
+                                        <div className="w-14 h-14 bg-[#1a2b4c] rounded-full flex items-center justify-center mb-3 shadow-md">
+                                            <PawPrint className="text-white" size={26} fill="white" />
+                                        </div>
+                                        <h2 className="text-lg font-black text-[#1a2b4c] dark:text-white uppercase tracking-wider mb-0.5">PetEye</h2>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-5">Biên lai điện tử</p>
+
+                                        <p className="text-xs text-slate-500 font-medium mb-1">Số tiền giao dịch</p>
+                                        <h1 className="text-3xl font-black text-[#1a2b4c] dark:text-white mb-2 tracking-tight">
+                                            {new Intl.NumberFormat('vi-VN').format(viewInvoiceBooking.services ? viewInvoiceBooking.services.reduce((acc: number, cur: any) => acc + (cur.servicePrice || 0), 0) : (viewInvoiceBooking.servicePrice || 0))}đ
+                                        </h1>
+                                        <div className="px-3 py-1 bg-green-50/80 dark:bg-green-500/10 text-green-600 dark:text-green-400 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                            Thành công
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-dashed border-slate-200 dark:border-slate-700 py-6 space-y-4">
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Mã giao dịch</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right break-all">MOCK-{viewInvoiceBooking.bookingId || viewInvoiceBooking.id}</span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Thời gian</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                {format(parseISO(viewInvoiceBooking.appointmentDatetime), "dd/MM/yyyy HH:mm:ss")}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Phương thức</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right uppercase">
+                                                {viewInvoiceBooking.paymentMethod || 'MOCK'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Cửa hàng</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right uppercase">
+                                                {viewInvoiceBooking.shopName || 'PET_PHU_QUY'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Dịch vụ</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                {viewInvoiceBooking.services && viewInvoiceBooking.services.length > 0
+                                                    ? viewInvoiceBooking.services.map((s: any) => s.serviceName).join(', ')
+                                                    : viewInvoiceBooking.serviceName}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <span className="text-xs text-slate-500 min-w-[90px]">Nội dung</span>
+                                            <span className="text-xs font-bold text-[#1a2b4c] dark:text-white text-right">
+                                                Mock payment for booking #{viewInvoiceBooking.bookingId || viewInvoiceBooking.id}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t border-[#1a2b4c] dark:border-slate-700 pt-4 text-center">
+                                        <p className="text-[10px] text-slate-500 italic mb-1">Cảm ơn bạn đã sử dụng dịch vụ của PetEye!</p>
+                                        <p className="text-[9px] text-slate-400">Hotline: 1900 9999 - email: support@peteye.vn</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Bar */}
+                            <div className="p-4 bg-white dark:bg-slate-900 flex gap-3 shrink-0 rounded-b-[1.5rem]">
+                                <button
+                                    onClick={() => handleSendInvoice(viewInvoiceBooking.bookingId || viewInvoiceBooking.id)}
+                                    disabled={sendingInvoiceId === (viewInvoiceBooking.bookingId || viewInvoiceBooking.id)}
+                                    className="flex-1 py-3 bg-white dark:bg-slate-800 text-[#1a2b4c] dark:text-white border border-slate-200 dark:border-slate-700 rounded-[12px] text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                                 >
-                                    Gửi yêu cầu
+                                    {sendingInvoiceId === (viewInvoiceBooking.bookingId || viewInvoiceBooking.id) ? <Loader2 size={14} className="animate-spin" /> : null}
+                                    Xuất hóa đơn
+                                </button>
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    className="flex-[1.5] py-3 bg-[#1a2b4c] text-white rounded-[12px] text-xs font-bold hover:bg-[#111d33] transition-all flex items-center justify-center gap-2 shadow-lg"
+                                >
+                                    <Download size={14} />
+                                    Tải biên lai PDF
                                 </button>
                             </div>
                         </motion.div>
-                    </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Modal Đặt lịch thêm */}
+            <ShopAddBookingModal
+                isOpen={addBookingData?.isOpen || false}
+                onClose={() => setAddBookingData(prev => prev ? { ...prev, isOpen: false } : null)}
+                customerId={addBookingData?.customerId || 0}
+                customerName={addBookingData?.customerName || ''}
+                shopId={addBookingData?.shopId || 0}
+                defaultPetId={addBookingData?.defaultPetId || 0}
+                onSuccess={() => {
+                    refetchList();
+                    refetchCalendar();
+                }}
+            />
+
+            <ShopCancelBookingModal
+                isOpen={cancelModalData !== null}
+                onClose={() => setCancelModalData(null)}
+                booking={cancelModalData}
+                onConfirm={handleShopCancelBooking}
+                isSubmitting={isCanceling}
+            />
         </div>
     );
 }

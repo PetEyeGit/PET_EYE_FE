@@ -19,9 +19,11 @@ export function ProfileLayout() {
   const [showPerksModal, setShowPerksModal] = useState(false);
   const [fullUserInfo, setFullUserInfo] = useState<any>(null);
   const [publicVouchers, setPublicVouchers] = useState<any[]>([]);
+  const [isVoucherServiceEnabled, setIsVoucherServiceEnabled] = useState(true);
 
   useEffect(() => {
     userService.getPublicVouchers().then(setPublicVouchers).catch(console.error);
+    userService.getVoucherServiceConfig().then(setIsVoucherServiceEnabled).catch(console.error);
     if (user?.id) {
       userService.getById(Number(user.id))
         .then(data => {
@@ -160,7 +162,8 @@ export function ProfileLayout() {
             </div>
           </div>
 
-          {/* Membership card */}
+          {/* Membership card - HIDING AS REQUESTED */}
+          {/*
           <div className="bg-gradient-to-br from-[#1a2b4c] to-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
             
@@ -169,33 +172,45 @@ export function ProfileLayout() {
                 Membership
               </span>
               <div className="w-10 h-10 bg-gradient-to-tr from-white/10 to-white/30 rounded-xl flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-all duration-500">
-                <span className={`material-symbols-outlined ${tierTextColor} text-2xl`}>{tierIcon}</span>
+                <span className={`material-symbols-outlined text-slate-300 text-2xl`}>stars</span>
               </div>
             </div>
 
-            <div className="relative z-10">
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Cấp bậc hiện tại</p>
-              <h3 className="text-2xl font-black text-white mt-1">Hạng <span className={tierTextColor}>{currentTierName}</span></h3>
-              
-              <div className="mt-8 space-y-2">
-                <div className="flex justify-between items-end">
-                  <p className="text-slate-400 text-xs font-medium">Đến hạng {nextTier}</p>
-                  <p className="text-white text-sm font-black">{(totalSpending / 1000).toLocaleString()}K / {(nextThreshold / 1000).toLocaleString()}K <span className="text-[10px] font-medium text-slate-500">VND</span></p>
+            {isVoucherServiceEnabled ? (
+              <>
+                <div className="relative z-10">
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Cấp bậc hiện tại</p>
+                  <h3 className="text-2xl font-black text-white mt-1">Hạng <span className={tierTextColor}>{currentTierName}</span></h3>
+                  
+                  <div className="mt-8 space-y-2">
+                    <div className="flex justify-between items-end">
+                      <p className="text-slate-400 text-xs font-medium">Đến hạng {nextTier}</p>
+                      <p className="text-white text-sm font-black">{(totalSpending / 1000).toLocaleString()}K / {(nextThreshold / 1000).toLocaleString()}K <span className="text-[10px] font-medium text-slate-500">VND</span></p>
+                    </div>
+                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)] transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
+                    </div>
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full shadow-[0_0_10px_rgba(45,212,191,0.5)] transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
-                </div>
-              </div>
-            </div>
 
-            <button 
-              onClick={() => setShowPerksModal(true)}
-              className="w-full mt-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/10 backdrop-blur-sm transition-all flex items-center justify-center gap-2"
-            >
-              Xem đặc quyền của tôi
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </button>
+                <button 
+                  onClick={() => setShowPerksModal(true)}
+                  className="w-full mt-6 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/10 backdrop-blur-sm transition-all flex items-center justify-center gap-2"
+                >
+                  Xem đặc quyền của tôi
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+              </>
+            ) : (
+              <div className="relative z-10 text-center py-4">
+                <h3 className="text-xl font-black text-white mt-1">Hệ Thống Hạng</h3>
+                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mt-4 border border-slate-600 inline-block px-4 py-1.5 rounded-full bg-slate-800/50">
+                  Sắp ra mắt
+                </p>
+              </div>
+            )}
           </div>
+          */}
         </aside>
 
         {/* Perks Modal */}
@@ -301,6 +316,7 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fullUserInfo, setFullUserInfo] = useState<any>(null);
+  const [isVoucherServiceEnabled, setIsVoucherServiceEnabled] = useState(true);
 
   useEffect(() => {
     if (user?.id) {
@@ -310,13 +326,17 @@ export default function Profile() {
 
   const fetchUserData = async () => {
     try {
-      const data = await userService.getById(Number(user?.id));
+      const [data, config] = await Promise.all([
+        userService.getById(Number(user?.id)),
+        userService.getVoucherServiceConfig()
+      ]);
       setFullUserInfo(data);
       setFullName(data.fullName);
       setEmail(data.email);
       setPhone(data.phone || '');
       setAddress(data.address || '');
       if (data.avatar) setAvatar(data.avatar);
+      setIsVoucherServiceEnabled(config);
     } catch (error) {
       console.error('Failed to fetch user data:', error);
     }
@@ -539,8 +559,9 @@ export default function Profile() {
           </form>
         </div>
 
-        {/* Membership Tiers Explanation */}
+        {/* Membership Tiers Explanation - HIDING AS REQUESTED */}
 
+        {/* {isVoucherServiceEnabled && (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-8">
             <div className="size-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center text-yellow-600">
@@ -594,6 +615,7 @@ export default function Profile() {
             )})}
           </div>
         </div>
+        )} */}
       </main>
   );
 }

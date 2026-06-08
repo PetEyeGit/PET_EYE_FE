@@ -4,6 +4,15 @@ export interface ApiResponse<T> {
   result?: T;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 export interface AuthenticationResponse {
   authenticated: boolean;
   token: string;
@@ -158,6 +167,7 @@ export interface BookingResponse {
       serviceName: string;
       servicePrice: number;
       category?: string;
+      durationMinutes?: number;
   }[];
   petId: number;
   petName: string;
@@ -181,6 +191,7 @@ export interface BookingResponse {
   checkoutUrl?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  paidAmount?: number;
   cameraRtspUrl?: string;
   cameraStreamUrl?: string;
   cameraEnabled?: boolean;

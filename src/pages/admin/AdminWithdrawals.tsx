@@ -5,13 +5,15 @@ import { useSearchParams } from 'react-router-dom';
 import {
   ArrowDownToLine, CheckCircle2, XCircle, Clock, Loader2,
   Building2, CreditCard, User, ChevronRight, Store,
-  RefreshCw, Search, ExternalLink, X, Info, AlertCircle
+  RefreshCw, Search, ExternalLink, X, Info, AlertCircle, MessageCircle
 } from 'lucide-react';
 import { walletService, type WithdrawalRequestResponse } from '../../services/wallet.service';
 import { useTheme } from '../../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { format, parseISO, differenceInHours, differenceInMinutes } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { adminService } from '../../services/admin.service';
+import { bookingService } from '../../services/booking.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,39 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
   const [adminNote, setAdminNote] = useState('');
   const meta = statusMeta(request.status, isDark);
 
+  const requestBankInfoMutation = useMutation({
+    mutationFn: async (req: WithdrawalRequestResponse) => {
+      if (!req.userEmail) return Promise.reject('Không có email khách hàng');
+      
+      let extraInfo = '';
+      if (req.type === 'REFUND') {
+        try {
+          const booking = await bookingService.getBookingById(req.id);
+          const servicesList = booking.services?.map(s => s.name).join(', ') || 'Không rõ';
+          const petName = booking.pet?.name || 'Không rõ';
+          extraInfo = `🐾 Thú cưng: ${petName}\n✂️ Dịch vụ: ${servicesList}\n`;
+        } catch (e) {
+          console.warn('Could not fetch booking details for refund notification', e);
+        }
+      }
+
+      const content = `🚨 [HỆ THỐNG] YÊU CẦU THÔNG TIN HOÀN TIỀN\n\nBạn có một đơn đã bị hủy cần được hoàn tiền 100% (Mã đơn: #${req.id})\n\n📋 THÔNG TIN CHI TIẾT:\n${extraInfo}📝 Lý do hủy: ${req.note || 'Không rõ'}\n🕒 Thời gian hủy: ${formatDate(req.createdAt)}\n\n💳 Vui lòng cung cấp thông tin ngân hàng của bạn ngay tại khung chat này (Bao gồm: Tên Ngân Hàng, Số Tài Khoản, Tên Chủ Tài Khoản) để chúng tôi có thể xử lý hoàn tiền cho bạn một cách nhanh nhất.\n\nXin chân thành cảm ơn! 💖`;
+      
+      return adminService.sendChatMessage({
+        shopId: 0,
+        channelType: 'CUSTOMER_CHAT',
+        recipientEmail: req.userEmail,
+        content
+      });
+    },
+    onSuccess: () => {
+      toast.success('Đã gửi tin nhắn yêu cầu thông tin ngân hàng cho khách hàng.');
+    },
+    onError: () => {
+      toast.error('Gửi tin nhắn thất bại.');
+    }
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
       <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto admin-scrollbar ${isDark ? 'admin-glass-card bg-slate-900/95' : 'bg-white'}`}>
@@ -183,21 +218,37 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
 
           <div className="space-y-2">
             <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Thông tin ngân hàng</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {[
-                { icon: <Building2 className="w-3.5 h-3.5" />, label: 'Ngân hàng', value: request.bankName },
-                { icon: <CreditCard className="w-3.5 h-3.5" />, label: 'Số TK', value: request.bankAccount },
-                { icon: <User className="w-3.5 h-3.5" />, label: 'Chủ TK', value: request.accountHolder },
-              ].map(item => (
-                <div key={item.label} className={`flex items-center gap-2 p-3 rounded-xl ${isDark ? 'bg-white/[0.02] border border-white/5' : 'bg-slate-50'}`}>
-                  <span className="text-slate-400">{item.icon}</span>
-                  <div className="min-w-0">
-                    <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
-                    <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
+            {!request.bankName || request.bankName.trim() === '' ? (
+              <div className={`p-4 rounded-xl flex items-center justify-between ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
+                <p className={`text-sm ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>Khách hàng chưa cung cấp thông tin</p>
+                {request.type === 'REFUND' && request.userId && (
+                  <button 
+                    onClick={() => requestBankInfoMutation.mutate(request)}
+                    disabled={requestBankInfoMutation.isPending}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {requestBankInfoMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />}
+                    Nhắn tin yêu cầu
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { icon: <Building2 className="w-3.5 h-3.5" />, label: 'Ngân hàng', value: request.bankName },
+                  { icon: <CreditCard className="w-3.5 h-3.5" />, label: 'Số TK', value: request.bankAccount },
+                  { icon: <User className="w-3.5 h-3.5" />, label: 'Chủ TK', value: request.accountHolder },
+                ].map(item => (
+                  <div key={item.label} className={`flex items-center gap-2 p-3 rounded-xl ${isDark ? 'bg-white/[0.02] border border-white/5' : 'bg-slate-50'}`}>
+                    <span className="text-slate-400">{item.icon}</span>
+                    <div className="min-w-0">
+                      <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
+                      <p className={`text-xs font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {request.note && (

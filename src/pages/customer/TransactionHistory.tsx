@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { transactionService } from '../../services/transaction.service';
 import type { TransactionResponse } from '../../types/api';
 import { format } from 'date-fns';
+import { PawPrint } from 'lucide-react';
 
 export default function TransactionHistory() {
   const [selectedTx, setSelectedTx] = useState<TransactionResponse | null>(null);
@@ -12,21 +13,19 @@ export default function TransactionHistory() {
   const itemsPerPage = 10;
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['my-transactions'],
-    queryFn: transactionService.getMyTransactions,
+  const { data: pageData, isLoading, isFetching } = useQuery({
+    queryKey: ['my-transactions', currentPage],
+    queryFn: () => transactionService.getCustomerTransactions(currentPage, itemsPerPage),
+    placeholderData: keepPreviousData,
   });
+
+  const transactions = pageData?.content || [];
+  const totalPages = pageData?.totalPages || 1;
 
   const filteredTx = transactions.filter(tx => {
     if (filter === 'ALL') return true;
     return tx.status === filter;
   });
-
-  const totalPages = Math.ceil(filteredTx.length / itemsPerPage);
-  const paginatedTx = filteredTx.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handleDownloadPdf = async () => {
     // Sử dụng trình duyệt native để in ra PDF (hỗ trợ oklch, font đẹp, sắc nét 100%)
@@ -49,6 +48,7 @@ export default function TransactionHistory() {
       case 'FAILED': return 'Thất bại';
       case 'CANCELLED': return 'Đã hủy';
       case 'PENDING': return 'Đang xử lý';
+      case 'NO_SHOW_PENALTY': return 'Phạt vắng mặt';
       default: return status;
     }
   };
@@ -68,18 +68,17 @@ export default function TransactionHistory() {
               setFilter(f);
               setCurrentPage(1);
             }}
-            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-              filter === f 
-                ? 'bg-[#1a2b4c] text-white shadow-lg' 
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50'
-            }`}
+            className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${filter === f
+              ? 'bg-[#1a2b4c] text-white shadow-lg'
+              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50'
+              }`}
           >
             {f === 'ALL' ? 'Tất cả' : getStatusLabel(f)}
           </button>
         ))}
       </div>
 
-      {isLoading ? (
+      {isLoading && !pageData ? (
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -89,10 +88,10 @@ export default function TransactionHistory() {
           <p className="text-slate-500 font-medium">Không tìm thấy giao dịch nào.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {paginatedTx.map(tx => (
-            <div 
-              key={tx.id} 
+        <div className={`space-y-4 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
+          {filteredTx.map(tx => (
+            <div
+              key={tx.id}
               onClick={() => setSelectedTx(tx)}
               className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
             >
@@ -104,7 +103,18 @@ export default function TransactionHistory() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">
-                    {tx.description || (tx.type === 'BOOKING_PAYMENT' ? `Thanh toán lịch hẹn #${tx.bookingId}` : 'Giao dịch')}
+                    {(tx.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                    || (tx.type === 'BOOKING_PAYMENT' ? `Thanh toán lịch hẹn #${tx.bookingId}` : 'Giao dịch')}
                   </h3>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                     <span>{format(new Date(tx.createdAt), 'dd/MM/yyyy HH:mm')}</span>
@@ -142,17 +152,16 @@ export default function TransactionHistory() {
           >
             <span className="material-symbols-outlined text-sm">chevron_left</span>
           </button>
-          
+
           <div className="flex gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
             {Array.from({ length: totalPages }).map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentPage(idx + 1)}
-                className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${
-                  currentPage === idx + 1
-                    ? 'bg-[#1a2b4c] text-white shadow-md'
-                    : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
+                className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${currentPage === idx + 1
+                  ? 'bg-[#1a2b4c] text-white shadow-md'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  }`}
               >
                 {idx + 1}
               </button>
@@ -176,7 +185,7 @@ export default function TransactionHistory() {
             {/* Header Modal */}
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950 flex-shrink-0">
               <h3 className="font-bold text-slate-900 dark:text-white">Chi tiết giao dịch</h3>
-              <button 
+              <button
                 onClick={() => setSelectedTx(null)}
                 className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
               >
@@ -188,68 +197,81 @@ export default function TransactionHistory() {
             <div className="overflow-y-auto flex-1">
               <div ref={receiptRef} className="print-receipt p-6 sm:p-8 bg-white text-slate-900">
                 <div className="text-center mb-6 sm:mb-8">
-                <div className="w-16 h-16 bg-[#1a2b4c] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <span className="material-symbols-outlined text-white text-3xl">pets</span>
-                </div>
-                <h2 className="text-2xl font-black text-[#1a2b4c]">PETEYE</h2>
-                <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Biên lai điện tử</p>
-              </div>
-
-              <div className="text-center mb-8 pb-8 border-b border-dashed border-slate-300">
-                <p className="text-sm text-slate-500 font-medium mb-1">Số tiền giao dịch</p>
-                <p className="text-4xl font-black text-slate-900">{selectedTx.amount.toLocaleString()}đ</p>
-                <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(selectedTx.status)}`}>
-                  {getStatusLabel(selectedTx.status)}
-                </div>
-              </div>
-
-              <div className="space-y-4 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Mã giao dịch</span>
-                  <span className="font-bold text-slate-900 uppercase">{selectedTx.gatewayTransactionId || `TXN-${selectedTx.id}`}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Thời gian</span>
-                  <span className="font-bold text-slate-900">{format(new Date(selectedTx.createdAt), 'dd/MM/yyyy HH:mm:ss')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Phương thức</span>
-                  <span className="font-bold text-slate-900 uppercase">{selectedTx.paymentMethod}</span>
-                </div>
-                {selectedTx.shopName && (
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                    <span className="text-slate-500">Cửa hàng</span>
-                    <span className="font-bold text-slate-900">{selectedTx.shopName}</span>
+                  <div className="w-16 h-16 bg-[#1a2b4c] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <PawPrint className="text-white" size={26} fill="white" />
                   </div>
-                )}
-                {selectedTx.serviceName && (
+                  <h2 className="text-2xl font-black text-[#1a2b4c]">PETEYE</h2>
+                  <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Biên lai điện tử</p>
+                </div>
+
+                <div className="text-center mb-8 pb-8 border-b border-dashed border-slate-300">
+                  <p className="text-sm text-slate-500 font-medium mb-1">Số tiền giao dịch</p>
+                  <p className="text-4xl font-black text-slate-900">{selectedTx.amount.toLocaleString()}đ</p>
+                  <div className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(selectedTx.status)}`}>
+                    {getStatusLabel(selectedTx.status)}
+                  </div>
+                </div>
+
+                <div className="space-y-4 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Dịch vụ</span>
-                    <span className="font-bold text-slate-900">{selectedTx.serviceName}</span>
+                    <span className="text-slate-500">Mã giao dịch</span>
+                    <span className="font-bold text-slate-900 uppercase">{selectedTx.gatewayTransactionId || `TXN-${selectedTx.id}`}</span>
                   </div>
-                )}
-                <div className="flex justify-between items-start pt-4 border-t border-slate-100">
-                  <span className="text-slate-500">Nội dung</span>
-                  <span className="font-bold text-slate-900 text-right max-w-[200px]">{selectedTx.description}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Thời gian</span>
+                    <span className="font-bold text-slate-900">{format(new Date(selectedTx.createdAt), 'dd/MM/yyyy HH:mm:ss')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Phương thức</span>
+                    <span className="font-bold text-slate-900 uppercase">{selectedTx.paymentMethod}</span>
+                  </div>
+                  {selectedTx.shopName && (
+                    <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                      <span className="text-slate-500">Cửa hàng</span>
+                      <span className="font-bold text-slate-900">{selectedTx.shopName}</span>
+                    </div>
+                  )}
+                  {selectedTx.serviceName && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500">Dịch vụ</span>
+                      <span className="font-bold text-slate-900">{selectedTx.serviceName}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-start pt-4 border-t border-slate-100">
+                    <span className="text-slate-500">Nội dung</span>
+                    <span className="font-bold text-slate-900 text-right max-w-[200px]">
+                      {(selectedTx.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t-4 border-[#1a2b4c] text-center">
+                  <p className="text-xs text-slate-400">Cảm ơn bạn đã sử dụng dịch vụ của PetEye!</p>
+                  <p className="text-[10px] text-slate-300 mt-1">hotline: 1900 9999 - email: support@peteye.vn</p>
                 </div>
               </div>
-
-              <div className="mt-8 pt-6 border-t-4 border-[#1a2b4c] text-center">
-                <p className="text-xs text-slate-400">Cảm ơn bạn đã sử dụng dịch vụ của PetEye!</p>
-                <p className="text-[10px] text-slate-300 mt-1">hotline: 1900 9999 - email: support@peteye.vn</p>
-              </div>
-            </div>
             </div>
 
             {/* Footer Modal */}
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end gap-3 flex-shrink-0">
-              <button 
+              <button
                 onClick={() => setSelectedTx(null)}
                 className="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
               >
                 Đóng
               </button>
-              <button 
+              <button
                 onClick={handleDownloadPdf}
                 disabled={downloading}
                 className="px-5 py-2.5 rounded-xl font-bold text-white bg-[#1a2b4c] shadow-lg shadow-[#1a2b4c]/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
