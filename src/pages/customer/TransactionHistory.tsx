@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { transactionService } from '../../services/transaction.service';
 import type { TransactionResponse } from '../../types/api';
 import { format } from 'date-fns';
@@ -13,9 +13,10 @@ export default function TransactionHistory() {
   const itemsPerPage = 10;
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const { data: pageData, isLoading } = useQuery({
+  const { data: pageData, isLoading, isFetching } = useQuery({
     queryKey: ['my-transactions', currentPage],
     queryFn: () => transactionService.getCustomerTransactions(currentPage, itemsPerPage),
+    placeholderData: keepPreviousData,
   });
 
   const transactions = pageData?.content || [];
@@ -47,6 +48,7 @@ export default function TransactionHistory() {
       case 'FAILED': return 'Thất bại';
       case 'CANCELLED': return 'Đã hủy';
       case 'PENDING': return 'Đang xử lý';
+      case 'NO_SHOW_PENALTY': return 'Phạt vắng mặt';
       default: return status;
     }
   };
@@ -76,7 +78,7 @@ export default function TransactionHistory() {
         ))}
       </div>
 
-      {isLoading ? (
+      {isLoading && !pageData ? (
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -86,7 +88,7 @@ export default function TransactionHistory() {
           <p className="text-slate-500 font-medium">Không tìm thấy giao dịch nào.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className={`space-y-4 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
           {filteredTx.map(tx => (
             <div
               key={tx.id}
@@ -101,7 +103,18 @@ export default function TransactionHistory() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white line-clamp-1">
-                    {tx.description || (tx.type === 'BOOKING_PAYMENT' ? `Thanh toán lịch hẹn #${tx.bookingId}` : 'Giao dịch')}
+                    {(tx.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                    || (tx.type === 'BOOKING_PAYMENT' ? `Thanh toán lịch hẹn #${tx.bookingId}` : 'Giao dịch')}
                   </h3>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                     <span>{format(new Date(tx.createdAt), 'dd/MM/yyyy HH:mm')}</span>
@@ -226,7 +239,20 @@ export default function TransactionHistory() {
                   )}
                   <div className="flex justify-between items-start pt-4 border-t border-slate-100">
                     <span className="text-slate-500">Nội dung</span>
-                    <span className="font-bold text-slate-900 text-right max-w-[200px]">{selectedTx.description}</span>
+                    <span className="font-bold text-slate-900 text-right max-w-[200px]">
+                      {(selectedTx.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                      }
+                    </span>
                   </div>
                 </div>
 

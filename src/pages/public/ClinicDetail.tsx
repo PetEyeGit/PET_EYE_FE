@@ -1768,7 +1768,7 @@ export default function ClinicDetail() {
                         if (!user) {
                           setShowLoginPrompt(true);
                         } else {
-                          navigate('/messages');
+                          navigate(`/messages?shopId=${shop?.id}&shopName=${encodeURIComponent(shop?.shopName || '')}`);
                         }
                       }}
                       className="flex-1 h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-500 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 font-semibold text-sm transition-colors shadow-sm"

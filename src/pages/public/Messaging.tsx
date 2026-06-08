@@ -22,7 +22,10 @@ export default function Messaging() {
   // Fetch unique shops from booking history
   const { data: bookings = [] } = useQuery({
     queryKey: ['my-bookings-chat', user?.id],
-    queryFn: () => bookingService.getMyBookings(),
+    queryFn: async () => {
+      const res = await bookingService.getMyBookings(1, 100);
+      return res?.content || [];
+    },
     enabled: !!user
   });
 
@@ -49,6 +52,10 @@ export default function Messaging() {
     adminSupport,
     ...mergedShops
   ];
+
+  if (selectedShop && !allConversations.find(c => c.id === selectedShop.id)) {
+    allConversations.push(selectedShop as any);
+  }
 
   // If a shop is passed via URL, ensure it's in the list or added as temp
   useEffect(() => {

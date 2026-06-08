@@ -55,9 +55,11 @@ export const bookingService = {
   },
 
   /** Get all bookings of the current user */
-  getMyBookings: async (): Promise<BookingResponse[]> => {
-    const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/bookings/my');
-    return response.data.result ?? [];
+  getMyBookings: async (page: number = 1, size: number = 10, status?: string): Promise<any> => {
+    const params: any = { page, size };
+    if (status && status !== 'all') params.status = status;
+    const response = await apiClient.get<ApiResponse<any>>('/bookings/my', { params });
+    return response.data.result;
   },
 
   /** Get booking detail */

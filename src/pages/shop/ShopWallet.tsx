@@ -524,7 +524,18 @@ export default function ShopWallet() {
                         isPlus ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
                         : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
                       }`}>
-                        {t.type}
+                        {(() => {
+                          switch (t.type) {
+                            case 'WALLET_CREDIT': return 'Cộng tiền ví';
+                            case 'WALLET_DEDUCT': return 'Trừ tiền ví';
+                            case 'PAYMENT': return 'Thanh toán';
+                            case 'WITHDRAWAL': return 'Rút tiền';
+                            case 'REFUND': return 'Hoàn tiền';
+                            case 'CASH_DEPOSIT': return 'Tiền mặt';
+                            case 'MOCK': return 'MOCK';
+                            default: return t.type;
+                          }
+                        })()}
                       </span>
                       <span className="text-xs font-bold text-slate-400 font-mono">#{t.id}</span>
                       {t.bookingId && (
@@ -537,7 +548,18 @@ export default function ShopWallet() {
                       {isPlus ? '+' : '-'}{formatVND(t.amount)}
                     </p>
                     <p className={`text-sm mt-1.5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {t.description}
+                      {(t.description || '')
+                        .replace(/Mock payment for booking/gi, 'Thanh toán (Mock) cho đơn')
+                        .replace(/Wallet credit for booking/gi, 'Cộng tiền vào ví cho đơn')
+                        .replace(/shop share of/gi, 'phần của shop:')
+                        .replace(/Customer paid 10% deposit/gi, 'Khách hàng đã đặt cọc 10%')
+                        .replace(/Refund for booking/gi, 'Hoàn tiền cho đơn')
+                        .replace(/Wallet deduct for booking/gi, 'Trừ tiền ví cho đơn')
+                        .replace(/shop share deduct/gi, 'trừ phần của shop')
+                        .replace(/Withdrawal request/gi, 'Yêu cầu rút tiền')
+                        .replace(/Booking/gi, 'Đơn')
+                        .replace(/payment/gi, 'thanh toán')
+                      }
                     </p>
                     {t.serviceName && (
                       <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
@@ -553,7 +575,16 @@ export default function ShopWallet() {
                       t.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
                       : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
                     }`}>
-                      {t.status}
+                      {(() => {
+                        switch (t.status) {
+                          case 'SUCCESS': return 'Thành công';
+                          case 'FAILED': return 'Thất bại';
+                          case 'CANCELLED': return 'Đã hủy';
+                          case 'PENDING': return 'Đang xử lý';
+                          case 'NO_SHOW_PENALTY': return 'Phạt vắng mặt';
+                          default: return t.status;
+                        }
+                      })()}
                     </span>
                   </div>
                 </div>

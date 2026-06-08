@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
     Calendar, Clock, Plus, Home, Stethoscope, Scissors,
     Video, Star, CheckCircle, AlertCircle, XCircle, Wifi, Loader2,
@@ -519,11 +519,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
 export default function BookingHistory() {
     const qc = useQueryClient();
     const [activeTab, setActiveTab] = useState<TabKey>('all');
+    const [page, setPage] = useState(1);
+    const size = 10;
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPet, setSelectedPet] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
-    const [visibleCount, setVisibleCount] = useState(5);
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
     // Review state
@@ -542,11 +543,15 @@ export default function BookingHistory() {
 
     const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
 
-    const { data: bookings = [], isLoading, isError, refetch } = useQuery({
-        queryKey: ['my-bookings'],
-        queryFn: bookingService.getMyBookings,
+    const { data: pageData, isLoading, isFetching, isError, refetch } = useQuery({
+        queryKey: ['my-bookings', activeTab, page],
+        queryFn: () => bookingService.getMyBookings(page, size, activeTab),
         staleTime: 30_000,
+        placeholderData: keepPreviousData,
     });
+
+    const bookings: BookingResponse[] = pageData?.content || [];
+    const totalPages: number = pageData?.totalPages || 1;
 
     const petsList = useMemo(() => {
         const pets = bookings.map(b => b.petName).filter(Boolean);
@@ -693,21 +698,8 @@ export default function BookingHistory() {
         }
     };
 
-    const sorted = useMemo(() => {
-        return [...bookings].sort((a, b) => {
-            const dateA = new Date(a.createdAt || a.appointmentDatetime).getTime();
-            const dateB = new Date(b.createdAt || b.appointmentDatetime).getTime();
-            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-        });
-    }, [bookings, sortOrder]);
-
     const filtered = useMemo(() => {
-        let list = sorted;
-
-        // 1. Tab status filter
-        if (activeTab !== 'all') {
-            list = list.filter(b => getTabKey(b) === activeTab);
-        }
+        let list = bookings;
 
         // 2. Search query filter
         if (searchQuery.trim()) {
@@ -729,15 +721,19 @@ export default function BookingHistory() {
         if (selectedCategory !== 'all') {
             list = list.filter(b => getCategory(b) === selectedCategory);
         }
+        
+        if (sortOrder === 'asc') {
+            list.sort((a, b) => new Date(a.appointmentDatetime).getTime() - new Date(b.appointmentDatetime).getTime());
+        } else {
+            list.sort((a, b) => new Date(b.appointmentDatetime).getTime() - new Date(a.appointmentDatetime).getTime());
+        }
 
         return list;
-    }, [sorted, activeTab, searchQuery, selectedPet, selectedCategory]);
+    }, [bookings, searchQuery, selectedPet, selectedCategory, sortOrder]);
 
     const groupedBookings = useMemo(() => {
-        const visibleList = filtered.slice(0, visibleCount);
-
         const groups: Record<string, BookingResponse[]> = {};
-        visibleList.forEach(b => {
+        filtered.forEach(b => {
             let monthStr = 'Thời gian khác';
             try {
                 const date = parseISO(b.appointmentDatetime);
@@ -751,20 +747,9 @@ export default function BookingHistory() {
             groups[monthStr].push(b);
         });
         return groups;
-    }, [filtered, visibleCount]);
+    }, [filtered]);
 
-    const counts: Record<TabKey, number> = {
-        all: sorted.length,
-        upcoming: sorted.filter(b => getTabKey(b) === 'upcoming').length,
-        active: sorted.filter(b => getTabKey(b) === 'active').length,
-        completed: sorted.filter(b => getTabKey(b) === 'completed').length,
-        cancelled: sorted.filter(b => getTabKey(b) === 'cancelled').length,
-    };
-
-    const totalSpent = bookings.filter(b => b.status === 'COMPLETED').reduce((s, b) => s + b.servicePrice, 0);
-    const activePets = [...new Set(bookings.filter(b => b.status !== 'CANCELLED' && b.status !== 'WAITING_REFUND').map(b => b.petName).filter(Boolean))].length;
-
-    if (isLoading) return (
+    if (isLoading && !pageData) return (
         <div className="flex-1 flex flex-col items-center justify-center py-32 gap-6">
             <div className="relative">
                 <div className="w-16 h-16 border-4 border-primary/20 rounded-full animate-spin border-t-primary" />
@@ -797,14 +782,6 @@ export default function BookingHistory() {
                 </div>
             </div>
 
-            {/* Stats Dashboard */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard label="Tổng đơn hàng" value={counts.all} icon={Calendar} color="bg-indigo-500" delay={0.1} />
-                <StatCard label="Đang diễn ra" value={counts.active} icon={Wifi} color="bg-emerald-500" delay={0.2} />
-                <StatCard label="Thú cưng" value={activePets} icon={Heart} color="bg-rose-500" delay={0.3} />
-                <StatCard label="Tổng chi tiêu" value={formatVND(totalSpent)} icon={Wallet} color="bg-amber-500" delay={0.4} />
-            </div>
-
             {/* Filters & Search Control Panel */}
             <div className="flex flex-col gap-6 bg-slate-50/50 dark:bg-slate-900/30 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800/80">
                 {/* Tabs & Search */}
@@ -813,15 +790,10 @@ export default function BookingHistory() {
                     <div className="flex items-center gap-2 p-1 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 w-fit overflow-x-auto shrink-0 max-w-full">
                         {TABS.map(tab => (
                             <button
-                                key={tab.key} onClick={() => { setActiveTab(tab.key); setVisibleCount(5); }}
+                                key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); }}
                                 className={`px-5 py-2.5 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab.key ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 {tab.label}
-                                {counts[tab.key] > 0 && (
-                                    <span className={`px-1.5 py-0.5 rounded-lg text-[9px] ${activeTab === tab.key ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                                        {counts[tab.key]}
-                                    </span>
-                                )}
                             </button>
                         ))}
                     </div>
@@ -832,13 +804,13 @@ export default function BookingHistory() {
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(5); }}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                             placeholder="Tìm kiếm cửa hàng, dịch vụ..."
                             className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none font-bold text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:border-primary/50 transition-all shadow-sm"
                         />
                         {searchQuery && (
                             <button
-                                onClick={() => setSearchQuery('')}
+                                onClick={() => { setSearchQuery(''); setPage(1); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             >
                                 <X size={14} />
@@ -856,7 +828,7 @@ export default function BookingHistory() {
                             {petsList.map(petName => (
                                 <button
                                     key={petName}
-                                    onClick={() => { setSelectedPet(petName); setVisibleCount(5); }}
+                                    onClick={() => { setSelectedPet(petName); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedPet === petName
                                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-sm'
                                         : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-800 border-slate-100 dark:border-slate-800'
@@ -926,7 +898,7 @@ export default function BookingHistory() {
             </div>
 
             {/* List Section */}
-            <div className="space-y-10">
+            <div className={`space-y-10 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
                 {filtered.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-slate-800 p-24 text-center">
                         <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
@@ -962,15 +934,38 @@ export default function BookingHistory() {
                     </div>
                 )}
 
-                {/* Load More Control */}
-                {filtered.length > visibleCount && (
-                    <div className="flex justify-center pt-4">
+                {/* Pagination Controls */}
+                {!isLoading && totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2 mt-8 pb-8">
                         <button
-                            onClick={() => setVisibleCount(prev => prev + 5)}
-                            className="px-10 py-4 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-3xl text-xs font-black uppercase tracking-widest hover:shadow-xl hover:scale-105 active:scale-95 transition-all shadow-md shadow-slate-900/10 flex items-center gap-2"
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
-                            <Plus size={14} />
-                            Xem thêm cuộc hẹn ({filtered.length - visibleCount})
+                            <span className="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+
+                        <div className="flex gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
+                            {Array.from({ length: totalPages }).map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setPage(idx + 1)}
+                                    className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${page === idx + 1
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }`}
+                                >
+                                    {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-sm">chevron_right</span>
                         </button>
                     </div>
                 )}

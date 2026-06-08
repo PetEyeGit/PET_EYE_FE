@@ -162,7 +162,8 @@ export function ProfileLayout() {
             </div>
           </div>
 
-          {/* Membership card */}
+          {/* Membership card - HIDING AS REQUESTED */}
+          {/*
           <div className="bg-gradient-to-br from-[#1a2b4c] to-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
             
@@ -209,6 +210,7 @@ export function ProfileLayout() {
               </div>
             )}
           </div>
+          */}
         </aside>
 
         {/* Perks Modal */}
@@ -557,9 +559,9 @@ export default function Profile() {
           </form>
         </div>
 
-        {/* Membership Tiers Explanation */}
+        {/* Membership Tiers Explanation - HIDING AS REQUESTED */}
 
-        {isVoucherServiceEnabled && (
+        {/* {isVoucherServiceEnabled && (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-8">
             <div className="size-10 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center text-yellow-600">
@@ -613,7 +615,7 @@ export default function Profile() {
             )})}
           </div>
         </div>
-        )}
+        )} */}
       </main>
   );
 }
