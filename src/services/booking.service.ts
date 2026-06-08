@@ -60,6 +60,12 @@ export const bookingService = {
     return response.data.result ?? [];
   },
 
+  /** Get paginated bookings of the current user (10 per page) */
+  getMyBookingsPaged: async (page = 0): Promise<{ content: BookingResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }> => {
+    const response = await apiClient.get<ApiResponse<{ content: BookingResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }>>('/bookings/my/paged', { params: { page } });
+    return response.data.result!;
+  },
+
   /** Get booking detail */
   getById: async (id: number): Promise<BookingResponse> => {
     const response = await apiClient.get<ApiResponse<BookingResponse>>(`/bookings/${id}`);
@@ -122,6 +128,15 @@ export const bookingService = {
     
     const response = await apiClient.get<ApiResponse<BookingResponse[]>>('/bookings/shop', { params });
     return response.data.result ?? [];
+  },
+
+  /** Get paginated bookings for the authenticated shop owner (10 per page) */
+  getShopBookingsPaged: async (page = 0, start?: string, end?: string): Promise<{ content: BookingResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }> => {
+    const params: any = { page };
+    if (start) params.start = start;
+    if (end) params.end = end;
+    const response = await apiClient.get<ApiResponse<{ content: BookingResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }>>('/bookings/shop/paged', { params });
+    return response.data.result!;
   },
 
   /** Check if a pet is available for booking at a specific time */

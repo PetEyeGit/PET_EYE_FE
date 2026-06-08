@@ -21,9 +21,9 @@ export function useClinics() {
   
   const [searchQuery, setSearchQuery] = useState(initialQ);
   const [cityQuery, setCityQuery] = useState(initialCity);
-  // activeService stores the BE shopType value ('Tất cả' | 'CLINIC' | 'SPA' | ...)
   const [activeService, setActiveService] = useState(initialType);
   const [minRating, setMinRating] = useState(0);
+  const [page, setPage] = useState(0);
 
   // Debounce text inputs so API is only called after user stops typing
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -31,21 +31,29 @@ export function useClinics() {
 
   const shopTypeParam = activeService === 'Tất cả' ? undefined : activeService;
 
-  const { data: shops = [], isLoading, error } = useQuery({
-    queryKey: ['shops-public', debouncedSearch, debouncedCity, shopTypeParam],
-    queryFn: () => shopService.searchPublic({
+  const { data: pagedData, isLoading, error } = useQuery({
+    queryKey: ['shops-public', debouncedSearch, debouncedCity, shopTypeParam, page],
+    queryFn: () => shopService.searchPublicPaged({
       keyword:  debouncedSearch || undefined,
       city:     debouncedCity   || undefined,
       shopType: shopTypeParam,
+      page,
     }),
     staleTime: 30_000,
   });
 
-  // Client-side rating filter (BE already filters by shopType/keyword/city)
+  const shops = pagedData?.content ?? [];
+  const totalPages = pagedData?.totalPages ?? 1;
+  const totalElements = pagedData?.totalElements ?? 0;
+
+  // Client-side rating filter
   const filteredShops = useMemo(() => {
     if (minRating === 0) return shops;
     return shops.filter((s: ShopPublicResponse) => s.ratingAvg >= minRating);
   }, [shops, minRating]);
+
+  // Reset page khi filter thay đổi
+  useEffect(() => { setPage(0); }, [debouncedSearch, debouncedCity, activeService]);
 
   return {
     clinics: filteredShops,
@@ -59,5 +67,9 @@ export function useClinics() {
     setActiveService,
     minRating,
     setMinRating,
+    page,
+    setPage,
+    totalPages,
+    totalElements,
   };
 }

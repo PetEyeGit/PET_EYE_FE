@@ -49,20 +49,22 @@ export default function AdminShops() {
   const [detailShop, setDetailShop] = useState<AdminShopResponse | null>(null);
   const [staffMap, setStaffMap] = useState<Record<number, AdminStaffResponse[]>>({});
   const [loadingStaff, setLoadingStaff] = useState<number | null>(null);
+  const [page, setPage] = useState(0);
 
-  const { data: shops = [], isLoading } = useQuery({
-    queryKey: ['admin-shops'],
-    queryFn: adminService.getAllShops,
+  const { data: pagedData, isLoading } = useQuery({
+    queryKey: ['admin-shops', page],
+    queryFn: () => adminService.getShopsPaged(page),
     staleTime: 0,
   });
 
+  const shops = pagedData?.content ?? [];
+  const totalPages = pagedData?.totalPages ?? 1;
+
   const approveMutation = useMutation({
     mutationFn: adminService.approveShop,
-    onSuccess: (_, shopId) => {
+    onSuccess: () => {
       toast.success('Đã phê duyệt shop');
-      qc.setQueryData<AdminShopResponse[]>(['admin-shops'], old =>
-        old?.map(s => s.id === shopId ? { ...s, status: 'APPROVED' as ShopStatus, isVerified: true } : s) ?? []
-      );
+      qc.invalidateQueries({ queryKey: ['admin-shops'] });
       qc.invalidateQueries({ queryKey: ['admin-dashboard'] });
     },
     onError: () => toast.error('Phê duyệt thất bại'),
@@ -70,11 +72,9 @@ export default function AdminShops() {
 
   const rejectMutation = useMutation({
     mutationFn: adminService.rejectShop,
-    onSuccess: (_, shopId) => {
+    onSuccess: () => {
       toast.success('Đã từ chối shop');
-      qc.setQueryData<AdminShopResponse[]>(['admin-shops'], old =>
-        old?.map(s => s.id === shopId ? { ...s, status: 'REJECTED' as ShopStatus, isVerified: false } : s) ?? []
-      );
+      qc.invalidateQueries({ queryKey: ['admin-shops'] });
     },
     onError: () => toast.error('Từ chối thất bại'),
   });
@@ -231,6 +231,44 @@ export default function AdminShops() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Trang {page + 1} / {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              ← Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i).filter(i => Math.abs(i - page) <= 2).map(i => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-9 h-9 rounded-xl text-xs font-semibold transition-all ${
+                  i === page
+                    ? (isDark ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-blue-600 text-white')
+                    : (isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {detailShop && (

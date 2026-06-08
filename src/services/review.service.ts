@@ -29,6 +29,11 @@ export const reviewService = {
     const response = await apiClient.get(`/reviews/shop/${shopId}`);
     return response.data.result;
   },
+
+  getReviewsByShopPaged: async (shopId: number, page = 0): Promise<{ content: ReviewResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }> => {
+    const response = await apiClient.get(`/reviews/shop/${shopId}/paged`, { params: { page } });
+    return response.data.result;
+  },
   
   getReviewCount: async (shopId: number): Promise<number> => {
     const response = await apiClient.get(`/reviews/shop/${shopId}/count`);

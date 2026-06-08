@@ -15,20 +15,23 @@ export default function AdminMembers() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Tất cả');
   const [detail, setDetail] = useState<AdminUserResponse | null>(null);
+  const [page, setPage] = useState(0);
 
-  const { data: members = [], isLoading } = useQuery({
-    queryKey: ['admin-members'],
-    queryFn: adminService.getAllUsers,
+  const { data: pagedData, isLoading } = useQuery({
+    queryKey: ['admin-members', page],
+    queryFn: () => adminService.getUsersPaged(page),
     staleTime: 0,
   });
+
+  const members = pagedData?.content ?? [];
+  const totalPages = pagedData?.totalPages ?? 1;
+  const totalElements = pagedData?.totalElements ?? 0;
 
   const deactivateMutation = useMutation({
     mutationFn: adminService.deactivateUser,
     onSuccess: (_, userId) => {
       toast.success('Đã khóa tài khoản');
-      qc.setQueryData<AdminUserResponse[]>(['admin-members'], old =>
-        old?.map(m => m.id === userId ? { ...m, isActive: false } : m) ?? []
-      );
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
     },
     onError: () => toast.error('Khóa thất bại'),
   });
@@ -37,9 +40,7 @@ export default function AdminMembers() {
     mutationFn: adminService.activateUser,
     onSuccess: (_, userId) => {
       toast.success('Đã mở khóa tài khoản');
-      qc.setQueryData<AdminUserResponse[]>(['admin-members'], old =>
-        old?.map(m => m.id === userId ? { ...m, isActive: true } : m) ?? []
-      );
+      qc.invalidateQueries({ queryKey: ['admin-members'] });
     },
     onError: () => toast.error('Mở khóa thất bại'),
   });
@@ -85,12 +86,12 @@ export default function AdminMembers() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm theo tên, email..."
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Tìm theo tên, email..."
             className={`w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all ${isDark ? 'admin-glass-input' : 'border border-slate-200 bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'}`} />
         </div>
         <div className="flex gap-2 flex-wrap">
           {['Tất cả', 'USER', 'SHOP_OWNER', 'STAFF', 'ADMIN'].map(r => (
-            <button key={r} onClick={() => setRoleFilter(r)}
+            <button key={r} onClick={() => { setRoleFilter(r); setPage(0); }}
               className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 roleFilter === r
                   ? (isDark ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 glow-blue' : 'bg-blue-600 text-white shadow-sm')
@@ -101,7 +102,7 @@ export default function AdminMembers() {
           ))}
         </div>
         <div className={`rounded-xl px-4 py-2.5 text-sm font-semibold shrink-0 ${isDark ? 'admin-glass-card text-slate-300' : 'bg-white border border-slate-100 text-slate-600 shadow-sm'}`}>
-          {filtered.length} thành viên
+          {totalElements} thành viên
         </div>
       </div>
 
@@ -197,6 +198,44 @@ export default function AdminMembers() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Trang {page + 1} / {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              ← Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i).filter(i => Math.abs(i - page) <= 2).map(i => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-9 h-9 rounded-xl text-xs font-semibold transition-all ${
+                  i === page
+                    ? (isDark ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-blue-600 text-white')
+                    : (isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 ${isDark ? 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {detail && (

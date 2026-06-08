@@ -72,6 +72,10 @@ export default function VetSearch() {
     setActiveService,
     minRating,
     setMinRating,
+    page,
+    setPage,
+    totalPages,
+    totalElements,
   } = useClinics();
 
   const [sortBy, setSortBy] = useState(latParam ? 'Gần nhất' : 'Đánh giá cao nhất');
@@ -361,7 +365,7 @@ export default function VetSearch() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">
-                  {isLoading ? 'Đang tìm kiếm...' : `${sortedClinics.length} kết quả phù hợp`}
+                  {isLoading ? 'Đang tìm kiếm...' : `${totalElements} kết quả phù hợp`}
                 </h2>
                 <p className="text-sm font-medium text-slate-500">Dựa trên tiêu chí lựa chọn của bạn</p>
               </div>
@@ -404,7 +408,7 @@ export default function VetSearch() {
                   ))}
                 </>
               ) : (
-                sortedClinics.slice(0, 20).map((shop: ShopPublicResponse, index: number) => (
+                sortedClinics.map((shop: ShopPublicResponse, index: number) => (
                   <div key={`${shop.id}-${index}`} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.05}s` }}>
                     <Link
                       to={`/clinic/${shop.id}`}
@@ -485,6 +489,44 @@ export default function VetSearch() {
                 ))
               )}
             </div>
+
+            {/* Pagination */}
+            {!isLoading && totalPages > 1 && (
+              <div className="flex items-center justify-between mt-8">
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  Trang {page + 1} / {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="px-5 py-2.5 glass dark:glass-dark rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-white hover:border-primary/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    ← Trước
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i).filter(i => Math.abs(i - page) <= 2).map(i => (
+                    <button
+                      key={i}
+                      onClick={() => setPage(i)}
+                      className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
+                        i === page
+                          ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                          : 'glass dark:glass-dark text-slate-600 dark:text-white hover:border-primary/50'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="px-5 py-2.5 glass dark:glass-dark rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-white hover:border-primary/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Sau →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Empty state */}
             {!isLoading && sortedClinics.length === 0 && (

@@ -487,6 +487,7 @@ export default function BookingHistory() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [visibleCount, setVisibleCount] = useState(5);
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+    const [page, setPage] = useState(0);
 
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -504,11 +505,15 @@ export default function BookingHistory() {
 
     const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
 
-    const { data: bookings = [], isLoading, isError, refetch } = useQuery({
-        queryKey: ['my-bookings'],
-        queryFn: bookingService.getMyBookings,
+    const { data: pagedBookings, isLoading, isError, refetch } = useQuery({
+        queryKey: ['my-bookings', page],
+        queryFn: () => bookingService.getMyBookingsPaged(page),
         staleTime: 30_000,
     });
+
+    const bookings = pagedBookings?.content ?? [];
+    const totalPages = pagedBookings?.totalPages ?? 1;
+    const totalElements = pagedBookings?.totalElements ?? 0;
 
     const petsList = useMemo(() => {
         const pets = bookings.map(b => b.petName).filter(Boolean);
@@ -924,16 +929,41 @@ export default function BookingHistory() {
                     </div>
                 )}
 
-                {/* Load More Control */}
-                {filtered.length > visibleCount && (
-                    <div className="flex justify-center pt-4">
-                        <button
-                            onClick={() => setVisibleCount(prev => prev + 5)}
-                            className="px-10 py-4 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-white dark:to-slate-100 text-white dark:text-slate-900 rounded-3xl text-xs font-black uppercase tracking-widest hover:shadow-xl hover:scale-105 active:scale-95 transition-all shadow-md shadow-slate-900/10 flex items-center gap-2"
-                        >
-                            <Plus size={14} />
-                            Xem thêm cuộc hẹn ({filtered.length - visibleCount})
-                        </button>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            Trang {page + 1} / {totalPages} · {totalElements} cuộc hẹn
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={page === 0}
+                                className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:border-primary/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                ← Trước
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i).filter(i => Math.abs(i - page) <= 2).map(i => (
+                                <button
+                                    key={i}
+                                    onClick={() => setPage(i)}
+                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all ${
+                                        i === page
+                                            ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                            : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-primary/50'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={page >= totalPages - 1}
+                                className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:border-primary/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                Sau →
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -1100,7 +1130,7 @@ export default function BookingHistory() {
                                         disabled={cancelMutation.isPending}
                                         className="px-6 py-4 rounded-3xl bg-rose-500 text-white font-black uppercase tracking-[0.25em] shadow-lg shadow-rose-500/20 hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-60 transition-all"
                                     >
-                                        {cancelMutation.isLoading || directCancelMutation.isLoading ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
+                                        {cancelMutation.isPending || directCancelMutation.isPending ? <Loader2 size={18} className="animate-spin mx-auto" /> : 'Gửi yêu cầu hủy'}
                                     </button>
                                 </div>
                             </div>

@@ -162,12 +162,24 @@ export const adminService = {
   getAllShops: async (): Promise<AdminShopResponse[]> => {
     const res = await apiClient.get<ApiResponse<AdminShopResponse[]>>('/shops');
     const data = res.data.result ?? [];
-    // Jackson serialize boolean isVerified → "verified" (bỏ prefix "is")
     return data.map(s => ({
       ...s,
       isVerified: Boolean((s as any).verified ?? s.isVerified),
       status: s.status as AdminShopResponse['status'],
     }));
+  },
+
+  getShopsPaged: async (page = 0): Promise<PagedResponse<AdminShopResponse>> => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<AdminShopResponse>>>('/shops/paged', { params: { page } });
+    const paged = res.data.result!;
+    return {
+      ...paged,
+      content: paged.content.map(s => ({
+        ...s,
+        isVerified: Boolean((s as any).verified ?? s.isVerified),
+        status: s.status as AdminShopResponse['status'],
+      })),
+    };
   },
 
   getPendingShops: async (): Promise<AdminShopResponse[]> => {
@@ -197,13 +209,22 @@ export const adminService = {
   getAllUsers: async (): Promise<AdminUserResponse[]> => {
     const res = await apiClient.get<ApiResponse<AdminUserResponse[]>>('/users');
     const data = res.data.result ?? [];
-    if (data.length > 0) {
-      console.log('[DEBUG] raw user[0]:', JSON.stringify(data[0]));
-    }
     return data.map(u => ({
       ...u,
       isActive: Boolean((u as any).active ?? u.isActive),
     }));
+  },
+
+  getUsersPaged: async (page = 0): Promise<PagedResponse<AdminUserResponse>> => {
+    const res = await apiClient.get<ApiResponse<PagedResponse<AdminUserResponse>>>('/users/paged', { params: { page } });
+    const paged = res.data.result!;
+    return {
+      ...paged,
+      content: paged.content.map(u => ({
+        ...u,
+        isActive: Boolean((u as any).active ?? u.isActive),
+      })),
+    };
   },
 
   deactivateUser: async (id: number): Promise<void> => {

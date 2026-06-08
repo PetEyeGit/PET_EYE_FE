@@ -13,6 +13,7 @@ export default function ShopReviews() {
   const [filterRating, setFilterRating] = useState<number | 'all'>('all');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [page, setPage] = useState(0);
 
   // 1. Get My Shop Info
   const { data: shop } = useQuery({
@@ -20,12 +21,15 @@ export default function ShopReviews() {
     queryFn: () => shopService.getMyShop(),
   });
 
-  // 2. Get Reviews for this shop
-  const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ['shop-reviews-owner', shop?.id],
-    queryFn: () => reviewService.getReviewsByShop(shop!.id),
+  // 2. Get Reviews for this shop (paginated)
+  const { data: pagedData, isLoading } = useQuery({
+    queryKey: ['shop-reviews-owner', shop?.id, page],
+    queryFn: () => reviewService.getReviewsByShopPaged(shop!.id, page),
     enabled: !!shop?.id,
   });
+
+  const reviews = pagedData?.content ?? [];
+  const totalPages = pagedData?.totalPages ?? 1;
 
   // 3. Mutation for replying
   const replyMutation = useMutation({
@@ -258,6 +262,44 @@ export default function ShopReviews() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-8">
+          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Trang {page + 1} / {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all disabled:opacity-40 ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              ← Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i).filter(i => Math.abs(i - page) <= 2).map(i => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${
+                  i === page
+                    ? (isDark ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-primary text-white shadow-lg shadow-primary/20')
+                    : (isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all disabled:opacity-40 ${isDark ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+            >
+              Sau →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

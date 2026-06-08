@@ -120,6 +120,17 @@ export const shopService = {
     return response.data.result ?? [];
   },
 
+  /** Search verified shops with pagination (10 per page). */
+  searchPublicPaged: async (params?: {
+    keyword?: string;
+    city?: string;
+    shopType?: string;
+    page?: number;
+  }): Promise<{ content: ShopPublicResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }> => {
+    const response = await apiClient.get<ApiResponse<{ content: ShopPublicResponse[]; page: number; size: number; totalElements: number; totalPages: number; last: boolean }>>('/shops/public/paged', { params });
+    return response.data.result!;
+  },
+
   /** Search nearby shops using coordinates */
   searchNearby: async (lat: number, lng: number, radius: number = 10.0): Promise<ShopNearbyResponse[]> => {
     const response = await apiClient.get<ApiResponse<ShopNearbyResponse[]>>('/shops/nearby', {
