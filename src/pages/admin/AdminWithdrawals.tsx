@@ -150,9 +150,9 @@ function DetailModal({ request, onClose, onApprove, onReject, approving, rejecti
       let extraInfo = '';
       if (req.type === 'REFUND') {
         try {
-          const booking = await bookingService.getBookingById(req.id);
-          const servicesList = booking.services?.map(s => s.name).join(', ') || 'Không rõ';
-          const petName = booking.pet?.name || 'Không rõ';
+          const booking = await bookingService.getById(req.id);
+          const servicesList = booking.services?.map(s => s.serviceName).join(', ') || 'Không rõ';
+          const petName = booking.petName || 'Không rõ';
           extraInfo = `🐾 Thú cưng: ${petName}\n✂️ Dịch vụ: ${servicesList}\n`;
         } catch (e) {
           console.warn('Could not fetch booking details for refund notification', e);
@@ -365,7 +365,7 @@ export default function AdminWithdrawals() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, note, type }: { id: number; note: string; type: string }) => {
+    mutationFn: async ({ id, note, type }: { id: number; note: string; type: string }): Promise<any> => {
       if (type === 'REFUND') return walletService.confirmRefundForBooking(id);
       return walletService.approveWithdrawal(id, note);
     },

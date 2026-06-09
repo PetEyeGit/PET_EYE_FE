@@ -151,6 +151,7 @@ export interface BookingRequest {
   paymentMethod?: 'PAYOS' | 'CASH';
   cageSize?: string;
   roomType?: string;
+  userVoucherId?: number;
 }
 
 export interface BookingResponse {

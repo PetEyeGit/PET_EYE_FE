@@ -532,7 +532,7 @@ export default function Payment() {
                       note: bookingNote.trim()
                         ? (booking.petNote ? `${booking.petNote}\n—\nGhi chú thêm: ${bookingNote.trim()}` : bookingNote.trim())
                         : (booking.petNote || ''),
-                      paymentMethod: payMethod === 'cash' ? 'CASH' : 'PAYOS',
+                      paymentMethod: (payMethod === 'cash' ? 'CASH' : 'PAYOS') as "PAYOS" | "CASH",
                       cageSize: booking.cageSize,
                       roomType: booking.roomType,
                       userVoucherId: payMethod === 'payos' && selectedVoucherId ? selectedVoucherId : undefined,

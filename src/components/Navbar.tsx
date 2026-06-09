@@ -184,7 +184,7 @@ function AuthNavbar() {
   useOutsideClick(userRef, () => setUserOpen(false));
   useOutsideClick(notifRef, () => setNotifOpen(false));
 
-  const { notifications, unreadCount, markRead, markAllRead, deleteRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead, deleteRead } = useNotifications(1, !!user);
   const active = (p: string) => location.pathname === p;
 
   useEffect(() => {
@@ -407,7 +407,7 @@ function AuthNavbar() {
             className="md:hidden overflow-hidden border-t border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl"
           >
             <div className="px-6 py-8 space-y-2">
-              {[...NAV, { to: '/camera', label: 'Camera lưu trú' }, { to: '/messages', label: 'Tin nhắn' }].map(item => (
+              {[{ to: '/search', label: 'Tìm cơ sở' }, { to: '/camera', label: 'Camera lưu trú' }, { to: '/messages', label: 'Tin nhắn' }].map(item => (
                 <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)}
                   className={`flex items-center px-4 py-4 rounded-2xl text-[16px] font-black transition-all
                     ${active(item.to) ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-700 dark:text-slate-300 hover:bg-primary/5 hover:text-primary'}`}>

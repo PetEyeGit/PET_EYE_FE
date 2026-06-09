@@ -44,7 +44,7 @@ export default function ShopHeader() {
     navigate('/');
   };
 
-  const { notifications, unreadCount, markRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead } = useNotifications(1, !!user);
 
   const isActive = (path: string) => location.pathname === path;
 

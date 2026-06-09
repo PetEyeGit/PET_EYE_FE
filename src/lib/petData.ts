@@ -1,4 +1,4 @@
-import { PetData } from '../pages/PetProfile';
+import { PetData } from '../pages/customer/PetProfile';
 
 // items used by the pet list UI
 export interface PetListItem {
@@ -69,15 +69,17 @@ export function getPetById(id: number): PetData | undefined {
     const item = PETS.find(p => p.id === id);
     if (!item) return undefined;
     return {
+        id: item.id,
         name: item.name,
         breed: item.breed,
+        species: item.species,
         gender: item.gender,
-        birthYear: item.birthYear ?? new Date().getFullYear(),
+        dob: `${item.birthYear ?? new Date().getFullYear()}-01-01`,
         weight: parseFloat(item.weight) || 0,
-        chipId: item.chipId ?? '',
         color: item.color,
         sterilized: item.sterilized ?? false,
-        notes: item.notes ?? '',
+        healthNote: item.notes ?? '',
         avatar: item.avatar ?? item.img,
-    };
+        active: true
+    } as PetData;
 }

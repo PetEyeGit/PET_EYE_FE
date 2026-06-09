@@ -299,7 +299,7 @@ export default function BookingSuccess() {
             Lịch của tôi
           </Link>
           <Link
-            to="/user/dashboard"
+            to="/"
             className="flex items-center justify-center gap-1.5 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm text-xs"
           >
             <span className="material-symbols-outlined text-sm">home</span>

@@ -42,7 +42,7 @@ function AdminLayoutInner() {
   // Pending refund modal state
   const [showPendingRefundModal, setShowPendingRefundModal] = useState(false);
 
-  const { notifications = [], isLoading: loadingRefundNotifications, markRead } = useNotifications(user?.role === 'ADMIN');
+  const { notifications = [], isLoading: loadingRefundNotifications, markRead } = useNotifications(1, user?.role === 'ADMIN');
   const refundNotifications = notifications.filter(n =>
     !n.isRead && /(yêu cầu hoàn tiền|hoàn tiền khách hàng)/i.test(`${n.title} ${n.content}`)
   );

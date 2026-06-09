@@ -12,12 +12,12 @@ export default function About() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const fadeIn = {
+  const fadeIn: any = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
   };
 
-  const staggerContainer = {
+  const staggerContainer: any = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,

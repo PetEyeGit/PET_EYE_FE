@@ -553,7 +553,7 @@ export default function BookingHistory() {
     const totalElements = pagedBookings?.totalElements ?? 0;
 
     const petsList = useMemo(() => {
-        const pets = bookings.map(b => b.petName).filter(Boolean);
+        const pets = bookings.map(b => b.petName).filter(Boolean) as string[];
         return ['all', ...Array.from(new Set(pets))];
     }, [bookings]);
 

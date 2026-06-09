@@ -53,11 +53,11 @@ export default function Footer() {
                         <ul className="space-y-4 text-sm text-slate-300">
                             <li className="flex items-start gap-3">
                                 <span className="material-symbols-outlined text-[20px] shrink-0 mt-0.5">location_on</span>
-                                <span className="leading-snug">Tầng 12, Tòa nhà Innovation, Quận 1, TP. Hồ Chí Minh</span>
+                                <span className="leading-snug">7 Đ. D1, Tăng Nhơn Phú, Hồ Chí Minh</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-[20px] shrink-0">call</span>
-                                <span>1900 1234 (8:00 - 22:00)</span>
+                                <span>070 718 5436 (8:00 - 22:00)</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-[20px] shrink-0">mail</span>
