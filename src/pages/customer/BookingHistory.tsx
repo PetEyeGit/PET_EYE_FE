@@ -519,14 +519,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
 export default function BookingHistory() {
     const qc = useQueryClient();
     const [activeTab, setActiveTab] = useState<TabKey>('all');
-    const [page, setPage] = useState(1);
-    const size = 10;
+    const [page, setPage] = useState(0);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedPet, setSelectedPet] = useState<string>('all');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-    const [page, setPage] = useState(0);
 
     // Review state
     const [showReviewModal, setShowReviewModal] = useState(false);
@@ -544,27 +542,15 @@ export default function BookingHistory() {
 
     const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
 
-<<<<<<< HEAD
     const { data: pagedBookings, isLoading, isError, refetch } = useQuery({
         queryKey: ['my-bookings', page],
         queryFn: () => bookingService.getMyBookingsPaged(page),
-=======
-    const { data: pageData, isLoading, isFetching, isError, refetch } = useQuery({
-        queryKey: ['my-bookings', activeTab, page],
-        queryFn: () => bookingService.getMyBookings(page, size, activeTab),
->>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
         staleTime: 30_000,
-        placeholderData: keepPreviousData,
     });
 
-<<<<<<< HEAD
     const bookings = pagedBookings?.content ?? [];
     const totalPages = pagedBookings?.totalPages ?? 1;
     const totalElements = pagedBookings?.totalElements ?? 0;
-=======
-    const bookings: BookingResponse[] = pageData?.content || [];
-    const totalPages: number = pageData?.totalPages || 1;
->>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
 
     const petsList = useMemo(() => {
         const pets = bookings.map(b => b.petName).filter(Boolean);
@@ -762,7 +748,7 @@ export default function BookingHistory() {
         return groups;
     }, [filtered]);
 
-    if (isLoading && !pageData) return (
+    if (isLoading && !pagedBookings) return (
         <div className="flex-1 flex flex-col items-center justify-center py-32 gap-6">
             <div className="relative">
                 <div className="w-16 h-16 border-4 border-primary/20 rounded-full animate-spin border-t-primary" />
@@ -868,7 +854,7 @@ export default function BookingHistory() {
                             ].map(cat => (
                                 <button
                                     key={cat.key}
-                                    onClick={() => { setSelectedCategory(cat.key); setVisibleCount(5); }}
+                                    onClick={() => { setSelectedCategory(cat.key); }}
                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedCategory === cat.key
                                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-sm'
                                         : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-800 border-slate-100 dark:border-slate-800'
@@ -911,7 +897,7 @@ export default function BookingHistory() {
             </div>
 
             {/* List Section */}
-            <div className={`space-y-10 transition-opacity duration-200 ${isFetching ? 'opacity-60' : 'opacity-100'}`}>
+            <div className="space-y-10 transition-opacity duration-200">
                 {filtered.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 rounded-[4rem] border-2 border-dashed border-slate-100 dark:border-slate-800 p-24 text-center">
                         <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
@@ -947,7 +933,6 @@ export default function BookingHistory() {
                     </div>
                 )}
 
-<<<<<<< HEAD
                 {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex items-center justify-between pt-4">
@@ -983,41 +968,6 @@ export default function BookingHistory() {
                                 Sau →
                             </button>
                         </div>
-=======
-                {/* Pagination Controls */}
-                {!isLoading && totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 mt-8 pb-8">
-                        <button
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-sm">chevron_left</span>
-                        </button>
-
-                        <div className="flex gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
-                            {Array.from({ length: totalPages }).map((_, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setPage(idx + 1)}
-                                    className={`w-10 h-10 flex-shrink-0 rounded-xl font-bold text-sm transition-all ${page === idx + 1
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                        }`}
-                                >
-                                    {idx + 1}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-sm">chevron_right</span>
-                        </button>
->>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
                     </div>
                 )}
             </div>

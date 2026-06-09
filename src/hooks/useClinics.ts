@@ -24,6 +24,7 @@ export function useClinics() {
   const [activeService, setActiveService] = useState(initialType);
   const [minRating, setMinRating] = useState(0);
   const [page, setPage] = useState(0);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   // Debounce text inputs so API is only called after user stops typing
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -90,5 +91,8 @@ export function useClinics() {
     setPage,
     totalPages,
     totalElements,
+    selectedServices,
+    setSelectedServices,
+    availableServices,
   };
 }
