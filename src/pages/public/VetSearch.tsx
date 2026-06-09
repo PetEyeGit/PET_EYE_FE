@@ -73,16 +73,10 @@ export default function VetSearch() {
     setActiveService,
     minRating,
     setMinRating,
-<<<<<<< HEAD
     page,
     setPage,
     totalPages,
     totalElements,
-=======
-    selectedServices,
-    setSelectedServices,
-    availableServices,
->>>>>>> 422cd08e3c15e27b790559f5892ac7a6ab49bb15
   } = useClinics();
 
   const [sortBy, setSortBy] = useState(latParam ? 'Gần nhất' : 'Đánh giá cao nhất');
