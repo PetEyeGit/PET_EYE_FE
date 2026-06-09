@@ -79,7 +79,7 @@ export default function About() {
           >
             <div className="absolute -left-10 -top-10 text-[120px] text-blue-500/10 font-serif leading-none">"</div>
             <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 leading-tight mb-8 tracking-tighter relative z-10">
-              Trở thành một trong những <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">nền tảng công nghệ đáng tin cậy</span> hàng đầu.
+              Trở thành một trong những <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">nền tảng công nghệ đáng tin cậy</span> hàng&nbsp;đầu.
             </h2>
             <p className="text-2xl md:text-3xl text-slate-600 font-medium leading-relaxed relative z-10">
               Kết nối chủ nuôi với hệ sinh thái dịch vụ thú cưng minh bạch và chất lượng.
@@ -120,21 +120,21 @@ export default function About() {
         </div>
       </section>
 
-      {/* 3. Why Choose PetEye - Staggered Left/Right alternating */}
-      <section className="py-24 md:py-32 bg-white relative overflow-hidden">
+      {/* 3. Why Choose PetEye - Compact Staggered Left/Right alternating */}
+      <section className="py-16 md:py-20 bg-white relative overflow-hidden">
         {/* Background decors */}
         <div className="absolute top-40 right-0 w-64 h-64 bg-orange-100 rounded-full blur-[80px] -z-10"></div>
         <div className="absolute bottom-40 left-0 w-64 h-64 bg-blue-100 rounded-full blur-[80px] -z-10"></div>
 
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
-          <div className="text-center max-w-4xl mx-auto mb-20 md:mb-32">
-            <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
+        <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20">
+          <div className="text-center max-w-3xl mx-auto mb-16 md:mb-20">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tighter">
               Vì sao hàng nghìn chủ nuôi <br className="hidden md:block"/>
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 pb-2">lựa chọn PetEye?</span>
             </h2>
           </div>
 
-          <div className="space-y-24 md:space-y-32">
+          <div className="space-y-16 md:space-y-20">
             {[
               { icon: Shield, title: "Đối tác được xác thực", desc: "Chúng tôi kiểm duyệt thông tin và tiêu chuẩn hoạt động trước khi đưa đối tác lên nền tảng.", color: "text-blue-500", bg: "bg-blue-50", align: "left" },
               { icon: Video, title: "Theo dõi trực tuyến", desc: "Xem thú cưng mọi lúc tại các cơ sở hỗ trợ Camera Monitoring.", color: "text-rose-500", bg: "bg-rose-50", align: "right" },
@@ -143,18 +143,18 @@ export default function About() {
             ].map((feature, i) => (
               <motion.div 
                 key={i} 
-                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn}
-                className={`flex flex-col md:flex-row items-center gap-8 md:gap-16 ${feature.align === 'right' ? 'md:flex-row-reverse' : ''}`}
+                initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeIn}
+                className={`flex flex-col md:flex-row items-center gap-6 md:gap-12 ${feature.align === 'right' ? 'md:flex-row-reverse' : ''}`}
               >
-                <div className="md:w-1/2 flex justify-center">
-                   <div className={`w-40 h-40 md:w-56 md:h-56 rounded-full flex items-center justify-center ${feature.bg} ${feature.color} shadow-2xl shadow-slate-200/50 relative group`}>
+                <div className="md:w-5/12 flex justify-center">
+                   <div className={`w-32 h-32 md:w-48 md:h-48 rounded-full flex items-center justify-center ${feature.bg} ${feature.color} shadow-xl shadow-slate-200/50 relative group`}>
                       <div className="absolute inset-0 bg-white/40 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                      <feature.icon size={80} className="relative z-10 group-hover:scale-110 transition-transform duration-500" />
+                      <feature.icon size={64} className="relative z-10 group-hover:scale-110 transition-transform duration-500" />
                    </div>
                 </div>
-                <div className={`md:w-1/2 text-center md:text-left ${feature.align === 'right' ? 'md:text-right' : ''}`}>
-                  <h4 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">{feature.title}</h4>
-                  <p className="text-xl text-slate-600 leading-relaxed font-medium">{feature.desc}</p>
+                <div className={`md:w-7/12 text-center md:text-left ${feature.align === 'right' ? 'md:text-right' : ''}`}>
+                  <h4 className="text-2xl md:text-3xl font-black text-slate-900 mb-3">{feature.title}</h4>
+                  <p className="text-lg text-slate-600 leading-relaxed font-medium">{feature.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -182,7 +182,7 @@ export default function About() {
               <div className="w-20 h-2 bg-blue-500 mb-8 rounded-full"></div>
               <p className="text-3xl text-blue-400 font-bold mb-6">Minh bạch trong mọi quyết định</p>
               <p className="text-xl text-slate-400 font-medium leading-relaxed italic border-l-4 border-slate-700 pl-6">
-                "Chúng tôi tin rằng sự an tâm bắt đầu từ việc nhìn thấy và hiểu rõ nơi bạn gửi gắm thú cưng."
+                "Chúng tôi tin rằng sự an tâm bắt đầu từ việc nhìn thấy và hiểu rõ nơi bạn gửi gắm thú&nbsp;cưng."
               </p>
             </motion.div>
 
