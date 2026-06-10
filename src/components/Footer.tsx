@@ -5,12 +5,12 @@ import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6';
 
 export default function Footer() {
     return (
-        <footer className="bg-[#0b1b36] text-white pt-16 pb-6 mt-auto">
+        <footer className="bg-[#0b1b36] text-white pt-16 pb-32 md:pb-6 mt-auto">
             <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     {/* Cột 1: Brand & Socials */}
                     <div className="space-y-6">
-                        <Link to="/" className="inline-block mb-3"><Logo lightText /></Link>
+                        <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="inline-block mb-3"><Logo lightText /></Link>
                         <p className="text-sm text-slate-300 leading-relaxed pr-4">
                             Nền tảng kết nối chủ nuôi với các dịch vụ chăm sóc thú cưng đáng tin cậy
                         </p>

@@ -58,7 +58,10 @@ export default function HomePage() {
                         bookingService.getMyBookings()
                     ]);
                     setPets(petsData || []);
-                    setBookings(bookingsData || []);
+                    
+                    // Xử lý trường hợp API trả về dạng phân trang { content: [...] }
+                    const bookingsList = Array.isArray(bookingsData) ? bookingsData : (bookingsData?.content || []);
+                    setBookings(bookingsList);
                 }
             } catch (error) {
                 console.error("Error fetching homepage data:", error);

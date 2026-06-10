@@ -1985,8 +1985,9 @@ export default function ClinicDetail() {
                               setViewingBookingsPetId(pet.id);
                               setLoadingPetBookings(true);
                               try {
-                                const bookings = await bookingService.getMyBookings();
-                                const active = bookings.filter((b: any) =>
+                                const res = await bookingService.getMyBookings();
+                                const bookingsList = Array.isArray(res) ? res : (res?.content || []);
+                                const active = bookingsList.filter((b: any) =>
                                   b.petId === pet.id &&
                                   ['CONFIRMED', 'IN_PROGRESS'].includes(b.status)
                                 );

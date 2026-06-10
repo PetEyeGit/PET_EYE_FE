@@ -283,7 +283,7 @@ function AuthNavbar() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-[calc(100%+12px)] right-0 w-[380px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 z-50 overflow-hidden"
+                  className="fixed top-[70px] left-4 right-4 w-auto sm:absolute sm:top-[calc(100%+12px)] sm:right-0 sm:left-auto sm:w-[380px] max-w-full sm:max-w-[380px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-700/50 z-[100] overflow-hidden"
                 >
                   <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                     <h4 className="text-sm font-black text-slate-900 dark:text-white">Thông báo mới</h4>

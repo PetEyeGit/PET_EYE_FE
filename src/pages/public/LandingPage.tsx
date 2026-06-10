@@ -107,10 +107,10 @@ export default function Home() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   return (
-    <main className="flex-1 overflow-x-hidden font-display relative pb-24 md:pb-0">
+    <main className="flex-1 overflow-x-hidden font-display relative pb-32 md:pb-0">
       
       {/* ─── Hero Section ────────────────────────────────────────────── */}
-      <section className="relative min-h-fit md:min-h-[80vh] xl:min-h-[85vh] flex items-center justify-center pt-8 pb-8 xl:pt-16 xl:pb-12 px-6 overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <section className="relative min-h-fit md:min-h-[80vh] xl:min-h-[85vh] flex items-center justify-center pt-8 pb-24 md:pb-8 xl:pt-16 xl:pb-12 px-6 overflow-hidden bg-slate-50 dark:bg-slate-950">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           {/* Navy/Indigo tint overlay */}
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-50/80 to-transparent dark:from-[#0B1120] dark:to-transparent" />
@@ -352,86 +352,92 @@ export default function Home() {
           {/* Fade out top/bottom */}
           <div className="absolute inset-0 bg-gradient-to-b from-slate-50 dark:from-slate-950 via-transparent to-slate-50 dark:to-slate-950 opacity-80" />
 
-          {/* Radar Sweeps */}
-          <div className="absolute top-1/2 left-[65%] -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-          <div className="absolute top-1/2 left-[65%] -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-blue-500/30 rounded-full" />
-          <div className="absolute top-1/2 left-[65%] -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-blue-500/10 rounded-full" />
-          
-          {/* Center User Pin */}
-          <div className="absolute top-1/2 left-[65%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
-            <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_0_30px_rgba(37,99,235,0.6)] border-4 border-white dark:border-blue-900/50">
-              <Navigation size={24} className="fill-current -rotate-45" />
+          <div className="hidden lg:block">
+            {/* Radar Sweeps */}
+            <div className="absolute top-[20%] left-[85%] md:top-1/2 md:left-[65%] -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
+            <div className="absolute top-[20%] left-[85%] md:top-1/2 md:left-[65%] -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-blue-500/30 rounded-full" />
+            <div className="absolute top-[20%] left-[85%] md:top-1/2 md:left-[65%] -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-blue-500/10 rounded-full" />
+            
+            {/* Center User Pin */}
+            <div className="absolute top-[20%] left-[85%] md:top-1/2 md:left-[65%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
+              <div className="w-10 h-10 md:w-14 md:h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-[0_0_30px_rgba(37,99,235,0.6)] border-4 border-white dark:border-blue-900/50">
+                <Navigation size={20} className="fill-current -rotate-45 md:w-6 md:h-6" />
+              </div>
+              <div className="mt-2 px-3 py-1 md:px-4 md:py-1.5 bg-white dark:bg-slate-800 rounded-full shadow-lg text-[9px] md:text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider border border-transparent dark:border-slate-700">Bạn ở đây</div>
             </div>
-            <div className="mt-2 px-4 py-1.5 bg-white dark:bg-slate-800 rounded-full shadow-lg text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-wider border border-transparent dark:border-slate-700">Bạn ở đây</div>
           </div>
 
           {/* Mock Pins */}
-          {[
-            { t: "25%", l: "45%", delay: 0.5, dist: "1.2" },
-            { t: "75%", l: "50%", delay: 1.2, dist: "3.5" },
-            { t: "30%", l: "85%", delay: 0.8, dist: "2.1" },
-            { t: "60%", l: "80%", delay: 1.5, dist: "4.0" },
-            { t: "80%", l: "65%", delay: 2.1, dist: "2.8" },
-          ].map((pin, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, scale: 0, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: pin.delay, repeat: Infinity, repeatType: "reverse", repeatDelay: 4 }}
-              className="absolute flex flex-col items-center z-10"
-              style={{ top: pin.t, left: pin.l }}
-            >
-              <div className="relative">
-                <span className="absolute -inset-2 rounded-full bg-primary/20 dark:bg-blue-400/20 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-blue-400 shadow-xl border-2 border-primary dark:border-blue-500/50">
-                  <PawPrint size={18} className="fill-primary/20 dark:fill-blue-500/20" />
+          <div className="hidden md:block">
+            {[
+              { t: "25%", l: "45%", delay: 0.5, dist: "1.2" },
+              { t: "75%", l: "50%", delay: 1.2, dist: "3.5" },
+              { t: "30%", l: "85%", delay: 0.8, dist: "2.1" },
+              { t: "60%", l: "80%", delay: 1.5, dist: "4.0" },
+              { t: "80%", l: "65%", delay: 2.1, dist: "2.8" },
+            ].map((pin, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, scale: 0, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: pin.delay, repeat: Infinity, repeatType: "reverse", repeatDelay: 4 }}
+                className="absolute flex flex-col items-center z-10"
+                style={{ top: pin.t, left: pin.l }}
+              >
+                <div className="relative">
+                  <span className="absolute -inset-2 rounded-full bg-primary/20 dark:bg-blue-400/20 animate-ping" style={{ animationDuration: '2s' }} />
+                  <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-primary dark:text-blue-400 shadow-xl border-2 border-primary dark:border-blue-500/50">
+                    <PawPrint size={18} className="fill-primary/20 dark:fill-blue-500/20" />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-full shadow-sm text-[9px] font-black text-slate-500 dark:text-slate-300 border border-transparent dark:border-slate-700/50">
-                {pin.dist} km
-              </div>
-            </motion.div>
-          ))}
+                <div className="mt-2 px-3 py-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-full shadow-sm text-[9px] font-black text-slate-500 dark:text-slate-300 border border-transparent dark:border-slate-700/50">
+                  {pin.dist} km
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
         <div className="relative min-h-[600px] lg:min-h-[700px] flex flex-col justify-center py-16 xl:py-24 px-6 z-10 max-w-7xl mx-auto w-full">
           <div className="flex flex-col lg:flex-row items-center gap-12 w-full">
             <div className="lg:w-1/2 relative z-20">
-              <div className="mb-8">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-xs mb-6">
-                  <Navigation size={14} /> Hệ thống định vị
-                </div>
-                <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1]">
-                  Tìm cơ sở <br className="hidden lg:block" />
-                  <span className="text-gradient">Gần bạn nhất</span>
-                </h2>
-                <p className="mt-6 text-slate-600 dark:text-slate-300 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
-                  Cho phép truy cập vị trí để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
-                </p>
-              </div>
-
-              {!nearbyCoords && (
-                <div className="flex flex-col items-center lg:items-start">
-                  <button 
-                    onClick={handleGetLocation}
-                    disabled={locationStatus === 'loading'}
-                    className="w-full sm:w-auto px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-500 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 group"
-                  >
-                    {locationStatus === 'loading' ? (
-                      <Loader2 className="animate-spin text-blue-500" size={24} />
-                    ) : (
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                        <Compass size={20} className={locationStatus === 'success' ? 'text-green-500' : 'text-blue-500'} />
-                      </div>
-                    )}
-                    TÌM QUANH ĐÂY BẰNG GPS
-                  </button>
-                  <p className="text-xs text-slate-500 dark:text-white mt-4 italic flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">info</span> 
-                    Hệ thống sẽ tự động quét bản đồ
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-8 md:p-0 md:bg-transparent md:dark:bg-transparent md:backdrop-blur-none rounded-[32px] md:rounded-none border border-white/50 dark:border-slate-700/50 md:border-transparent shadow-xl md:shadow-none">
+                <div className="mb-8">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold text-xs mb-6">
+                    <Navigation size={14} /> Hệ thống định vị
+                  </div>
+                  <h2 className="text-4xl md:text-5xl xl:text-6xl font-black text-blue-950 dark:text-white leading-[1.1]">
+                    Tìm cơ sở <br className="hidden lg:block" />
+                    <span className="text-gradient">Gần bạn nhất</span>
+                  </h2>
+                  <p className="mt-6 text-slate-600 dark:text-slate-300 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed font-medium">
+                    Cho phép truy cập vị trí để tìm ngay các phòng khám, spa uy tín nằm trong bán kính 10km quanh bạn.
                   </p>
                 </div>
-              )}
+
+                {!nearbyCoords && (
+                  <div className="flex flex-col items-center lg:items-start">
+                    <button 
+                      onClick={handleGetLocation}
+                      disabled={locationStatus === 'loading'}
+                      className="w-full sm:w-auto px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-500 rounded-[24px] font-black flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 group"
+                    >
+                      {locationStatus === 'loading' ? (
+                        <Loader2 className="animate-spin text-blue-500" size={24} />
+                      ) : (
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                          <Compass size={20} className={locationStatus === 'success' ? 'text-green-500' : 'text-blue-500'} />
+                        </div>
+                      )}
+                      TÌM QUANH ĐÂY BẰNG GPS
+                    </button>
+                    <p className="text-xs text-slate-500 dark:text-white mt-4 italic flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">info</span> 
+                      Hệ thống sẽ tự động quét bản đồ
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="hidden lg:block"></div>
@@ -502,11 +508,11 @@ export default function Home() {
       </section>
 
       {/* ─── Live Camera Showcase ──────────────────────────────────────── */}
-      <section id="camera" className="py-20 md:py-24 2xl:py-32 px-6 bg-slate-900 relative overflow-hidden">
+      <section id="camera" className="py-20 md:py-24 2xl:py-32 px-6 bg-slate-900 relative overflow-hidden -mt-[1px] z-20">
         {/* Wave Divider */}
         <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-30">
           <svg className="relative block w-full h-[40px] md:h-[60px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" className="fill-slate-50 dark:fill-[#0B1120]"></path>
+            <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" className="fill-white dark:fill-slate-900"></path>
           </svg>
         </div>
         
@@ -582,7 +588,7 @@ export default function Home() {
       </section>
 
       {/* ─── How it Works (Quy trình) ──────────────────────────────────── */}
-      <section className="py-16 md:py-24 2xl:py-32 px-6 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
+      <section className="py-16 md:py-24 2xl:py-32 px-6 bg-slate-50 dark:bg-slate-950 relative overflow-hidden -mt-[1px] z-10">
         <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16 xl:mb-24 space-y-4">
@@ -734,7 +740,7 @@ export default function Home() {
       </section>
 
       {/* ─── Testimonials (Horizontal Split) ───────────────────────────── */}
-      <section className="py-16 md:py-24 2xl:py-32 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 overflow-hidden relative">
+      <section className="py-16 md:py-24 2xl:py-32 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 overflow-hidden relative -mt-[1px] z-10">
         {/* Background Gradients */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 blur-[150px] pointer-events-none" />
         
@@ -1002,10 +1008,10 @@ export default function Home() {
       </section>
 
       {/* ─── Sticky Mobile CTA ─────────────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50 md:hidden flex justify-center pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-[40] md:hidden flex justify-center pb-safe">
         <button 
           onClick={() => navigate('/search')} 
-          className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-xl shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl font-black shadow-xl shadow-slate-900/20 dark:shadow-white/10 flex items-center justify-center gap-2 active:scale-95 transition-transform"
         >
           <Search size={18} /> TÌM CƠ SỞ NGAY
         </button>
