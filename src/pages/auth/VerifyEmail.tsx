@@ -15,6 +15,7 @@ export default function VerifyEmail() {
   const email: string = location.state?.email ?? '';
   const password: string = location.state?.password ?? '';
   const isShop: boolean = location.state?.isShop ?? false;
+  const isShopLogin: boolean = location.state?.isShopLogin ?? false;
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,11 +53,12 @@ export default function VerifyEmail() {
       await authService.verifyEmail(email, otp);
       toast.success('Xác thực email thành công!');
       if (isShop) {
-        // Shop cần admin duyệt — không auto login, redirect sang success page
+        // Đăng ký shop mới — cần admin duyệt
         navigate('/shop/register/success', { replace: true });
       } else if (password) {
         await login(email, password);
-        navigate('/user/dashboard', { replace: true });
+        // Đăng nhập shop tab chưa xác thực → về shop dashboard
+        navigate(isShopLogin ? '/shop/dashboard' : '/', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }
@@ -69,7 +71,7 @@ export default function VerifyEmail() {
           navigate('/shop/register/success', { replace: true });
         } else if (password) {
           await login(email, password);
-          navigate('/user/dashboard', { replace: true });
+          navigate(isShopLogin ? '/shop/dashboard' : '/', { replace: true });
         } else {
           navigate('/login', { replace: true });
         }
