@@ -67,6 +67,7 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = React.useState('');
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [targetUrl, setTargetUrl] = React.useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = React.useState<string | null>(null);
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
@@ -163,6 +164,12 @@ export default function Login() {
       }
     } catch (error: any) {
       const code = Number(error.response?.data?.code);
+      if (code === 6001) {
+        // Email chưa xác thực — hiện modal
+        setUnverifiedEmail(email);
+        setLoading(false);
+        return;
+      }
       const msgs: Record<number, string> = {
         10010: roleType === 'shop' 
           ? 'Tài khoản cửa hàng không tồn tại trong hệ thống.' 
@@ -178,6 +185,7 @@ export default function Login() {
   };
 
   return (
+    <>
     <div className="w-screen h-screen flex bg-white dark:bg-slate-950 overflow-hidden relative">
       {/* ─── LEFT PANEL (Full Screen Image) ─── */}
       <motion.div
@@ -560,5 +568,81 @@ export default function Login() {
         </div>
       </motion.div>
     </div>
+
+    {/* ─── Unverified Email Modal ─── */}
+    <AnimatePresence>
+      {unverifiedEmail && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+          onClick={() => setUnverifiedEmail(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden"
+          >
+            {/* Top accent */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 to-orange-500" />
+
+            <div className="p-8 flex flex-col items-center text-center gap-5">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
+                <Mail size={30} className="text-amber-500" />
+              </div>
+
+              {/* Content */}
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Email chưa được xác thực
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Tài khoản{' '}
+                  <span className="font-bold text-slate-700 dark:text-slate-200">
+                    {unverifiedEmail}
+                  </span>{' '}
+                  cần xác thực email trước khi đăng nhập.
+                  <br />
+                  Vui lòng kiểm tra hộp thư và nhập mã OTP.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-3 w-full pt-1">
+                <button
+                  onClick={() => {
+                    authService.resendVerification(unverifiedEmail).catch(() => {});
+                    navigate('/verify-email', {
+                      state: {
+                        email: unverifiedEmail,
+                        password: activeRole === 'customer' ? customerPassword : shopPassword,
+                        isShopLogin: activeRole === 'shop',
+                      },
+                    });
+                    setUnverifiedEmail(null);
+                  }}
+                  className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-black rounded-2xl text-sm uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Mail size={16} />
+                  Xác thực Email ngay
+                </button>
+                <button
+                  onClick={() => setUnverifiedEmail(null)}
+                  className="w-full py-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-bold text-sm transition-colors"
+                >
+                  Để sau
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

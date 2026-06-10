@@ -63,7 +63,10 @@ export default function Register() {
       navigate('/verify-email', { state: { email, password } });
     } catch (err: any) {
       const code = err.response?.data?.code;
-      if (code === 1002) setError('Email đã được sử dụng');
+      const message = err.response?.data?.message || '';
+      console.error('[Register] error:', err.response?.data);
+      if (code === 1002) setError('Email đã được sử dụng. Vui lòng dùng email khác.');
+      else if (message) setError(message);
       else setError('Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
