@@ -125,8 +125,8 @@ export default function VerifyEmail() {
                 className={`w-12 h-14 rounded-xl border-2 flex items-center justify-center text-xl font-bold transition-all
                   ${error ? 'border-red-400 bg-red-50 text-red-600'
                     : otp.length === i ? 'border-primary ring-2 ring-primary/20 bg-white'
-                    : otp[i] ? 'border-slate-300 bg-white text-slate-900 dark:text-white dark:bg-slate-800'
-                    : 'border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-600'}`}>
+                      : otp[i] ? 'border-slate-300 bg-white text-slate-900 dark:text-white dark:bg-slate-800'
+                        : 'border-slate-200 bg-slate-50 dark:bg-slate-900 dark:border-slate-600'}`}>
                 {otp[i] ?? ''}
                 {otp.length === i && (
                   <span className="animate-pulse text-primary text-2xl leading-none">|</span>

@@ -89,10 +89,10 @@ export function useNotifications(page: number = 1, enabled = true) {
         if (old && old.content) return { ...old, content: old.content.filter((n: any) => !n.isRead) };
         return old;
       });
-      return {};
+      return { prev: null as any };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
+    onError: (_err, _vars, ctx: any) => {
+      if (ctx?.prev) qc.setQueriesData({ queryKey: ['my-notifications'] }, ctx.prev);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['my-notifications'] });
@@ -110,10 +110,10 @@ export function useNotifications(page: number = 1, enabled = true) {
         if (old && old.content) return { ...old, content: old.content.filter((n: any) => n.id !== id) };
         return old;
       });
-      return {};
+      return { prev: null as any };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['my-notifications'], ctx.prev);
+    onError: (_err, _vars, ctx: any) => {
+      if (ctx?.prev) qc.setQueriesData({ queryKey: ['my-notifications'] }, ctx.prev);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['my-notifications'] });

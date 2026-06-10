@@ -33,7 +33,7 @@ export default function StaffNavbar() {
 
   useOutsideClick(notiRef, () => setNotiOpen(false));
 
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(1, !!user);
 
   const handleLogout = () => {
     logout();
@@ -179,11 +179,11 @@ export default function StaffNavbar() {
 
             <div className="flex items-center gap-2 p-1.5 pr-2 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
               <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center text-sm font-black shadow-md shadow-primary/20">
-                {user?.fullName?.charAt(0).toUpperCase() || 'S'}
+                {user?.name?.charAt(0).toUpperCase() || 'S'}
               </div>
               <div className="hidden lg:block text-left mr-2">
                 <p className="text-[12px] font-black text-slate-900 dark:text-white leading-none">
-                  {user?.fullName?.split(' ').pop() || 'Staff'}
+                  {user?.name?.split(' ').pop() || 'Staff'}
                 </p>
                 <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">Nhân viên</p>
               </div>

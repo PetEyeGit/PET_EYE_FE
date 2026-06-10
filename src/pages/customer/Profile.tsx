@@ -307,8 +307,8 @@ export default function Profile() {
   const { user, setUserSession } = useAuth();
   const [fullName, setFullName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [address, setAddress] = useState(user?.address || '');
+  const [phone, setPhone] = useState((user as any)?.phone || '');
+  const [address, setAddress] = useState((user as any)?.address || '');
   const [avatar, setAvatar] = useState(user?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);

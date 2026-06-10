@@ -543,8 +543,8 @@ export default function BookingHistory() {
     const [showUpdateBankModal, setShowUpdateBankModal] = useState(false);
 
     const { data: pagedBookings, isLoading, isError, refetch } = useQuery({
-        queryKey: ['my-bookings', page],
-        queryFn: () => bookingService.getMyBookingsPaged(page),
+        queryKey: ['my-bookings', page, activeTab],
+        queryFn: () => bookingService.getMyBookings(page + 1, 10, activeTab),
         staleTime: 30_000,
     });
 
@@ -553,7 +553,7 @@ export default function BookingHistory() {
     const totalElements = pagedBookings?.totalElements ?? 0;
 
     const petsList = useMemo(() => {
-        const pets = bookings.map(b => b.petName).filter(Boolean);
+        const pets = bookings.map(b => b.petName).filter(Boolean) as string[];
         return ['all', ...Array.from(new Set(pets))];
     }, [bookings]);
 
@@ -789,7 +789,7 @@ export default function BookingHistory() {
                     <div className="flex items-center gap-2 p-1 bg-white dark:bg-slate-900 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 w-fit overflow-x-auto shrink-0 max-w-full">
                         {TABS.map(tab => (
                             <button
-                                key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(1); }}
+                                key={tab.key} onClick={() => { setActiveTab(tab.key); setPage(0); }}
                                 className={`px-5 py-2.5 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === tab.key ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-400 hover:text-slate-600'}`}
                             >
                                 {tab.label}
@@ -803,13 +803,13 @@ export default function BookingHistory() {
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
                             placeholder="Tìm kiếm cửa hàng, dịch vụ..."
                             className="w-full pl-11 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none font-bold text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:border-primary/50 transition-all shadow-sm"
                         />
                         {searchQuery && (
                             <button
-                                onClick={() => { setSearchQuery(''); setPage(1); }}
+                                onClick={() => { setSearchQuery(''); setPage(0); }}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             >
                                 <X size={14} />
@@ -827,7 +827,7 @@ export default function BookingHistory() {
                             {petsList.map(petName => (
                                 <button
                                     key={petName}
-                                    onClick={() => { setSelectedPet(petName); setPage(1); }}
+                                    onClick={() => { setSelectedPet(petName); setPage(0); }}
                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${selectedPet === petName
                                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-sm'
                                         : 'bg-white dark:bg-slate-900 text-slate-500 hover:text-slate-800 border-slate-100 dark:border-slate-800'

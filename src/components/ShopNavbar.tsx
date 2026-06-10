@@ -57,7 +57,7 @@ export default function ShopNavbar() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(!!user);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(1, !!user);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800">

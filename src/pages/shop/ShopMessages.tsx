@@ -18,6 +18,7 @@ export default function ShopMessages() {
     type: ChannelType;
     id: string | number; // For DIRECT, this is staff email
     title: string;
+    recipientEmail?: string;
   }>({ type: 'ADMIN_SUPPORT', id: 'admin', title: 'Hệ thống Admin' });
 
   const { data: myShop } = useQuery({

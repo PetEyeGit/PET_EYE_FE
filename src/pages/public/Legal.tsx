@@ -274,7 +274,7 @@ export default function Legal() {
                   </p>
                   <p className="flex items-start gap-3">
                     <span className="font-bold text-slate-900 min-w-[90px]">Email:</span> 
-                    <a href="mailto:peteye.contact26@gmail.com" className="text-blue-600 hover:text-blue-700 hover:underline">peteye.contact26@gmail.com</a>
+                    <a href="mail to:peteye.contact26@gmail.com" className="text-blue-600 hover:text-blue-700 hover:underline break-all">peteye.contact26@gmail.com</a>
                   </p>
                 </div>
               </div>

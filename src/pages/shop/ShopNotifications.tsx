@@ -108,7 +108,7 @@ type FilterKey = 'all' | 'unread' | 'read';
 
 export default function ShopNotifications() {
   const { isDark } = useTheme();
-  const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead, deleteRead, deleteSingle } = useNotifications(true);
+  const { notifications, unreadCount, isLoading, refetch, markRead, markAllRead, deleteRead, deleteSingle } = useNotifications(1, true);
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const filtered = notifications.filter(n => {

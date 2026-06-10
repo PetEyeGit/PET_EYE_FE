@@ -720,7 +720,7 @@ export default function Chatbot() {
   return (
     <>
       {/* Floating button */}
-      <button onClick={() => setOpen(v => !v)} className="fixed bottom-5 right-5 z-50 group" aria-label="Mo chatbot">
+      <button onClick={() => setOpen(v => !v)} className="fixed bottom-24 lg:bottom-5 right-4 lg:right-5 z-50 group" aria-label="Mo chatbot">
         <div className="relative">
           <div className="absolute inset-0 rounded-full bg-indigo-500 blur-lg opacity-40 group-hover:opacity-70 transition duration-300"></div>
           {/* NOTE: Bạn có thể đổi w-16 h-16 thành w-14 h-14 (nhỏ hơn) hoặc w-20 h-20 (lớn hơn) ở class bên dưới để tùy chỉnh kích thước */}
