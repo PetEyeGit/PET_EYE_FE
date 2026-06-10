@@ -125,10 +125,10 @@ export default function Home() {
           {[...Array(5)].map((_, i) => (
             <motion.div
               key={`paw-${i}`}
-              initial={{ y: "-10vh", x: `${Math.random() * 100}vw`, opacity: 0, rotate: 0 }}
+              initial={{ y: "-10vh", x: `${Math.random() * 100}%`, opacity: 0, rotate: 0 }}
               animate={{ 
                 y: "110vh", 
-                x: `${Math.random() * 100}vw`,
+                x: `${Math.random() * 100}%`,
                 opacity: [0, 0.15, 0.15, 0],
                 rotate: 360 
               }}

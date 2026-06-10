@@ -794,9 +794,9 @@ export default function ClinicDetail() {
         {/* Map & Directions Section - Đã chuyển xuống dạng Modal ở cuối file */}
 
         {/* Main 2-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10">
+        <div className="flex flex-col lg:grid lg:grid-cols-[2fr_1fr] gap-10">
           {/* Left Column */}
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-10 min-w-0 order-1 lg:col-start-1 lg:row-start-1">
 
 
             {/* Intro */}
@@ -1124,9 +1124,10 @@ export default function ClinicDetail() {
               </div>
             </section> */}
 
+          </div>
 
-
-            {/* Reviews */}
+          {/* Reviews */}
+          <div className="order-3 lg:col-start-1 lg:row-start-2 min-w-0 w-full">
             <section>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -1246,10 +1247,9 @@ export default function ClinicDetail() {
 
           </div>
 
-          {/* Right Column - Sticky Sidebar */}
-          {/* Right Column - Sidebar */}
-          <div className="hidden lg:block space-y-6">
-            <div className="sticky top-24 flex flex-col gap-6">
+          {/* Right Column - Sidebar (Booking & Map) */}
+          <div id="booking-section" className="flex flex-col gap-6 scroll-mt-24 order-2 lg:col-start-2 lg:row-span-2">
+            <div className="lg:sticky lg:top-24 flex flex-col gap-6">
               {/* Booking Card */}
               <div className="flex flex-col rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
                 <div className="p-6 flex flex-col gap-5">
@@ -1886,13 +1886,15 @@ export default function ClinicDetail() {
             <button className="flex items-center justify-center gap-2 h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm">
               <span className="material-symbols-outlined text-base">call</span>
             </button>
-            <Link
-              to="/bookings"
+            <button
+              onClick={() => {
+                document.getElementById('booking-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-[#1a2b4c] text-white font-bold text-sm shadow-lg shadow-[#1a2b4c]/25"
             >
               <span className="material-symbols-outlined text-base">calendar_month</span>
               Đặt lịch ngay
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -2089,11 +2091,11 @@ export default function ClinicDetail() {
         {selectedStaff && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedStaff(null)}>
             <div
-              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header / Cover */}
-              <div className="relative h-32 bg-gradient-to-r from-[#1a2b4c] to-indigo-900">
+              <div className="relative h-32 shrink-0 bg-gradient-to-r from-[#1a2b4c] to-indigo-900">
                 <button
                   onClick={() => setSelectedStaff(null)}
                   className="absolute top-4 right-4 size-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors backdrop-blur-md"
@@ -2222,11 +2224,11 @@ export default function ClinicDetail() {
         {selectedServiceForDetail && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedServiceForDetail(null)}>
             <div
-              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
+              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-y-auto max-h-[90vh] animate-in zoom-in-95 duration-300 border border-slate-200 dark:border-slate-800"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header / Cover */}
-              <div className="relative h-48 bg-slate-100 dark:bg-slate-800">
+              <div className="relative h-48 shrink-0 bg-slate-100 dark:bg-slate-800">
                 {selectedServiceForDetail.imageUrl ? (
                   <img
                     src={selectedServiceForDetail.imageUrl}

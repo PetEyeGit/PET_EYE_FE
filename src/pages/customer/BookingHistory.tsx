@@ -145,9 +145,9 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={() => setIsExpanded(true)}
-                className="group bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800/80 p-4 flex items-center justify-between gap-4 cursor-pointer hover:shadow-lg transition-all duration-300"
+                className="group bg-slate-50/50 dark:bg-slate-900/30 hover:bg-white dark:hover:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800/80 p-4 flex items-start sm:items-center justify-between gap-2 sm:gap-4 cursor-pointer hover:shadow-lg transition-all duration-300"
             >
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
                         <img
                             src={`https://images.unsplash.com/photo-${booking.id % 2 === 0 ? '1548199973-03cce0bbc87b' : '1516734212186-a967f81ad0d7'}?auto=format&fit=crop&q=80&w=150`}
@@ -164,7 +164,7 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-4 shrink-0 mt-1 sm:mt-0">
                     <div className="hidden sm:block text-right">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             {category === 'boarding' ? 'Thời hạn lưu trú' : 'Thời gian'}
@@ -176,12 +176,12 @@ function BookingItem({ booking, onCancel, cancelling, onReview, onUpdateBank }: 
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className={`px-2.5 py-1 rounded-full ${status.bg} ${status.text} text-[9px] font-black uppercase tracking-widest flex items-center gap-1`}>
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-3">
+                        <div className={`px-2.5 py-1 rounded-full ${status.bg} ${status.text} text-[9px] font-black uppercase tracking-widest flex items-center gap-1 whitespace-nowrap shrink-0`}>
                             <status.icon size={10} /> {status.label}
                         </div>
-                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">{formatVND(booking.servicePrice)}</span>
-                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-all">
+                        <span className="text-sm font-black text-slate-700 dark:text-slate-200 whitespace-nowrap">{formatVND(booking.servicePrice)}</span>
+                        <div className="hidden sm:flex w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-all">
                             <ChevronRight size={16} />
                         </div>
                     </div>
@@ -546,6 +546,7 @@ export default function BookingHistory() {
         queryKey: ['my-bookings', page, activeTab],
         queryFn: () => bookingService.getMyBookings(page + 1, 10, activeTab),
         staleTime: 30_000,
+        placeholderData: keepPreviousData,
     });
 
     const bookings = pagedBookings?.content ?? [];

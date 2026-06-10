@@ -232,10 +232,10 @@ export default function ProfilePets() {
               {/* Decorative background element */}
               <div className="absolute top-0 right-0 size-48 bg-gradient-to-bl from-blue-50/50 to-transparent dark:from-blue-900/5 pointer-events-none" />
               
-              <div className="p-8">
-                <div className="flex gap-6">
+              <div className="p-5 sm:p-8">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
                   <div className="relative shrink-0">
-                    <div className="size-32 rounded-[2rem] overflow-hidden ring-8 ring-slate-50 dark:ring-slate-800/50 group-hover:ring-[#1a2b4c]/5 transition-all duration-500">
+                    <div className="size-24 sm:size-32 mx-auto sm:mx-0 rounded-[2rem] overflow-hidden ring-8 ring-slate-50 dark:ring-slate-800/50 group-hover:ring-[#1a2b4c]/5 transition-all duration-500">
                       <img
                         src={pet.avatar || (pet.species === 'Mèo' ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=2043&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069&auto=format&fit=crop')}
                         alt={pet.name}
@@ -247,19 +247,19 @@ export default function ProfilePets() {
                     </div>
                   </div>
                   
-                  <div className="flex-1 min-w-0 pt-2">
-                    <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0 w-full pt-2">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-3 sm:gap-4 text-center sm:text-left">
                       <div>
                         <h3 className="font-bold text-slate-900 dark:text-white text-2xl group-hover:text-slate-900 dark:group-hover:text-blue-400 transition-colors tracking-tight">
                           {pet.name}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
                           <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">{pet.breed || 'Linh vật'}</span>
                           <span className="size-1 bg-slate-200 rounded-full" />
                           <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">{pet.gender}</span>
                         </div>
                       </div>
-                      <div className={`px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-300 ${
+                      <div className={`px-4 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-all duration-300 ${
                         pet.active 
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/20' 
                           : 'bg-slate-100 text-slate-500 border-slate-200'
@@ -299,7 +299,7 @@ export default function ProfilePets() {
                 )}
               </div>
               
-              <div className="px-8 py-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-4 border-t border-slate-100/50 dark:border-slate-800/50">
+              <div className="px-5 py-4 sm:px-8 sm:py-6 bg-slate-50/50 dark:bg-slate-800/20 flex flex-wrap sm:flex-nowrap gap-3 sm:gap-4 border-t border-slate-100/50 dark:border-slate-800/50">
                 <Link
                   to={`/search`}
                   className="flex-1 py-3.5 text-center bg-[#1a2b4c] hover:bg-[#2d4a82] text-white font-bold rounded-2xl text-xs shadow-lg shadow-blue-900/10 transition-all active:scale-95 flex items-center justify-center gap-2"

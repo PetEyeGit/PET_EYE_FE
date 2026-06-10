@@ -125,9 +125,34 @@ export function ProfileLayout() {
 
   return (
     <div className="flex-1 bg-slate-50 dark:bg-slate-950">
-      <div className="flex flex-col md:flex-row max-w-[1440px] mx-auto w-full px-4 md:px-10 py-8 gap-8">
-        {/* Sidebar */}
-        <aside className="w-full md:w-72 flex flex-col gap-6 shrink-0">
+      <div className="flex flex-col md:flex-row max-w-[1440px] mx-auto w-full px-4 md:px-10 py-4 md:py-8 gap-6 md:gap-8 relative">
+        
+        {/* Mobile Horizontal Nav */}
+        <nav className="md:hidden flex overflow-x-auto gap-2 pb-4 hide-scrollbar w-[calc(100%+2rem)] -mx-4 px-4 border-b border-slate-200 dark:border-slate-800 mb-2">
+          {NAV_ITEMS.map(item => {
+            const isActive =
+              item.path === '/profile'
+                ? location.pathname === '/profile'
+                : location.pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap transition-all text-sm font-semibold border ${
+                  isActive
+                    ? 'bg-[#1a2b4c] text-white border-[#1a2b4c] dark:bg-teal-500 dark:border-teal-500 shadow-md'
+                    : 'bg-white text-slate-600 border-slate-200 shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Sidebar (Desktop) */}
+        <aside className="hidden md:flex w-72 flex-col gap-6 shrink-0">
           {/* Nav */}
           <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex flex-col gap-1">
@@ -466,15 +491,15 @@ export default function Profile() {
                   <span className="material-symbols-outlined text-sm">photo_camera</span>
                 </button>
               </div>
-              <div className="text-center sm:text-left">
+              <div className="text-center sm:text-left w-full sm:w-auto">
                 <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{fullName}</h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm">Thành viên từ Peteye</p>
-                <div className="mt-4 flex flex-wrap justify-center sm:justify-start gap-3">
+                <div className="mt-4 flex flex-col sm:flex-row justify-center sm:justify-start gap-3 w-full">
                   <button 
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={loading}
-                    className="bg-[#1a2b4c] px-5 py-2 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity shadow-md disabled:opacity-50"
+                    className="bg-[#1a2b4c] px-5 py-3 sm:py-2 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 w-full sm:w-auto"
                   >
                     {loading ? 'Đang tải...' : 'Tải ảnh mới'}
                   </button>
@@ -482,7 +507,7 @@ export default function Profile() {
                     type="button"
                     onClick={handleDeleteAvatar}
                     disabled={loading}
-                    className="bg-slate-100 dark:bg-slate-800 px-5 py-2 rounded-lg text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                    className="bg-slate-100 dark:bg-slate-800 px-5 py-3 sm:py-2 rounded-xl text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 w-full sm:w-auto"
                   >
                     Xóa ảnh
                   </button>
@@ -547,11 +572,11 @@ export default function Profile() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-              <p className="text-xs text-slate-500 max-w-xs">Dữ liệu cá nhân của bạn được mã hóa và bảo mật theo chính sách riêng tư của Peteye.</p>
-              <div className="flex gap-3">
-                <button type="button" className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-sm">Hủy</button>
-                <button type="submit" disabled={loading} className="bg-[#1a2b4c] px-8 py-2.5 rounded-xl text-white font-bold shadow-lg shadow-[#1a2b4c]/20 hover:opacity-90 active:scale-[0.98] transition-all text-sm disabled:opacity-50">
+            <div className="flex flex-col md:flex-row items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800 gap-6 md:gap-4">
+              <p className="text-xs text-slate-500 max-w-xs text-center md:text-left order-2 md:order-1">Dữ liệu cá nhân của bạn được mã hóa và bảo mật theo chính sách riêng tư của Peteye.</p>
+              <div className="flex flex-col-reverse sm:flex-row gap-3 w-full md:w-auto order-1 md:order-2">
+                <button type="button" className="w-full sm:w-auto px-6 py-3.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-sm">Hủy</button>
+                <button type="submit" disabled={loading} className="w-full sm:w-auto bg-[#1a2b4c] px-8 py-3.5 sm:py-2.5 rounded-xl text-white font-bold shadow-lg shadow-[#1a2b4c]/20 hover:opacity-90 active:scale-[0.98] transition-all text-sm disabled:opacity-50">
                   {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
